@@ -4,34 +4,32 @@
 
 **Pins:** TileLang remat tip `a3012088` ([tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5)); full-table stamp `31483438` (2026-10-10); CANN cann_92b2; PTOAS 0.67.
 
+**Full exploration + plots:** see [`ANALYSIS.md`](ANALYSIS.md) (tile vs VF/el/instr, thread vs IPC/el, large-tile instr breakdown, LDS/STS.64/.128 rooftop).
+
 ## Per-case (simt-asc)
 
 | Tag | Suite | simt-asc verdict | Notes |
 |-----|-------|------------------|-------|
-| `sv1_e256_t32` | gate | PASS (Oct-10 / remat tip; treat gate green after harness ignore) |  |
-| `sv1_e2048_t32` | gate | PASS (Oct-10 / remat tip; treat gate green after harness ignore) |  |
-| `sv1_e512_t32` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e1024_t32` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e4096_t32` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e8192_t32` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e16384_t32` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e32768_t32` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e8192_t64` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e8192_t128` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e8192_t256` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
-| `sv1_e8192_t512` | explore | EXPLORE (not in Oct-10 gate table) | SV1-style ladder / optional |
+| `sv1_e256_t32` | gate | PASS |  |
+| `sv1_e2048_t32` | gate | PASS |  |
+| `sv1_e{512…32768}_t32` | explore | EXPLORE | size ladder |
+| `sv1_e8192_t{64…512}` | explore | EXPLORE | thread sweep @ 8K |
+| `sv1t_e16384_t{32…512}` | explore-measured | MEASURED PASS | best el/cyc **3.71 @ T512** |
+| `sv1tt_e16384_tile*_t128` | explore-measured | MEASURED PASS | best tiled **TILE2048: 5088 cyc, 3.22 el/cyc**; pack **.64 only** |
+| `sv1tt_e16384_tile{256,1024,8192}_t32` | explore-measured | MEASURED PASS | T32 foil |
 
-## Other paths
+## Handwritten SIMD DSL / simd-pto
 
 | Path | Status |
 |------|--------|
-| **simd-pto** | Active focus — Oct-10 VF-mode twin matrix still largely red (`0/61` suite-wide); per-bench remeasure TBD |
-| **Handwritten SIMD DSL** (`*d`) | Active focus — use `kernel_dsl` when present |
-| **simt-pto SoftLib** | **Deferred** — do not drive fixes from historical 29-FAIL list |
+| **Handwritten SIMD DSL** (`sv1d_e*_vl64`) | Active — size ladder listed in `config.toml`; fold VF/α when remeasured |
+| **simd-pto** | Active focus — suite-wide Oct-10 still largely red; per-bench remeasure TBD |
+| **simt-pto SoftLib** | **Deferred** |
 
-### SV1 exploration
+## Rooftop (one-liner)
 
-`suite = "explore"` cases mirror the SV1 cost / size / thread sweep (E up to 32k, T sweep at large E).
-Gate oneshot still runs E∈{256,2048}×T=32 only.
+Stock Simt SV1 tops out ~**3.2–3.7 el/cyc** with **LDS/STS.64**; **32 el/cyc FADD roof not reached** (IPC ~0.4 vs ~4 needed). **LDS/STS.128 never emitted** on Ascend Simt `T.Parallel`.
 
-See also: [`docs/regression/`](../../docs/regression/) and suite README.
+## Artifacts
+
+- `ANALYSIS.md`, `plots/*.png`, `data/SUMMARY_sv1_simt_tile16k.tsv`, `data/MIX_*.txt`, `data/IADD_IPC_REPORT_tile16k.txt`

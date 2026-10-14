@@ -13,7 +13,7 @@ Moved out of `PTO-ISA/tilelang` `examples/ascend/t_parallel_st_suite` so the sui
 | **Primary** | **Handwritten SIMD DSL** | PTO-DSL `*d` twins under `kernels_ptodsl/` (`@pto.jit`). |
 | **Deferred** | **simt-pto** SoftLib lowering | Kernels / `ST_VF_MODES=simt-pto` remain in-tree for later; **do not** treat the historical 29 FAIL table as the current work queue. |
 
-Per-case shapes and verdicts: `benches/<id>/config.toml` + `benches/<id>/VERDICT.md`.
+Per-case shapes and verdicts: `benches/<id>/config.toml` + `benches/<id>/VERDICT.md`. SV1 explore analysis: [`benches/sv1/ANALYSIS.md`](benches/sv1/ANALYSIS.md).
 
 ## Suite layout
 

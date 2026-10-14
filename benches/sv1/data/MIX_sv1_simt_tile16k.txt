@@ -1,0 +1,107 @@
+# Ascend SimtVF E=16K TILE / T mix notes
+
+## sv1tt_e16384_tile1024_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile1024_t128/OPPROF_20261013120424_ZCZUYGFGRKQRFPJS/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 64, 'SIMT_IADD': 644, 'SIMT_IADD_I': 580}
+lds_ofst={'0': 320, '180': 64, '100': 64, '80': 64}
+sts_ofst={'0': 256}
+pack=.64 body=2200 vf=5146
+
+## sv1tt_e16384_tile1024_t32
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile1024_t32/OPPROF_20261013121208_XJHLYMTOXSLNRHMH/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 16, 'SIMT_IADD_I': 529, 'SIMT_IADD': 545}
+lds_ofst={'0': 272, '80': 16, '100': 16, '120': 16, 'a0': 16, 'e0': 16, '60': 16, '140': 16, 'c0': 16, '160': 16, '40': 16, '1e0': 16, '1c0': 16, '1a0': 16, '20': 16, '180': 16}
+sts_ofst={'0': 256}
+pack=.64 body=1894 vf=14299
+
+## sv1tt_e16384_tile128_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile128_t128/OPPROF_20261013115834_ZIRSVGZMQIUQDTLP/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 1024, 'SIMT_STS': 512, 'SIMT_LEA': 1024, 'SIMT_FADD': 512, 'SIMT_IADD_I': 1540, 'SIMT_IADD': 1540}
+lds_ofst={'0': 1024}
+sts_ofst={'0': 512}
+pack=unk body=5652 vf=10456
+
+## sv1tt_e16384_tile2048_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile2048_t128/OPPROF_20261013120549_FKGWEBAMCUZURWQN/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 32, 'SIMT_IADD_I': 548, 'SIMT_IADD': 580}
+lds_ofst={'0': 288, '280': 32, '200': 32, '300': 32, '180': 32, '380': 32, '100': 32, '80': 32}
+sts_ofst={'0': 256}
+pack=.64 body=2008 vf=5088
+
+## sv1tt_e16384_tile256_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile256_t128/OPPROF_20261013120130_JDHGTVZKZQFXNYOF/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_LEA': 256, 'SIMT_FADD': 512, 'SIMT_IADD_I': 772, 'SIMT_IADD': 1028}
+lds_ofst={'0': 512}
+sts_ofst={'0': 256}
+pack=.64 body=3352 vf=5807
+
+## sv1tt_e16384_tile256_t32
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile256_t32/OPPROF_20261013121004_QBZHQWSFJWJNWONE/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 64, 'SIMT_IADD': 641, 'SIMT_IADD_I': 577}
+lds_ofst={'0': 320, '60': 64, '20': 64, '40': 64}
+sts_ofst={'0': 256}
+pack=.64 body=2182 vf=15859
+
+## sv1tt_e16384_tile4096_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile4096_t128/OPPROF_20261013120712_CNTJQBTQQMTPYMWN/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 16, 'SIMT_IADD_I': 660, 'SIMT_IADD': 676}
+lds_ofst={'0': 400, '380': 16, '180': 16, '300': 16, '280': 16, '200': 16, '100': 16, '80': 16}
+sts_ofst={'0': 256}
+pack=.64 body=2040 vf=5164
+
+## sv1tt_e16384_tile512_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile512_t128/OPPROF_20261013120301_YYSITOPXLXPMDUQU/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 128, 'SIMT_IADD_I': 644, 'SIMT_IADD': 772}
+lds_ofst={'0': 384, '80': 128}
+sts_ofst={'0': 256}
+pack=.64 body=2584 vf=5225
+
+## sv1tt_e16384_tile8192_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile8192_t128/OPPROF_20261013120836_HGFTBBMQZMBACIRF/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 8, 'SIMT_IADD_I': 716, 'SIMT_IADD': 724}
+lds_ofst={'0': 456, '200': 8, '180': 8, '280': 8, '300': 8, '380': 8, '100': 8, '80': 8}
+sts_ofst={'0': 256}
+pack=.64 body=2056 vf=5472
+
+## sv1tt_e16384_tile8192_t32
+csv=/tmp/sv1_cost_sweep/opsim_sv1tt_e16384_tile8192_t32/OPPROF_20261013121409_RNGACQWBAKJUWZPU/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 2, 'SIMT_IADD_I': 707, 'SIMT_IADD': 709}
+lds_ofst={'0': 450, '80': 2, '2a0': 2, 'a0': 2, 'c0': 2, '220': 2, '2c0': 2, '360': 2, '20': 2, '40': 2, '240': 2, '60': 2, '280': 2, '160': 2, '300': 2, '180': 2, '320': 2, '3e0': 2, '3c0': 2, '1a0': 2, '1e0': 2, '3a0': 2, '380': 2, '340': 2, '1c0': 2, 'e0': 2, '100': 2, '2e0': 2, '120': 2, '200': 2, '140': 2, '260': 2}
+sts_ofst={'0': 256}
+pack=.64 body=2002 vf=15983
+
+## sv1t_e16384_t128
+csv=/tmp/sv1_cost_sweep/opsim_sv1t_e16384_t128/OPPROF_20261013121618_XWPPYEQWUZNSCEPB/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 4, 'SIMT_IADD_I': 740, 'SIMT_IADD': 740}
+lds_ofst={'0': 484, '380': 4, '200': 4, '180': 4, '100': 4, '280': 4, '300': 4, '80': 4}
+sts_ofst={'0': 256}
+pack=.64 body=2036 vf=5700
+
+## sv1t_e16384_t256
+csv=/tmp/sv1_cost_sweep/opsim_sv1t_e16384_t256/OPPROF_20261013121744_URZXLGOQASNIOAFX/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 8, 'SIMT_IADD_I': 744, 'SIMT_IADD': 744}
+lds_ofst={'0': 488, '300': 8, '200': 8, '100': 8}
+sts_ofst={'0': 256}
+pack=.64 body=2056 vf=4864
+
+## sv1t_e16384_t32
+csv=/tmp/sv1_cost_sweep/opsim_sv1t_e16384_t32/OPPROF_20261013095913_QPSXFUUYNCTYPQWA/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 1, 'SIMT_IADD_I': 737, 'SIMT_IADD': 737}
+lds_ofst={'0': 481, '3a0': 1, '3e0': 1, '3c0': 1, '380': 1, '360': 1, '260': 1, '240': 1, '280': 1, '220': 1, '200': 1, '1e0': 1, '340': 1, '320': 1, '300': 1, '2e0': 1, '2c0': 1, '2a0': 1, '120': 1, '80': 1, '140': 1, 'a0': 1, 'c0': 1, '60': 1, 'e0': 1, '100': 1, '1a0': 1, '160': 1, '20': 1, '1c0': 1, '40': 1, '180': 1}
+sts_ofst={'0': 256}
+pack=.64 body=2021 vf=14882
+
+## sv1t_e16384_t512
+csv=/tmp/sv1_cost_sweep/opsim_sv1t_e16384_t512/OPPROF_20261013121907_PKCABNVQSOKVUFSB/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 16, 'SIMT_IADD_I': 752, 'SIMT_IADD': 752}
+lds_ofst={'0': 496, '200': 16}
+sts_ofst={'0': 256}
+pack=.64 body=2096 vf=4415
+
+## sv1t_e16384_t64
+csv=/tmp/sv1_cost_sweep/opsim_sv1t_e16384_t64/OPPROF_20261013115252_RTRSOPYJPAWNMROT/simulator/core0.veccore0/core0.veccore0_instr_exe.csv
+counts={'SIMT_LDS': 512, 'SIMT_STS': 256, 'SIMT_FADD': 512, 'SIMT_LEA': 2, 'SIMT_IADD_I': 738, 'SIMT_IADD': 738}
+lds_ofst={'0': 482, '40': 2, '240': 2, '2c0': 2, '300': 2, '340': 2, '380': 2, '3c0': 2, '280': 2, '100': 2, 'c0': 2, '140': 2, '80': 2, '180': 2, '1c0': 2, '200': 2}
+sts_ofst={'0': 256}
+pack=.64 body=2026 vf=8316
+

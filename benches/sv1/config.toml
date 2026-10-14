@@ -19,7 +19,13 @@ cann = "cann_92b2/9.2.0-beta.2"
 ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
 soc = "Ascend950PR_9599"
 
-# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[analysis]
+doc = "ANALYSIS.md"
+plots = "plots/"
+data = "data/SUMMARY_sv1_simt_tile16k.tsv"
+
+# Cases: gate = oneshot regress; explore = size/thread/tile ladders (see ANALYSIS.md).
+
 [[cases]]
 tag = "sv1_e256_t32"
 suite = "gate"
@@ -32,6 +38,7 @@ suite = "gate"
 args = ["2048", "32"]
 shape = { E = 2048, T = 32 }
 
+# --- Simt size ladder (T=32) ---
 [[cases]]
 tag = "sv1_e512_t32"
 suite = "explore"
@@ -68,6 +75,7 @@ suite = "explore"
 args = ["32768", "32"]
 shape = { E = 32768, T = 32 }
 
+# --- Simt thread sweep @ E=8192 (config explore) ---
 [[cases]]
 tag = "sv1_e8192_t64"
 suite = "explore"
@@ -91,3 +99,131 @@ tag = "sv1_e8192_t512"
 suite = "explore"
 args = ["8192", "512"]
 shape = { E = 8192, T = 512 }
+
+# --- Simt untiled thread sweep @ E=16384 (measured tile16k harvest) ---
+[[cases]]
+tag = "sv1t_e16384_t32"
+suite = "explore-measured"
+shape = { E = 16384, T = 32, TILE = 16384 }
+metrics_ref = "data/SUMMARY_sv1_simt_tile16k.tsv"
+
+[[cases]]
+tag = "sv1t_e16384_t64"
+suite = "explore-measured"
+shape = { E = 16384, T = 64, TILE = 16384 }
+
+[[cases]]
+tag = "sv1t_e16384_t128"
+suite = "explore-measured"
+shape = { E = 16384, T = 128, TILE = 16384 }
+
+[[cases]]
+tag = "sv1t_e16384_t256"
+suite = "explore-measured"
+shape = { E = 16384, T = 256, TILE = 16384 }
+
+[[cases]]
+tag = "sv1t_e16384_t512"
+suite = "explore-measured"
+shape = { E = 16384, T = 512, TILE = 16384 }
+
+# --- Simt tile sensitivity E=16384 T=128 (measured) ---
+[[cases]]
+tag = "sv1tt_e16384_tile128_t128"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 128, T = 128, ept = 1 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile256_t128"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 256, T = 128, ept = 2 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile512_t128"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 512, T = 128, ept = 4 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile1024_t128"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 1024, T = 128, ept = 8 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile2048_t128"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 2048, T = 128, ept = 16 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile4096_t128"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 4096, T = 128, ept = 32 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile8192_t128"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 8192, T = 128, ept = 64 }
+
+# --- Simt tile foils @ T=32 ---
+[[cases]]
+tag = "sv1tt_e16384_tile256_t32"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 256, T = 32 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile1024_t32"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 1024, T = 32 }
+
+[[cases]]
+tag = "sv1tt_e16384_tile8192_t32"
+suite = "explore-measured"
+shape = { E = 16384, TILE = 8192, T = 32 }
+
+# --- Handwritten SIMD DSL size ladder (VL=64) ---
+[[cases]]
+tag = "sv1d_e256_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 256, VL = 64 }
+
+[[cases]]
+tag = "sv1d_e512_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 512, VL = 64 }
+
+[[cases]]
+tag = "sv1d_e1024_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 1024, VL = 64 }
+
+[[cases]]
+tag = "sv1d_e2048_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 2048, VL = 64 }
+
+[[cases]]
+tag = "sv1d_e4096_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 4096, VL = 64 }
+
+[[cases]]
+tag = "sv1d_e8192_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 8192, VL = 64 }
+
+[[cases]]
+tag = "sv1d_e16384_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 16384, VL = 64 }
+
+[[cases]]
+tag = "sv1d_e32768_vl64"
+suite = "explore"
+path = "handwritten-simd-dsl"
+shape = { E = 32768, VL = 64 }

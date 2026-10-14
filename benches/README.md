@@ -24,3 +24,5 @@ python kernels/sv1_stream_eltwise.py 256 32
 ```
 
 Case matrices are declared in each `config.toml` `[[cases]]` (see SV1 `suite = "explore"` for the size/thread ladder).
+
+SV1 full Simt/Simd explore case list, sensitivity plots (tile/thread), instruction breakdown, and LDS/STS.64/.128 rooftop: [`benches/sv1/ANALYSIS.md`](sv1/ANALYSIS.md).
