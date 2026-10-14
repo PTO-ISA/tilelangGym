@@ -1,0 +1,42 @@
+id = "sv3"
+title = "GEMV partial KEEP / split"
+family = "sv"
+
+[paths]
+kernel = "sv3_gemv_partial_keep.py"
+kernel_vmi = "sv3v_gemv_partial_keep.py"
+kernel_dsl = "sv3d_gemv_partial_keep.py"
+
+[focus]
+primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
+deferred = ["simt-pto"]
+
+[pins]
+tilelang_tip = "a3012088cc61a7fac36c50ae19caf2524d5bf804"
+tilelang_pr = "https://github.com/PTO-ISA/tilelang/pull/5"
+full_table_stamp = "31483438"
+cann = "cann_92b2/9.2.0-beta.2"
+ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
+soc = "Ascend950PR_9599"
+
+# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[[cases]]
+tag = "sv3_m24_vl64_k16_t32_keep"
+suite = "gate"
+arm = "keep"
+args = ["24", "64", "16", "32", "keep"]
+shape = { M = 24, VL = 64, K = 16, T = 32 }
+
+[[cases]]
+tag = "sv3_m32_vl64_k16_t32_keep"
+suite = "gate"
+arm = "keep"
+args = ["32", "64", "16", "32", "keep"]
+shape = { M = 32, VL = 64, K = 16, T = 32 }
+
+[[cases]]
+tag = "sv3_m32_vl64_k16_t32_split_cm16"
+suite = "gate"
+arm = "split"
+args = ["32", "64", "16", "32", "split", "16"]
+shape = { M = 32, VL = 64, K = 16, T = 32, cm = 16 }

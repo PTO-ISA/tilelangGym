@@ -1,0 +1,147 @@
+id = "sv4"
+title = "Index gather + psum"
+family = "sv"
+
+[paths]
+kernel = "sv4_index_gather_psum.py"
+kernel_vmi = "sv4v_index_gather_psum.py"
+kernel_dsl = "sv4d_index_gather_psum.py"
+
+[focus]
+primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
+deferred = ["simt-pto"]
+
+[pins]
+tilelang_tip = "a3012088cc61a7fac36c50ae19caf2524d5bf804"
+tilelang_pr = "https://github.com/PTO-ISA/tilelang/pull/5"
+full_table_stamp = "31483438"
+cann = "cann_92b2/9.2.0-beta.2"
+ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
+soc = "Ascend950PR_9599"
+
+# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[[cases]]
+tag = "sv4_e256_b8_t32_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["256", "8", "32", "keep_idx"]
+shape = { E = 256, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e256_b8_t32_remat_idx"
+suite = "gate"
+arm = "remat_idx"
+args = ["256", "8", "32", "remat_idx"]
+shape = { E = 256, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e256_b8_t32_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["256", "8", "32", "remat_idx_calc"]
+shape = { E = 256, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e256_b16_t32_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["256", "16", "32", "keep_idx"]
+shape = { E = 256, B = 16, T = 32 }
+
+[[cases]]
+tag = "sv4_e256_b16_t32_remat_idx"
+suite = "gate"
+arm = "remat_idx"
+args = ["256", "16", "32", "remat_idx"]
+shape = { E = 256, B = 16, T = 32 }
+
+[[cases]]
+tag = "sv4_e256_b16_t32_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["256", "16", "32", "remat_idx_calc"]
+shape = { E = 256, B = 16, T = 32 }
+
+[[cases]]
+tag = "sv4_e512_b8_t32_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["512", "8", "32", "keep_idx"]
+shape = { E = 512, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e512_b8_t32_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["512", "8", "32", "remat_idx_calc"]
+shape = { E = 512, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e1024_b8_t32_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["1024", "8", "32", "keep_idx"]
+shape = { E = 1024, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e1024_b8_t32_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["1024", "8", "32", "remat_idx_calc"]
+shape = { E = 1024, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e1024_b16_t32_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["1024", "16", "32", "keep_idx"]
+shape = { E = 1024, B = 16, T = 32 }
+
+[[cases]]
+tag = "sv4_e1024_b16_t32_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["1024", "16", "32", "remat_idx_calc"]
+shape = { E = 1024, B = 16, T = 32 }
+
+[[cases]]
+tag = "sv4_e1536_b8_t32_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["1536", "8", "32", "keep_idx"]
+shape = { E = 1536, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e1536_b8_t32_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["1536", "8", "32", "remat_idx_calc"]
+shape = { E = 1536, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e2048_b8_t32_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["2048", "8", "32", "keep_idx"]
+shape = { E = 2048, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e2048_b8_t32_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["2048", "8", "32", "remat_idx_calc"]
+shape = { E = 2048, B = 8, T = 32 }
+
+[[cases]]
+tag = "sv4_e1024_b8_t16_keep_idx"
+suite = "gate"
+arm = "keep_idx"
+args = ["1024", "8", "16", "keep_idx"]
+shape = { E = 1024, B = 8, T = 16 }
+
+[[cases]]
+tag = "sv4_e1024_b8_t16_remat_idx_calc"
+suite = "gate"
+arm = "remat_idx_calc"
+args = ["1024", "8", "16", "remat_idx_calc"]
+shape = { E = 1024, B = 8, T = 16 }

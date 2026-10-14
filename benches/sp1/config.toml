@@ -1,0 +1,34 @@
+id = "sp1"
+title = "Dual scatter KEEP/remat pos"
+family = "sp"
+
+[paths]
+kernel = "sp1_dual_scatter_vsf.py"
+kernel_dsl = "sp1d_dual_scatter_keep_pos.py"
+
+[focus]
+primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
+deferred = ["simt-pto"]
+
+[pins]
+tilelang_tip = "a3012088cc61a7fac36c50ae19caf2524d5bf804"
+tilelang_pr = "https://github.com/PTO-ISA/tilelang/pull/5"
+full_table_stamp = "31483438"
+cann = "cann_92b2/9.2.0-beta.2"
+ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
+soc = "Ascend950PR_9599"
+
+# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[[cases]]
+tag = "sp1_t32_k2_h128_g32_t32_keep_pos"
+suite = "gate"
+arm = "keep_pos"
+args = ["32", "2", "128", "32", "32", "keep_pos"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }
+
+[[cases]]
+tag = "sp1_t32_k2_h128_g32_t32_remat_pos"
+suite = "gate"
+arm = "remat_pos"
+args = ["32", "2", "128", "32", "32", "remat_pos"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }

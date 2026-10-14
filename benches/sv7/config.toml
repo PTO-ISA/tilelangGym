@@ -1,0 +1,51 @@
+id = "sv7"
+title = "Case-3 large-G reduce eltwise"
+family = "sv"
+
+[paths]
+kernel = "sv7_reduce_large_eltwise.py"
+kernel_vmi = "sv7v_reduce_large_eltwise.py"
+kernel_dsl = "sv7d_reduce_large.py"
+
+[focus]
+primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
+deferred = ["simt-pto"]
+
+[pins]
+tilelang_tip = "a3012088cc61a7fac36c50ae19caf2524d5bf804"
+tilelang_pr = "https://github.com/PTO-ISA/tilelang/pull/5"
+full_table_stamp = "31483438"
+cann = "cann_92b2/9.2.0-beta.2"
+ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
+soc = "Ascend950PR_9599"
+
+# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[[cases]]
+tag = "sv7_r64_c128_g64_t32"
+suite = "gate"
+arm = "bare"
+args = ["64", "128", "64", "32"]
+shape = { R = 64, C = 128, G = 64, T = 32 }
+note = "harness leftover"
+
+[[cases]]
+tag = "sv7_r64_c128_g128_t32"
+suite = "gate"
+arm = "bare"
+args = ["64", "128", "128", "32"]
+shape = { R = 64, C = 128, G = 128, T = 32 }
+note = "harness leftover"
+
+[[cases]]
+tag = "sv7_r64_c128_g64_t32_multiwarp_ub"
+suite = "gate"
+arm = "multiwarp_ub"
+args = ["64", "128", "64", "32", "multiwarp_ub"]
+shape = { R = 64, C = 128, G = 64, T = 32 }
+
+[[cases]]
+tag = "sv7_r64_c128_g128_t32_multiwarp_ub"
+suite = "gate"
+arm = "multiwarp_ub"
+args = ["64", "128", "128", "32", "multiwarp_ub"]
+shape = { R = 64, C = 128, G = 128, T = 32 }
