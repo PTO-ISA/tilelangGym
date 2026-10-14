@@ -129,7 +129,7 @@ Ideal issue mix for that roof (no IADD): `{LDS_A, LDS_B, FADD, STS}` = **4 issue
 1. **Tile size:** sweet spot ~1024–2048 @ T128; TILE=128 stays scalar and ~2× worse VF_cyc.
 2. **Thread count:** T=32→512 cuts VF_cyc ~3.4× on untiled E=16K; IPC climbs 0.14→0.48.
 3. **Pack width:** Simt locks at `.64`; float4 / `.128` needs TileLang `max_vector_bits` + SoftLib f32x4 path (see agent float4 notes) — not one-liner.
-4. **Simd DSL / simd-pto:** size-ladder kernels exist (`sv1d_e*_vl64`); fold measured VF/α here when remeasured on current pins — plot script `scripts/plot_and_fit.py` (cost-sweep) expects paired `SUMMARY_sv1_cost.tsv` + `SUMMARY_sv1d_cost.tsv`.
+4. **Simd DSL / simd-pto:** large-E ladder measured — E=16K **31.5 el/cyc**, α≈**1.87** ⇒ asym ~**34 el/cyc** (NOT ~64). See §SIMD DSL large-E size ladder + `data/SUMMARY_sv1d_size_ladder.tsv`.
 
 ## Artifacts to regenerate plots
 
@@ -137,3 +137,25 @@ Ideal issue mix for that roof (no IADD): `{LDS_A, LDS_B, FADD, STS}` = **4 issue
 # from this folder after copying SUMMARY tsv into data/
 python3 ../../scripts/plot_sv1_sensitivity.py   # or re-run the generator that wrote plots/
 ```
+
+---
+
+## SIMD DSL (sv1d / VMI PTO-DSL) large-E size ladder
+
+Measured 2026-10-14 HKT on Ascend950PR_9599 opsim (pto-b10), VL=64, full-resident A+B+C in UB.
+Raw: `data/SUMMARY_sv1d_size_ladder.tsv` · note: `data/NOTE_sv1d_size_ladder.md`.
+
+| E | VF_cyc | body_instr | IPC | cyc/vec | **el/cyc** |
+|--:|-------:|-----------:|----:|--------:|-----------:|
+| 256 | 60 | 21 | 0.35 | 15.0 | **4.27** |
+| 4096 | 161 | 261 | 1.62 | 2.52 | **25.44** |
+| 8192 | 280 | 517 | 1.85 | 2.19 | **29.26** |
+| **16384** | **520** | **1029** | **1.98** | **2.03** | **31.51** |
+
+**Asymptotic:** slope α ≈ **1.87** cyc/vec (E≥4K) ⇒ **~34 el/cyc**. At largest measured **E=16K: 31.5 el/cyc**.
+
+**vs theory α≈1 → 64 el/cyc:** **NOT approached** (~2× gap; consistent with ~2 cyc/vec for 2×vload+vadd+vstore when LD/ST/EX do not collapse to 1 issue/cyc). E=32K skipped (3·E·4 exceeds UB for full-resident).
+
+![simd size vs el](plots/sv1_simd_size_vs_el.png)
+
+![simt vs simd overlay](plots/sv1_simt_vs_simd_el_overlay.png)
