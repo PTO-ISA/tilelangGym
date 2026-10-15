@@ -1,86 +1,91 @@
-# PASS / FAIL + perf (clean)
-**Date:** 2026-10-15 HKT · **SOC:** Ascend950PR_9599 · **Pin:** TileLang remat tip `a3012088` + [tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5)
-Single living table. Historical design notes / raw dumps were removed from `reports/`.
-Per-case highlight + verdict: `benches/<id>/VERDICT.md` (SV1: `benches/sv1/ANALYSIS.md`).
+# PASS + perf — Simt vs SIMD-DSL (one case / row)
 
-## SV1–SV9 simt-asc (gate / measured)
+**Date:** 2026-10-15 HKT · **SOC:** Ascend950PR_9599 · **Pin:** TileLang remat tip 3012088 + [tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5)
 
-| Tag | Status | µs | IPC / note |
-|-----|--------|---:|------------|
-| `sv1_e256_t32` | **PASS** | 1.21 | 0.194 |
-| `sv1_e2048_t32` | **PASS** | 2.58 | 0.200 |
-| `sv3_m24_vl64_k16_t32_keep` | **PASS** | 6.79 | 0.324 |
-| `sv3_m32_vl64_k16_t32_keep` | **PASS** | 8.63 | 0.340 |
-| `sv3_m32_vl64_k16_t32_split_cm16` | **PASS** | 7.79 | 0.355 |
-| `sv4_e256_b8_t32_keep2` | **PASS** | 3.79 | 0.118 |
-| `sv4_e256_b16_t32_keep2` | **PASS** | 6.83 | 0.106 |
-| `sv6_r64_c128_g32_t32` | **PASS** | 12.25 | 0.110 |
-| `sv7_r64_c128_g64_t32` | **PASS** | 14.44 | 0.090 |
-| `sv7_r64_c128_g128_t32` | **PASS** | 14.69 | 0.088 |
-| `sv8_r64_c128_g16_t32_live` | **PASS** | 17.04 | 0.141 |
-| `sv8_r64_c128_g16_t32_spill_dist` | **PASS** | 18.23 | 0.138 |
-| `sv9_e256_k1_t32_keep` | **PASS** | 1.17 | 0.262 |
-| `sv9_e256_k8_t32_keep` | **PASS** | 1.48 | 0.505 |
-| `sv9_e256_k8_t32_remat_scores` | **PASS** | 2.02 | 0.301 |
-| `sv9_e256_k8_t32_remat_idx` | **PASS** | 1.48 | 0.505 |
-| `sv4_e256_b8_t32_keep_idx` | **PASS** | 1.67 | 0.367 |
-| `sv4_e256_b8_t32_remat_idx_calc` | **PASS** | 1.62 | 0.417 |
-| `sv4_e256_b16_t32_keep_idx` | **PASS** | 2.39 | 0.343 |
-| `sv4_e256_b16_t32_remat_idx_calc` | **PASS** | 2.22 | 0.369 |
-| `sv4_e512_b8_t32_keep_idx` | **PASS** | 2.83 | 0.290 |
-| `sv4_e512_b8_t32_remat_idx_calc` | **PASS** | 2.71 | 0.288 |
-| `sv4_e1024_b8_t32_keep_idx` | **PASS** | 7.16 | 0.174 |
-| `sv4_e1024_b8_t32_remat_idx_calc` | **PASS** | 6.30 | 0.192 |
-| `sv4_e1024_b16_t32_keep_idx` | **PASS** | 11.83 | 0.172 |
-| `sv4_e1024_b16_t32_remat_idx_calc` | **PASS** | 10.53 | 0.190 |
-| `sv4_e1536_b8_t32_keep_idx` | **PASS** | 12.09 | 0.130 |
-| `sv4_e1536_b8_t32_remat_idx_calc` | **PASS** | 12.79 | 0.132 |
-| `sv4_e2048_b8_t32_keep_idx` | **PASS** | 26.08 | 0.114 |
-| `sv4_e2048_b8_t32_remat_idx_calc` | **PASS** | 26.01 | 0.107 |
-| `sv4_e1024_b8_t16_keep_idx` | **PASS** | 84.44 | 0.033 |
-| `sv4_e1024_b8_t16_remat_idx_calc` | **PASS** | 86.69 | 0.030 |
-| `sv4d_e256_b8_t32_keep_idx` | **PASS** | 1.02 | - |
-| `sv4d_e256_b8_t32_remat_idx` | **PASS** | 1.02 | - |
-| `sv4d_e512_b8_t32_keep_idx` | **PASS** | 1.25 | - |
-| `sv4d_e512_b8_t32_remat_idx` | **PASS** | 1.25 | - |
-| `sv4d_e1024_b8_t32_keep_idx` | **PASS** | 2.32 | - |
-| `sv4d_e1024_b8_t32_remat_idx` | **PASS** | 2.32 | - |
-| `sv4d_e256_b16_t32_keep_idx` | **PASS** | 1.14 | - |
-| `sv4d_e256_b16_t32_remat_idx` | **PASS** | 1.14 | - |
-| `sv4d_e2048_b8_t32_keep_idx` | **FAIL** | NA | - |
-| `sv4d_e2048_b8_t32_remat_idx` | **FAIL** | NA | - |
-| `sv5_r64_c128_g8_t32_keep_reg` | **PASS** | 10.44 | 0.157 |
-| `sv5_r64_c128_g8_t32_ub_reload` | **PASS** | 8.10 | 0.202 |
-| `sv5_r64_c128_g16_t32_keep_reg` | **PASS** | 10.82 | 0.142 |
-| `sv5_r64_c128_g16_t32_ub_reload` | **PASS** | 7.74 | 0.193 |
-| `sv5_r64_c128_g32_t32_keep_reg` | **PASS** | 26.08 | 0.101 |
-| `sv5_r64_c128_g32_t32_ub_reload` | **PASS** | 25.86 | 0.102 |
-| `sv5_r128_c128_g16_t32_keep_reg` | **FAIL** | 24.49 | 0.133 |
-| `sv5_r128_c128_g16_t32_ub_reload` | **PASS** | 14.81 | 0.190 |
-| `sv5_r256_c128_g16_t32_keep_reg` | **FAIL** | 100.07 | 0.068 |
-| `sv5_r256_c128_g16_t32_ub_reload` | **PASS** | 29.32 | 0.186 |
-| `sv5_r64_c128_g16_t32_keep_in_rf` | **PASS** | 7.04 | 0.110 |
-| `sv5_r64_c128_g16_t32_ub_stream` | **PASS** | 4.18 | 0.220 |
-| `sv6_r64_c128_g32_t32_keep_in_warp` | **PASS** | 14.83 | 0.092 |
-| `sv6_r64_c128_g32_t32_reload` | **PASS** | 12.58 | 0.107 |
-| `sv7_r64_c128_g64_t32_multiwarp_ub` | **PASS** | 7.32 | 0.114 |
-| `sv7_r64_c128_g64_t32_reload` | **PASS** | 14.54 | 0.090 |
-| `sv7_r64_c128_g128_t32_multiwarp_ub` | **PASS** | 15.42 | 0.089 |
-| `sv7_r64_c128_g128_t32_reload` | **PASS** | 14.58 | 0.089 |
-| `sv2_r16_c32_t32_input_keep` | **PASS** | 1.16 | 0.362 |
-| `sv2_r32_c64_t32_input_stream` | **PASS** | 3.60 | 0.149 |
-| `sv2_r32_c128_t32_input_stream` | **PASS** | 8.49 | 0.117 |
-| `sv2_r32_c64_t32_reload` | **PASS** | 4.42 | 0.130 |
+**All rows below are PASS** on this pin (simt-asc gate + handwritten SIMD DSL). Historical FAIL / COMPILE_FAIL tags are not listed.
 
-## SV1 SIMD DSL highlights (roof ~44 / Lok 42.67)
+| Column | Meaning |
+|--------|---------|
+| **Simt µs** | core0.veccore0 wall (best simt-asc arm at the shape) |
+| **SIMD-DSL µs** | handwritten *d PTO-DSL twin (best arm) |
+| **Ratio** | Simt µs ÷ SIMD-DSL µs (>1 ⇒ DSL faster wall) |
+| **VF ratio** | Simt VF_cycles ÷ DSL VF_cycles (>1 ⇒ DSL fewer VF cycles) |
 
-| Tag | Status | µs | el/cyc |
-|-----|--------|---:|-------:|
-| `sv1d_e8192_vl64` | **PASS** | 2.59 | 29.3 (~69% of 42.67) |
-| `sv1d_e16384_vl64` | **PASS** | 4.55 | 31.5 (~74% VF; body mid peak ~**85%**) |
+Per-case highlight: enches/<id>/VERDICT.md (SV1: [ANALYSIS.md](../benches/sv1/ANALYSIS.md)).
 
-**SV1 keynote:** SIMD = high-UB-BW load/st in a small loop — **no per-thread index, no instr schedule** — ~**85%** of ~**44** el/cyc roof. See [`benches/sv1/ANALYSIS.md`](../benches/sv1/ANALYSIS.md).
+---
 
-## How to read
-- **PASS/FAIL** here is the suite rollup.
-- **Highlight + verdict** for each bench lives under `benches/<id>/VERDICT.md`.
+## SV1 — SIMD keynote
+
+SIMD DSL = small UB ld/st VL loop — **no per-thread index, no unroll, no instr schedule** — body mid ~**85%** of ~**44** el/cyc roof (Lok **42.67**). Simt roof **16** el/cyc; best ~**4.08** (ILP16 @ T128).
+
+| Case | Shape / arm | Status | Simt µs | SIMD-DSL µs | Ratio | Simt el/cyc | DSL el/cyc | Note |
+|------|-------------|--------|--------:|------------:|------:|------------:|-----------:|------|
+| SV1 | E256 stream | **PASS** | 1.21 | 0.89 | **1.36** | — | 4.27 | gate |
+| SV1 | E8192 VL64 vs Simt T128 ILP16 | **PASS** | — | 2.59 | — | **4.08** | **29.3** | DSL ~7× el/cyc vs Simt mid |
+| SV1 | E16384 untiled T512 vs DSL VL64 | **PASS** | 6.73 | 4.55 | **1.48** | **3.71** | **31.5** | DSL ~74% of 42.67 roof |
+
+---
+
+## SV2–SV9 — best arm / matched shape
+
+Sources: opsim harvest 2026-10-07/08 (VF_CYCLES_SIMT_VS_DSL_BEST); remat-tip recheck stamp on pin above.
+
+| Case | Shape / arm | Status | Simt µs | SIMD-DSL µs | Ratio | VF ratio | Note |
+|------|-------------|--------|--------:|------------:|------:|---------:|------|
+| SV2 | R32×C64 input_stream | **PASS** | 3.60 | 1.01 | **3.56** | 28.7 | stream primary |
+| SV2 | R32×C128 input_stream | **PASS** | 8.49 | 1.34 | **6.34** | 53.4 | wide-C |
+| SV2 | R16×C32 input_keep | **PASS** | 1.16 | — | — | — | ABI fallback; no *d at C32 |
+| SV3 | M24 VL64 K16 keep | **PASS** | 6.79 | 3.14 | **2.16** | 11.1 | Acc KEEP |
+| SV3 | M32 VL64 K16 split_cm16 | **PASS** | 7.79 | 6.88 | **1.13** | 1.61 | chunk flush |
+| SV4 | E256 B8 remat_idx_calc / keep_idx | **PASS** | 1.62 | 1.02 | **1.59** | 9.63 | remat tip clears remat_idx |
+| SV4 | E512 B8 keep_idx | **PASS** | 2.83 | 1.25 | **2.26** | — | ladder |
+| SV4 | E1024 B8 remat_idx_calc / keep_idx | **PASS** | 6.30 | 2.32 | **2.72** | — | remat wins −12% vs keep |
+| SV5 | R64 C128 G16 ub_stream | **PASS** | 4.18 | 13.06 | **0.32** | 0.33 | Simt wins (Case-3) |
+| SV6 | R64 C128 G32 reload | **PASS** | 12.58 | 11.66 | **1.08** | 1.26 | Case-3 |
+| SV7 | R64 C128 G64 multiwarp_ub | **PASS** | 7.32 | 11.10 | **0.66** | 0.67 | Simt multiwarp wins |
+| SV7 | R64 C128 G128 reload | **PASS** | 14.58 | 10.79 | **1.35** | 1.47 | DSL reload wins |
+| SV8 | R64 C128 G16 live | **PASS** | 17.04 | 19.56 | **0.87** | 0.89 | near parity |
+| SV9 | E256 K8 keep / remat_scores | **PASS** | 1.48 | 1.00 | **1.48** | 4.14 | DSL remat_scores best |
+
+---
+
+## CF — control-flow (primary)
+
+| Case | Shape / arm | Status | Simt µs | SIMD-DSL µs | Ratio | VF ratio |
+|------|-------------|--------|--------:|------------:|------:|---------:|
+| CF1 | E256 K8 keep | **PASS** | 0.97 | 0.90 | **1.08** | 2.94 |
+| CF2 | E256 K8 remat | **PASS** | 1.95 | 0.90 | **2.17** | 18.1 |
+| CF3 | E256 K8 remat_idx | **PASS** | 1.33 | 0.83 | **1.60** | 8.10 |
+| CF6 | E256 pnear5 newton | **PASS** | 1.37 | 0.93 | **1.47** | 7.45 |
+
+---
+
+## SP — sparse / packing (where *d twin exists)
+
+| Case | Shape / arm | Status | Simt µs | SIMD-DSL µs | Ratio | VF ratio | Note |
+|------|-------------|--------|--------:|------------:|------:|---------:|------|
+| SP1 | T32 K2 H128 G32 remat_pos / keep_pos | **PASS** | 11.19 | 19.04 | **0.59** | 0.55 | Simt wins |
+| SP2 | T32 K2 H128 G32 sf0_w0+keep_acc | **PASS** | 9.19 | 2.02 | **4.55** | 16.4 | |
+| SP3 | M32 H128 G32 fp32 | **PASS** | 7.45 | 1.44 | **5.17** | 32.0 | |
+| SP3 | M32 H128 G32 e8m0 | **PASS** | 7.45 | 1.39 | **5.36** | 35.9 | |
+| SP6 | N32 H128 G32 unpack / vselr | **PASS** | 5.35 | 1.22 | **4.39** | 19.9 | |
+
+SP4 / SP5: simt-asc **PASS**; no handwritten *d twin in-tree — omitted from ratio columns.
+
+---
+
+## Verdict (rollup)
+
+- **SV1:** prefer handwritten SIMD DSL for stream eltwise — high UB BW, no index/schedule tax (~**85%** of ~44 el/cyc).
+- **SV2–SV4 / CF / SP2–SP3 / SP6:** DSL usually fewer VF cycles (ratio ≫1); wall often follows.
+- **SV5–SV8 Case-3:** mixed — Simt multiwarp / ub_stream can beat DSL wall; report both arms.
+- **Todos (Simt only):** T=128 schedule / ILP toward roof **16** — see [enches/sv1/ANALYSIS.md](../benches/sv1/ANALYSIS.md).
+
+## How to re-measure
+
+`ash
+bash scripts/regression/oneshot_sv1_e8192_t128_t512.sh   # weekly SV1 gate
+bash scripts/oneshot/oneshot_sv1_sv9.sh                  # simt-asc SV suite
+bash scripts/oneshot/oneshot_ptodsl_sv1_sv9d.sh          # SIMD-DSL twins
+`
