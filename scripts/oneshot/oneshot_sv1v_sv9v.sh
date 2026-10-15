@@ -105,9 +105,13 @@ compile_run_generic() {
   echo "$TAG $PASSLINE us=$US" | tee -a "$SUMMARY"
 }
 
-echo "==== PHASE SV1V stream eltwise (SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv1v_stream_eltwise.py" sv1v_e256_t64 256 64
-compile_run_generic "$SUITE/kernels/sv1v_stream_eltwise.py" sv1v_e2048_t64 2048 64
+echo "==== PHASE SV1 stream eltwise (SimdVF via ST_VF_MODE) ===="
+# SV1: one T.Parallel file; mode via ST_VF_MODE (no sv1v_* twin)
+(
+  export ST_VF_MODE=simd-pto
+  compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e256_t64 256 64
+  compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e2048_t64 2048 64
+)
 
 echo "==== PHASE SV2V live RF eltwise + scale bcast (SimdVF) ===="
 compile_run_generic "$SUITE/kernels/sv2v_eltwise_bcast_rf.py" sv2v_r32_c32_t64_frag_live 32 32 64 frag_live

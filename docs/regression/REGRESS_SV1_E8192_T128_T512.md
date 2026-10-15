@@ -37,4 +37,4 @@ See repo README / `benches/sv1/config.toml` `[pins]`. Prefer remat tip `a3012088
 
 ## Related analysis (not required for gate PASS)
 
-`benches/sv1/VERDICT.md`, `ANALYSIS.md`, `analysis/NOTE_sv1_*` — roof **16**, ILP16 schedule experiments, bubble/T, GPU compare. Gate script does **not** run ILP rewrites.
+`benches/sv1/ANALYSIS.md` — roof **16**, ILP16@T128, T128 schedule todos. Gate script does **not** run ILP rewrites.

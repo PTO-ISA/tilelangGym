@@ -4,10 +4,10 @@ family = "sv"
 
 [paths]
 kernel = "sv1_stream_eltwise.py"
-kernel_vmi = "sv1v_stream_eltwise.py"
 kernel_dsl = "sv1d_stream_eltwise.py"
 
 [focus]
+# TileLang mode via ST_VF_MODE on sv1_stream_eltwise.py (no sv1v twin).
 primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
 deferred = ["simt-pto"]
 
