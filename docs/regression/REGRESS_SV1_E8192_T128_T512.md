@@ -1,6 +1,6 @@
 # SV1 weekly gate — E=8192 × T=128 + T=512
 
-**Script:** [`oneshot_sv1_e8192_t128_t512.sh`](../oneshot_sv1_e8192_t128_t512.sh) (repo root)  
+**Script:** [`scripts/regression/oneshot_sv1_e8192_t128_t512.sh`](../scripts/regression/oneshot_sv1_e8192_t128_t512.sh) (repo root)  
 **Mode:** `ST_VF_MODE=simt-asc` (default)  
 **Cases:** `sv1_e8192_t128`, `sv1_e8192_t512` — stock TileLang SimtVF, **no AI / schedule rewrites**.  
 **Pass rule:** both `COMPILE_OK` and opsim line starts with `PASS`. Exit **0** only if both PASS.
@@ -25,7 +25,7 @@ export SIM_DSL=/home/happybot/PTOAS-vmi/scripts/sim_dsl.sh
 # export ST_SIMTVF_OUT=/tmp/sv1_e8192_gate
 # export SOC=Ascend950PR_9599
 
-bash oneshot_sv1_e8192_t128_t512.sh
+bash scripts/regression/oneshot_sv1_e8192_t128_t512.sh
 echo exit=$?
 ```
 

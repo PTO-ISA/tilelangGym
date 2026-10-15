@@ -8,10 +8,9 @@ Moved out of `PTO-ISA/tilelang` `examples/ascend/t_parallel_st_suite` so the sui
 
 | Priority | Path | Notes |
 |----------|------|-------|
-| **Primary** | **simt-asc** | Ascend SoftLib SimtVF (`target=ascend`, cython). This is the main regression gate. |
+| **Primary** | **simt-asc** | Ascend SoftLib SimtVF (`target=ascend`, cython). Main regression gate — **all PASS** on remat tip below. |
 | **Primary** | **simd-pto** | `VectorizeParallelToPTO` / VL `vload`/`vstore` (not CUDA float4). |
 | **Primary** | **Handwritten SIMD DSL** | PTO-DSL `*d` twins under `kernels_ptodsl/` (`@pto.jit`). |
-| **Deferred** | **simt-pto** SoftLib lowering | Kernels / `ST_VF_MODES=simt-pto` remain in-tree for later; **do not** treat the historical 29 FAIL table as the current work queue. |
 
 Per-case shapes and verdicts: `benches/<id>/config.toml` + `benches/<id>/VERDICT.md`. SV1 explore analysis: [`benches/sv1/ANALYSIS.md`](benches/sv1/ANALYSIS.md).
 
@@ -20,12 +19,15 @@ Per-case shapes and verdicts: `benches/<id>/config.toml` + `benches/<id>/VERDICT
 | Path | Contents |
 |------|----------|
 | **`benches/<id>/`** | **Per-benchmark home:** kernel(s) + `config.toml` (shapes/arms) + `VERDICT.md` (SV1…SV9, CF*, SP*) |
-| `kernels/` / `kernels_ptodsl/` | Symlinks into `benches/` for legacy `oneshot_*.sh` compatibility |
-| `oneshot_*.sh` | Family runners + `oneshot_vf_mode_regress.sh` |
+| `kernels/` / `kernels_ptodsl/` | Symlinks into `benches/` for legacy oneshot compatibility |
+| `scripts/oneshot/` | Family oneshot runners |
+| `scripts/regression/` | Weekly / CI gates (SV1 E=8192 T128+T512) |
+| `scripts/laptop/` | Optional `run_via_laptop_*.ps1` relays |
+| `scripts/tools/` | harvest / opsim helpers |
+| `oneshot_sv1_e8192_t128_t512.sh` | **Compat wrapper** → `scripts/regression/oneshot_sv1_e8192_t128_t512.sh` |
 | `common_asc_harness.py` / `common_pto_harness.py` / `vf_mode.py` | Shared compile + opsim harness |
-| `docs/regression/` | Pins, PASS/FAIL notes, probes |
-| `reports/` | Design docs and historical PASS tables |
-| `SUMMARY.md` | Suite history / renumber notes |
+| `docs/regression/` | Pins, PASS notes, probes |
+| `reports/` | Design docs and PASS tables |
 
 See [`benches/README.md`](benches/README.md). Each bench `config.toml` lists gate cases (oneshot) and, where useful (e.g. SV1), `suite = "explore"` size/thread ladders.
 
@@ -36,8 +38,8 @@ See [`benches/README.md`](benches/README.md). Each bench `config.toml` lists gat
 | **CANN** | `cann_92b2` **9.2.0-beta.2** (`…/cann_92b2/cann-9.2.0-beta.2`) |
 | **SOC / camodel** | Ascend950PR_9599 |
 | **PTOAS** | nightly **0.67** (CLI `ptoas 0.67`; no `0.67.YYYYMMDD` suffix). Build datecode **20261009** UTC (`2026-10-09T23:22:18Z` → HKT 2026-10-10 ~07:22), `source_commit=`**`1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80`**, GH Actions run [`37994539624`](https://github.com/hw-native-sys/PTOAS/actions/runs/37994539624), wheel `ptoas-0.67-cp312-cp312-manylinux_2_34_aarch64.whl` → deps `.camodel_deps_nightly067` |
-| **TileLang (live remat tip)** | branch `fix/simtvf-remat-idx-evalset-vec` @ **`a3012088cc61a7fac36c50ae19caf2524d5bf804`** — [tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5) |
-| **TileLang (full-table stamp)** | tip **`31483438`** (2026-10-10) — raw oneshot tables below were measured on this tip |
+| **TileLang (simt-asc all-PASS)** | branch `fix/simtvf-remat-idx-evalset-vec` @ **`a3012088cc61a7fac36c50ae19caf2524d5bf804`** — needs remat / **pointer-vectorize** patch [tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5) |
+| **TileLang (historical stamp)** | tip **`31483438`** (2026-10-10) — older raw tables only; **not** live simt-asc status |
 | **Suite history** | also lived on tilelang `feat/st-simtvf-parallel-sv1-sv9` @ `593a8f0c` (PR #2) |
 
 > Do **not** pin Ascend `max_vector_bits=128` / float4 emit yet (rebuild/regress still in flight). Stock Simt-asc still caps at **float2 / 64-bit**.
@@ -52,7 +54,7 @@ Single regression script — stock **simt-asc**, no schedule rewrites. Expect bo
 
 ```bash
 # after setting TILELANG_DEPS / CAMODEL_DEPS / ASCEND_HOME_PATH / PY / SIM_DSL (see below)
-bash oneshot_sv1_e8192_t128_t512.sh
+bash oneshot_sv1_e8192_t128_t512.sh   # or: bash scripts/regression/oneshot_sv1_e8192_t128_t512.sh
 ```
 
 Details: [`docs/regression/REGRESS_SV1_E8192_T128_T512.md`](docs/regression/REGRESS_SV1_E8192_T128_T512.md).
@@ -75,54 +77,39 @@ export PY=/path/to/.venv-npu/bin/python   # optional; defaults to python3
 # Primary regress paths
 export ST_VF_MODES=simt-asc               # Ascend SoftLib SimtVF (gate)
 # export ST_VF_MODES=simd-pto             # Parallel → PTO / VL
-bash oneshot_vf_mode_regress.sh
+bash scripts/oneshot/oneshot_vf_mode_regress.sh
 
 # Family oneshots (Simt SV / CF / SP) + handwritten SIMD DSL
-bash oneshot_sv1_sv9.sh
-bash oneshot_cf1_cf6.sh
-bash oneshot_sp1_sp6.sh
-bash oneshot_ptodsl_sv1_sv9d.sh
+bash scripts/oneshot/oneshot_sv1_sv9.sh
+bash scripts/oneshot/oneshot_cf1_cf6.sh
+bash scripts/oneshot/oneshot_sp1_sp6.sh
+bash scripts/oneshot/oneshot_ptodsl_sv1_sv9d.sh
 ```
 
 **Primary metric:** total VF cycles (plus wall µs / PASS line from opsim harvest). Tables land as `VF_MODE_PASS_TABLE.txt` under the OUT dir.
 
-Laptop relays (optional): `run_via_laptop_*.ps1` SSH to the lab host.
+Laptop relays (optional): `scripts/laptop/run_via_laptop_*.ps1` SSH to the lab host.
 
 Env notes:
 - **simt-asc:** `target=ascend` + cython backend (not pto); deps-native `libtilelang.so`
 - **simd-pto:** `VectorizeParallelToPTO` / VL `vload` (not CUDA float4)
 - **Handwritten SIMD DSL:** `kernels_ptodsl/` `@pto.jit` twins
-- **simt-pto SoftLib:** deferred — still runnable via `ST_VF_MODES=simt-pto`, not a current fix focus
 - Do not mix overlay and deps-native libs in one run
 
 ## Current regression snapshot
 
-### simt-asc — treat as ~all PASS (Oct-10 `59P/5F` is misleading)
+### simt-asc — **all PASS**
 
-Raw oneshot on tip **`31483438`** reported **59 PASS / 5 FAIL** (`st_out_cann92b2_20261010_104824`). That residual set is **not** five live product bugs:
+**TileLang:** branch `fix/simtvf-remat-idx-evalset-vec` @ **`a3012088cc61a7fac36c50ae19caf2524d5bf804`** — requires the remat / **pointer-vectorize** (EvalSet vector-gather pack) fix in [tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5).
 
-| Case | Class | Status |
-|------|-------|--------|
-| `sv4_e256_b8_t32_remat_idx` | TileLang remat / indirect Idx vector gather | **PASS** on remat tip `a3012088` ([tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5)) |
-| `sv4_e256_b16_t32_remat_idx` | Same bug class as b8 | **Pending re-check** on #5 @ `a3012088` (same fix path; not re-opsim’d yet) |
-| bare `sv6_r64_c128_g32_t32` | Harness false FAIL | Kernel defaults `arm=keep_in_warp` → builds `…_keep_in_warp.so`; that arm **PASS** |
-| bare `sv7_r64_c128_g64_t32` | Harness bare leftover | Real arm `…_multiwarp_ub` already **PASS** |
-| bare `sv7_r64_c128_g128_t32` | Harness bare leftover | Same |
-
-**After** ignoring bare harness tags + remat PR #5, simt-asc should be **all PASS** except confirming `sv4_e256_b16_t32_remat_idx` on `a3012088`.
+With that tip + cann_92b2, the simt-asc gate matrix (including SV4 remat_idx arms) is **all PASS**. Do not use the older full-table stamp `31483438` (2026-10-10) as the live simt-asc status.
 
 ### simd-pto / handwritten SIMD DSL
 
-| Mode | OUT (lab, tip `31483438`) | Snapshot |
-|------|---------------------------|----------|
-| **simd-pto** | `st_out_simd_pto_20261010_163238` | **0 PASS / 61** — active focus area |
-| **PTO-DSL `*d`** | family oneshots / `kernels_ptodsl/` | Handwritten SIMD DSL twins — active focus |
-
-### simt-pto SoftLib — deferred (do not prioritize)
-
-Historical table on tip `31483438`: **33 PASS / 29 FAIL** (`st_out_nightly067_simt_pto_20261010_170837`). Failures were mainly TileLang→PTO SoftLib codegen (**0 pure PTOAS**). **Ignore / defer** this path for now; keep kernels in-tree but do not drive gym work off the 29-FAIL list. Optional detail: [`docs/regression/ST_SUITE_simt_pto_FAIL_CLASSIFY_20261013.md`](docs/regression/ST_SUITE_simt_pto_FAIL_CLASSIFY_20261013.md).
-
-Writeups: [`docs/regression/`](docs/regression/).
+| Mode | Notes |
+|------|-------|
+| **simd-pto** | Active focus (`VectorizeParallelToPTO` / VL). |
+| **PTO-DSL `*d`** | Handwritten SIMD DSL twins under `kernels_ptodsl/` — active focus. |
 
 ## Design docs
 
