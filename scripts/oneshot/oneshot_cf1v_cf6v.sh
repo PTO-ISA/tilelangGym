@@ -53,7 +53,7 @@ fi
 cp -f "$SUITE"/run_opsim_generic.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_cf_summary.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_simt_vmi_compare.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 if [[ ! -f "$OV/build/lib/libtilelang.so" ]]; then
@@ -104,26 +104,26 @@ compile_run_generic() {
 }
 
 echo "==== PHASE CF1V thresh kill KEEP (mask select) ===="
-compile_run_generic "$SUITE/kernels/cf1v_pred_thresh_keep.py" cf1v_e256_k1_t64_keep 256 1 64
-compile_run_generic "$SUITE/kernels/cf1v_pred_thresh_keep.py" cf1v_e256_k8_t64_keep 256 8 64
+compile_run_generic "$SUITE/benches/cf1/cf1v_pred_thresh_keep.py" cf1v_e256_k1_t64_keep 256 1 64
+compile_run_generic "$SUITE/benches/cf1/cf1v_pred_thresh_keep.py" cf1v_e256_k8_t64_keep 256 8 64
 
 echo "==== PHASE CF2V remat + kill-in-shared (mask select) ===="
-compile_run_generic "$SUITE/kernels/cf2v_remat_thresh_kill_shared.py" cf2v_e256_k8_t64_remat 256 8 64
+compile_run_generic "$SUITE/benches/cf2/cf2v_remat_thresh_kill_shared.py" cf2v_e256_k8_t64_remat 256 8 64
 
 echo "==== PHASE CF3V remat_idx (mask select) ===="
-compile_run_generic "$SUITE/kernels/cf3v_remat_idx.py" cf3v_e256_k8_t64_remat_idx 256 8 64
+compile_run_generic "$SUITE/benches/cf3/cf3v_remat_idx.py" cf3v_e256_k8_t64_remat_idx 256 8 64
 
 echo "==== PHASE CF4V nested mask select ===="
-compile_run_generic "$SUITE/kernels/cf4v_nested_if.py" cf4v_e256_t64_pfat5 256 64 5
-compile_run_generic "$SUITE/kernels/cf4v_nested_if.py" cf4v_e256_t64_pfat25 256 64 25
+compile_run_generic "$SUITE/benches/cf4/cf4v_nested_if.py" cf4v_e256_t64_pfat5 256 64 5
+compile_run_generic "$SUITE/benches/cf4/cf4v_nested_if.py" cf4v_e256_t64_pfat25 256 64 25
 
 echo "==== PHASE CF5V div+near0 mask select ===="
-compile_run_generic "$SUITE/kernels/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear5 256 64 5
-compile_run_generic "$SUITE/kernels/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear25 256 64 25
+compile_run_generic "$SUITE/benches/cf5/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear5 256 64 5
+compile_run_generic "$SUITE/benches/cf5/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear25 256 64 25
 
 echo "==== PHASE CF6V Newton+near0 mask select ===="
-compile_run_generic "$SUITE/kernels/cf6v_newton_branch.py" cf6v_e256_t64_pnear5 256 64 5
-compile_run_generic "$SUITE/kernels/cf6v_newton_branch.py" cf6v_e256_t64_pnear25 256 64 25
+compile_run_generic "$SUITE/benches/cf6/cf6v_newton_branch.py" cf6v_e256_t64_pnear5 256 64 5
+compile_run_generic "$SUITE/benches/cf6/cf6v_newton_branch.py" cf6v_e256_t64_pnear25 256 64 25
 
 echo "==== HARVEST CF VMI ===="
 "$PY" "$SUITE/harvest_cf_summary.py" 2>&1 | tee "$OUT/harvest_cf1v_cf6v.log" || true

@@ -36,7 +36,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -82,28 +82,28 @@ compile_run_generic() {
 
 echo "==== PHASE SV4 gather+psum (keep_idx / remat_idx) ===="
 # Primary matrix: E=256, B∈{8,16}, T=32, BOTH arms
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b8_t32_keep_idx 256 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx 256 8 32 remat_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b16_t32_keep_idx 256 16 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx 256 16 32 remat_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b8_t32_keep_idx 256 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx 256 8 32 remat_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b16_t32_keep_idx 256 16 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx 256 16 32 remat_idx
 
 # --- near-spill ladder (2026-10-05): N=E/T elems/thread; keep holds 2N, remat N.
 #     crossover at N=32 (E=1024,T=32). remat_idx is COMPILE_FAIL (kept as evidence).
 #     third arm remat_idx_calc recomputes the VCI instead of re-reading shared UB.
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx_calc 256 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e512_b8_t32_keep_idx 512 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e512_b8_t32_remat_idx_calc 512 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t32_keep_idx 1024 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t32_remat_idx_calc 1024 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1536_b8_t32_keep_idx 1536 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1536_b8_t32_remat_idx_calc 1536 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e2048_b8_t32_keep_idx 2048 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e2048_b8_t32_remat_idx_calc 2048 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx_calc 256 16 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b16_t32_keep_idx 1024 16 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b16_t32_remat_idx_calc 1024 16 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t16_keep_idx 1024 8 16 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t16_remat_idx_calc 1024 8 16 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx_calc 256 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e512_b8_t32_keep_idx 512 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e512_b8_t32_remat_idx_calc 512 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t32_keep_idx 1024 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t32_remat_idx_calc 1024 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1536_b8_t32_keep_idx 1536 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1536_b8_t32_remat_idx_calc 1536 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e2048_b8_t32_keep_idx 2048 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e2048_b8_t32_remat_idx_calc 2048 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx_calc 256 16 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b16_t32_keep_idx 1024 16 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b16_t32_remat_idx_calc 1024 16 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t16_keep_idx 1024 8 16 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t16_remat_idx_calc 1024 8 16 remat_idx_calc
 
 "$PY" "$SUITE/harvest_report.py" 2>&1 | tee "$OUT/harvest_sv4.log" || true
 

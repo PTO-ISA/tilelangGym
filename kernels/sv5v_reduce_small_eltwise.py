@@ -1,1 +1,0 @@
-../benches/sv5/sv5v_reduce_small_eltwise.py

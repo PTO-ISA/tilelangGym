@@ -1,1 +1,0 @@
-../benches/sv7/sv7v_reduce_large_eltwise.py

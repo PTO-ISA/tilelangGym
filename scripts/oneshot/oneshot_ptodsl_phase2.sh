@@ -53,16 +53,16 @@ run_one() {
 }
 
 # SV2d: scale ALWAYS KEEP; input KEEP (R16) vs STREAM (R32/64). fold_scale_reload demoted.
-run_one "sv2d_r16_c64_t32_input_keep" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 16 64 32 input_keep
-run_one "sv2d_r32_c64_t32_input_stream" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 32 64 32 input_stream
-run_one "sv2d_r64_c64_t32_input_stream" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 64 64 32 input_stream
-run_one "sv2d_r32_c128_t32_input_stream" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 32 128 32 input_stream
+run_one "sv2d_r16_c64_t32_input_keep" "benches/sv2/sv2d_eltwise_bcast_rf.py" 16 64 32 input_keep
+run_one "sv2d_r32_c64_t32_input_stream" "benches/sv2/sv2d_eltwise_bcast_rf.py" 32 64 32 input_stream
+run_one "sv2d_r64_c64_t32_input_stream" "benches/sv2/sv2d_eltwise_bcast_rf.py" 64 64 32 input_stream
+run_one "sv2d_r32_c128_t32_input_stream" "benches/sv2/sv2d_eltwise_bcast_rf.py" 32 128 32 input_stream
 # Optional: input_keep at R32 expected spill (cliff foil)
-run_one "sv2d_r32_c64_t32_input_keep" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 32 64 32 input_keep
-run_one "sv4d_e256_b8_t32_keep_idx" "kernels_ptodsl/sv4d_index_gather_psum.py" 256 8 32 keep_idx
-run_one "sv4d_e256_b8_t32_remat_idx" "kernels_ptodsl/sv4d_index_gather_psum.py" 256 8 32 remat_idx
-run_one "sv9d_e256_k8_t32_keep" "kernels_ptodsl/sv9d_topk_e2e.py" 256 8 32 keep
-run_one "sv9d_e256_k8_t32_remat_scores" "kernels_ptodsl/sv9d_topk_e2e.py" 256 8 32 remat_scores
-run_one "sv9d_e256_k8_t32_remat_idx" "kernels_ptodsl/sv9d_topk_e2e.py" 256 8 32 remat_idx
+run_one "sv2d_r32_c64_t32_input_keep" "benches/sv2/sv2d_eltwise_bcast_rf.py" 32 64 32 input_keep
+run_one "sv4d_e256_b8_t32_keep_idx" "benches/sv4/sv4d_index_gather_psum.py" 256 8 32 keep_idx
+run_one "sv4d_e256_b8_t32_remat_idx" "benches/sv4/sv4d_index_gather_psum.py" 256 8 32 remat_idx
+run_one "sv9d_e256_k8_t32_keep" "benches/sv9/sv9d_topk_e2e.py" 256 8 32 keep
+run_one "sv9d_e256_k8_t32_remat_scores" "benches/sv9/sv9d_topk_e2e.py" 256 8 32 remat_scores
+run_one "sv9d_e256_k8_t32_remat_idx" "benches/sv9/sv9d_topk_e2e.py" 256 8 32 remat_idx
 
 echo "[ptodsl-phase2] done. Logs under $OUT"

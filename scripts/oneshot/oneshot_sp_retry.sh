@@ -22,7 +22,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 SUITE=${SUITE:-$HERE}
 export ST_SIMTVF_OUT=$OUT
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
 trap 'cp -a "$BK" "$DEPS/build/lib/libtilelang.so"; echo "restored deps lib"' EXIT
@@ -56,8 +56,8 @@ compile_run_generic() {
   echo "$TAG $PASSLINE us=$US" | tee -a "$SUMMARY"
 }
 
-compile_run_generic "$SUITE/kernels/sp1_dual_scatter_vsf.py" sp1_t32_k2_h128_g32_t32_keep_pos 32 2 128 32 32 keep_pos
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_keep_pos 32 2 128 32 32 sf1 w1 keep_pos
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_remat_pos 32 2 128 32 32 sf1 w1 remat_pos
-compile_run_generic "$SUITE/kernels/sp3_sf_pack_ue8m0.py" sp3_m32_h128_g32_t32_ue8m0 32 128 32 32 ue8m0
+compile_run_generic "$SUITE/benches/sp1/sp1_dual_scatter_vsf.py" sp1_t32_k2_h128_g32_t32_keep_pos 32 2 128 32 32 keep_pos
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_keep_pos 32 2 128 32 32 sf1 w1 keep_pos
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_remat_pos 32 2 128 32 32 sf1 w1 remat_pos
+compile_run_generic "$SUITE/benches/sp3/sp3_sf_pack_ue8m0.py" sp3_m32_h128_g32_t32_ue8m0 32 128 32 32 ue8m0
 echo "==== RETRY SUMMARY ===="; cat "$SUMMARY"; echo DONE_RETRY

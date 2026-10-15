@@ -1,1 +1,0 @@
-../benches/sv6/sv6d_reduce_mid.py

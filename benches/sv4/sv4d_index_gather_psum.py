@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SV4d — PTO-DSL twin of Simt SV4 (index gather + partial-sum).
 
-Simt: kernels/sv4_index_gather_psum.py (keep_idx / remat_idx — NOT keep2)
+Simt: benches/sv4/sv4_index_gather_psum.py (keep_idx / remat_idx — NOT keep2)
 Tags: sv4d_e{E}_b{B}_t{T}_{keep_idx,remat_idx}
 
 Gold: Out[i] = sum_b A[b,i] * W[Idx[i]],  Idx[i] = (i*7+3) % E

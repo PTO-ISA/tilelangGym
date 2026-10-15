@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Full SimtVF Parallel matrix SV1–SV9 on pto-b10 (REGRESSION-2 recipe).
 # Compile target follows ST_VF_MODE (default simt-asc → target=ascend, cython).
-# simt-pto / simd-pto compile target=pto. kernels_ptodsl/ is separate.
+# simt-pto / simd-pto compile target=pto. DSL kernels live under benches/<id>/.
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
@@ -61,7 +61,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -110,7 +110,7 @@ compile_run_topk() {
   local TAG=$1; shift
   echo "==== COMPILE $TAG ====" | tee -a "$SUMMARY"
   set +e
-  "$PY" "$SUITE/kernels/sv9_topk_e2e.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
+  "$PY" "$SUITE/benches/sv9/sv9_topk_e2e.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
   local RC=${PIPESTATUS[0]}
   set -e
   if [[ "$RC" -ne 0 || ! -f "$OUT/so/${TAG}.so" ]]; then
@@ -130,52 +130,52 @@ compile_run_topk() {
 }
 
 echo "==== PHASE SV1 stream eltwise ===="
-compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e256_t32 256 32
-compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e2048_t32 2048 32
+compile_run_generic "$SUITE/benches/sv1/sv1_stream_eltwise.py" sv1_e256_t32 256 32
+compile_run_generic "$SUITE/benches/sv1/sv1_stream_eltwise.py" sv1_e2048_t32 2048 32
 
 echo "==== PHASE SV2 live RF eltwise + scale bcast (ex-SV1B) ===="
-compile_run_generic "$SUITE/kernels/sv2_eltwise_bcast_rf.py" sv2_r32_c32_t32_frag_live 32 32 32 frag_live
-compile_run_generic "$SUITE/kernels/sv2_eltwise_bcast_rf.py" sv2_r32_c32_t32_reload 32 32 32 reload
+compile_run_generic "$SUITE/benches/sv2/sv2_eltwise_bcast_rf.py" sv2_r32_c32_t32_frag_live 32 32 32 frag_live
+compile_run_generic "$SUITE/benches/sv2/sv2_eltwise_bcast_rf.py" sv2_r32_c32_t32_reload 32 32 32 reload
 
 echo "==== PHASE SV3 GEMV Acc KEEP / split (ex-SV2G) ===="
-compile_run_generic "$SUITE/kernels/sv3_gemv_partial_keep.py" sv3_m24_vl64_k16_t32_keep 24 64 16 32 keep
-compile_run_generic "$SUITE/kernels/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_keep 32 64 16 32 keep
-compile_run_generic "$SUITE/kernels/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_split_cm16 32 64 16 32 split 16
+compile_run_generic "$SUITE/benches/sv3/sv3_gemv_partial_keep.py" sv3_m24_vl64_k16_t32_keep 24 64 16 32 keep
+compile_run_generic "$SUITE/benches/sv3/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_keep 32 64 16 32 keep
+compile_run_generic "$SUITE/benches/sv3/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_split_cm16 32 64 16 32 split 16
 
 echo "==== PHASE SV4 gather+psum (keep_idx / remat_idx) ===="
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b8_t32_keep_idx 256 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx 256 8 32 remat_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b16_t32_keep_idx 256 16 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx 256 16 32 remat_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b8_t32_keep_idx 256 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx 256 8 32 remat_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b16_t32_keep_idx 256 16 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx 256 16 32 remat_idx
 
 # --- near-spill ladder (2026-10-05): N=E/T elems/thread; keep holds 2N, remat N.
 #     crossover at N=32 (E=1024,T=32). remat_idx is COMPILE_FAIL (kept as evidence).
 #     third arm remat_idx_calc recomputes the VCI instead of re-reading shared UB.
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx_calc 256 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e512_b8_t32_keep_idx 512 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e512_b8_t32_remat_idx_calc 512 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t32_keep_idx 1024 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t32_remat_idx_calc 1024 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1536_b8_t32_keep_idx 1536 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1536_b8_t32_remat_idx_calc 1536 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e2048_b8_t32_keep_idx 2048 8 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e2048_b8_t32_remat_idx_calc 2048 8 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx_calc 256 16 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b16_t32_keep_idx 1024 16 32 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b16_t32_remat_idx_calc 1024 16 32 remat_idx_calc
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t16_keep_idx 1024 8 16 keep_idx
-compile_run_generic "$SUITE/kernels/sv4_index_gather_psum.py" sv4_e1024_b8_t16_remat_idx_calc 1024 8 16 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b8_t32_remat_idx_calc 256 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e512_b8_t32_keep_idx 512 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e512_b8_t32_remat_idx_calc 512 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t32_keep_idx 1024 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t32_remat_idx_calc 1024 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1536_b8_t32_keep_idx 1536 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1536_b8_t32_remat_idx_calc 1536 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e2048_b8_t32_keep_idx 2048 8 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e2048_b8_t32_remat_idx_calc 2048 8 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e256_b16_t32_remat_idx_calc 256 16 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b16_t32_keep_idx 1024 16 32 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b16_t32_remat_idx_calc 1024 16 32 remat_idx_calc
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t16_keep_idx 1024 8 16 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4_index_gather_psum.py" sv4_e1024_b8_t16_remat_idx_calc 1024 8 16 remat_idx_calc
 
 echo "==== PHASE SV5/SV6/SV7 Case-3 reduce → reduced eltwise ===="
-compile_run_generic "$SUITE/kernels/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_reg 64 128 16 32 keep_reg
-compile_run_generic "$SUITE/kernels/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_ub_reload 64 128 16 32 ub_reload
-compile_run_generic "$SUITE/kernels/sv6_reduce_mid_eltwise.py"   sv6_r64_c128_g32_t32 64 128 32 32
-compile_run_generic "$SUITE/kernels/sv7_reduce_large_eltwise.py" sv7_r64_c128_g64_t32 64 128 64 32
-compile_run_generic "$SUITE/kernels/sv7_reduce_large_eltwise.py" sv7_r64_c128_g128_t32 64 128 128 32
+compile_run_generic "$SUITE/benches/sv5/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_reg 64 128 16 32 keep_reg
+compile_run_generic "$SUITE/benches/sv5/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_ub_reload 64 128 16 32 ub_reload
+compile_run_generic "$SUITE/benches/sv6/sv6_reduce_mid_eltwise.py"   sv6_r64_c128_g32_t32 64 128 32 32
+compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c128_g64_t32 64 128 64 32
+compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c128_g128_t32 64 128 128 32
 
 echo "==== PHASE SV8 Case-3 quant e2e ===="
-compile_run_generic "$SUITE/kernels/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
-compile_run_generic "$SUITE/kernels/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
+compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
+compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
 
 echo "==== PHASE SV9 topk e2e ===="
 compile_run_topk sv9_e256_k1_t32_keep 256 1 32 keep

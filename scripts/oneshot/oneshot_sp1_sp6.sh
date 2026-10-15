@@ -3,7 +3,7 @@
 # SP1 Pos KEEP/remat · SP2 Acc/Pos transitional · SP3 fp32 + e8m0 A5 bit-reinterpret
 # (soft Pow2 LUT retired; no native e8m0 vcvt on A5) · SP4 pad · SP5 · SP6 soft LUT appendix.
 # Compile target follows ST_VF_MODE (default simt-asc → target=ascend, cython).
-# simt-pto / simd-pto compile target=pto. kernels_ptodsl/ is separate.
+# simt-pto / simd-pto compile target=pto. DSL kernels live under benches/<id>/.
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
@@ -63,7 +63,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -110,34 +110,34 @@ compile_run_generic() {
 
 # Practical dims for first green: T=32,K=2,H=128,G=32,Thr=32
 echo "==== PHASE SP1 dual scatter keep_pos / remat_pos ===="
-compile_run_generic "$SUITE/kernels/sp1_dual_scatter_vsf.py" sp1_t32_k2_h128_g32_t32_keep_pos 32 2 128 32 32 keep_pos
-compile_run_generic "$SUITE/kernels/sp1_dual_scatter_vsf.py" sp1_t32_k2_h128_g32_t32_remat_pos 32 2 128 32 32 remat_pos
+compile_run_generic "$SUITE/benches/sp1/sp1_dual_scatter_vsf.py" sp1_t32_k2_h128_g32_t32_keep_pos 32 2 128 32 32 keep_pos
+compile_run_generic "$SUITE/benches/sp1/sp1_dual_scatter_vsf.py" sp1_t32_k2_h128_g32_t32_remat_pos 32 2 128 32 32 remat_pos
 
 echo "==== PHASE SP2 Acc KEEP/remat × sf0/sf1 tax (one case) ===="
 # Acc KEEP + tax pair
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf0_w0_keep_acc 32 2 128 32 32 sf0 w0 keep_acc
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_keep_acc 32 2 128 32 32 sf1 w1 keep_acc
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf0_w0_keep_acc 32 2 128 32 32 sf0 w0 keep_acc
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_keep_acc 32 2 128 32 32 sf1 w1 keep_acc
 # Acc remat + sf1_w1 (and sf0_w0 for completeness)
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_remat_acc 32 2 128 32 32 sf1 w1 remat_acc
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf0_w0_remat_acc 32 2 128 32 32 sf0 w0 remat_acc
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_remat_acc 32 2 128 32 32 sf1 w1 remat_acc
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf0_w0_remat_acc 32 2 128 32 32 sf0 w0 remat_acc
 # Legacy Pos arms (Acc KEEP) — historical continuity
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_keep_pos 32 2 128 32 32 sf1 w1 keep_pos
-compile_run_generic "$SUITE/kernels/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_remat_pos 32 2 128 32 32 sf1 w1 remat_pos
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_keep_pos 32 2 128 32 32 sf1 w1 keep_pos
+compile_run_generic "$SUITE/benches/sp2/sp2_dual_gather_wreduce.py" sp2_t32_k2_h128_g32_t32_sf1_w1_remat_pos 32 2 128 32 32 sf1 w1 remat_pos
 
 echo "==== PHASE SP3 fp32 vs A5 bit-reinterpret e8m0 (soft LUT retired; no native e8m0 vcvt) ===="
-compile_run_generic "$SUITE/kernels/sp3_sf_pack_ue8m0.py" sp3_m32_h128_g32_t32_fp32 32 128 32 32 fp32
-compile_run_generic "$SUITE/kernels/sp3_sf_pack_ue8m0.py" sp3_m32_h128_g32_t32_e8m0 32 128 32 32 e8m0
+compile_run_generic "$SUITE/benches/sp3/sp3_sf_pack_ue8m0.py" sp3_m32_h128_g32_t32_fp32 32 128 32 32 fp32
+compile_run_generic "$SUITE/benches/sp3/sp3_sf_pack_ue8m0.py" sp3_m32_h128_g32_t32_e8m0 32 128 32 32 e8m0
 
 echo "==== PHASE SP4 pad gather ===="
-compile_run_generic "$SUITE/kernels/sp4_pad_gather.py" sp4_e64_h128_t32_pad25 64 128 32 25
+compile_run_generic "$SUITE/benches/sp4/sp4_pad_gather.py" sp4_e64_h128_t32_pad25 64 128 32 25
 
 echo "==== PHASE SP5 sideband vs interleave ===="
-compile_run_generic "$SUITE/kernels/sp5_sideband_vs_interleave.py" sp5_n64_h128_g32_qg32_t32_sideband 64 128 32 32 32 sideband
-compile_run_generic "$SUITE/kernels/sp5_sideband_vs_interleave.py" sp5_n64_h128_g32_qg32_t32_interleave 64 128 32 32 32 interleave
+compile_run_generic "$SUITE/benches/sp5/sp5_sideband_vs_interleave.py" sp5_n64_h128_g32_qg32_t32_sideband 64 128 32 32 32 sideband
+compile_run_generic "$SUITE/benches/sp5/sp5_sideband_vs_interleave.py" sp5_n64_h128_g32_qg32_t32_interleave 64 128 32 32 32 interleave
 
 echo "==== PHASE SP6 soft LUT 4-bit e2m1 dequant (appendix) ===="
-compile_run_generic "$SUITE/kernels/sp6_fp4_unpack.py" sp6_n32_h128_g32_t32_unpack 32 128 32 32 unpack
-compile_run_generic "$SUITE/kernels/sp6_fp4_unpack.py" sp6_n32_h128_g32_t32_unpack_sf 32 128 32 32 unpack_sf
+compile_run_generic "$SUITE/benches/sp6/sp6_fp4_unpack.py" sp6_n32_h128_g32_t32_unpack 32 128 32 32 unpack
+compile_run_generic "$SUITE/benches/sp6/sp6_fp4_unpack.py" sp6_n32_h128_g32_t32_unpack_sf 32 128 32 32 unpack_sf
 
 echo "==== SUMMARY_sp1_sp6_raw ===="
 cat "$SUMMARY"

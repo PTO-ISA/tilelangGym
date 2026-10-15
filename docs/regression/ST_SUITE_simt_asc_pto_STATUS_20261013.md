@@ -32,7 +32,7 @@ Tables: `$OUT/VF_MODE_PASS_TABLE.txt`.
 - **simt-asc:** **59 PASS / 5 FAIL** (64 tags in cann92b2 dual table; PR #2 still says 56/61 for an earlier stamp)
 - **simt-pto (nightly 0.67):** **33 PASS / 29 FAIL**
 - **simd-pto:** **0 PASS / 61 FAIL** (`Unsupported storage scope ... local` / SimdVF→PTO)
-- **PTO-DSL twins (`kernels_ptodsl/` *d):** not part of `oneshot_vf_mode_regress.sh`; PR #2 still records 21/21 Simt + 21/21 SIMD PTO-DSL product PASS on Wenbo tip — **simd-pto VF-mode twins still 0/61**
+- **PTO-DSL twins (`benches/<id>/*d`):** not part of `oneshot_vf_mode_regress.sh`; PR #2 still records 21/21 Simt + 21/21 SIMD PTO-DSL product PASS on Wenbo tip — **simd-pto VF-mode twins still 0/61**
 
 ## 1) Is simt-asc ALL PASS after Lok’s fix (incl. sv6/sv7)?
 

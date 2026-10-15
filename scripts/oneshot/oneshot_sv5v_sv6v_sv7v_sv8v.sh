@@ -53,7 +53,7 @@ cp -f "$SUITE"/run_opsim_generic.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/run_opsim_topk.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_simt_vmi_compare.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 if [[ ! -f "$OV/build/lib/libtilelang.so" ]]; then
@@ -104,17 +104,17 @@ compile_run_generic() {
 }
 
 echo "==== PHASE SV5V (small-G reduce → reduced eltwise, SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_keep_reg 64 128 16 64 keep_reg
-compile_run_generic "$SUITE/kernels/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_ub_reload 64 128 16 64 ub_reload
-compile_run_generic "$SUITE/kernels/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64 64 128 32 64
+compile_run_generic "$SUITE/benches/sv5/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_keep_reg 64 128 16 64 keep_reg
+compile_run_generic "$SUITE/benches/sv5/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_ub_reload 64 128 16 64 ub_reload
+compile_run_generic "$SUITE/benches/sv6/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64 64 128 32 64
 
 echo "==== PHASE SV6V (large-G reduce → reduced eltwise, SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64 64 128 64 64
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64 64 128 128 64
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64 64 128 64 64
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64 64 128 128 64
 
 echo "==== PHASE SV8V Case-3 (live + spill_dist, SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
-compile_run_generic "$SUITE/kernels/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
+compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
+compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
 
 "$PY" "$SUITE/harvest_report.py" 2>&1 | tee "$OUT/harvest_sv5v_sv6v_sv8v.log" || true
 "$PY" "$SUITE/harvest_simt_vmi_compare.py" --out "$OUT/reports/ST_VMI_COMPARE.md" 2>&1 | tee "$OUT/harvest_simt_vmi_compare.log" || true

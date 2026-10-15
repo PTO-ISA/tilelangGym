@@ -27,7 +27,7 @@ run1() {
   local TAG=$1; shift
   echo "==== COMPILE $TAG ====" | tee -a "$SUMMARY"
   set +e
-  "$PY" "$SUITE/kernels/cf6v_newton_branch.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
+  "$PY" "$SUITE/benches/cf6/cf6v_newton_branch.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
   local RC=${PIPESTATUS[0]}
   set -e
   if [[ "$RC" -ne 0 || ! -f "$OUT/so/${TAG}.so" ]]; then

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-CF5d — PTO-DSL explicit twin of Simt CF5 (div + near-0 branch).
 
-Simt twin: kernels/cf5_div_ulp_branch.py
+Simt twin: benches/cf5/cf5_div_ulp_branch.py
 CF5v ABI tax (DO NOT copy): Kernel-serial Div *outside* SimdVF → ~6.23µs.
 This *d* keeps Div in vector RF: vmax abs + vcmp lt eps + vsel/vdiv — no outside-VF serial.
 

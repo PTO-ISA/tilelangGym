@@ -70,30 +70,30 @@ run_one() {
 }
 
 # SP1d keep_pos
-run_one "sp1d_t32_k2_h128_g32_t32_keep_pos" "kernels_ptodsl/sp1d_dual_scatter_keep_pos.py" 32 2 128 32 32
+run_one "sp1d_t32_k2_h128_g32_t32_keep_pos" "benches/sp1/sp1d_dual_scatter_keep_pos.py" 32 2 128 32 32
 
 # SP2d Acc × sf/w matrix
-run_one "sp2d_t32_k2_h128_g32_t32_sf0_w0_keep_acc"  "kernels_ptodsl/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf0 w0 keep_acc
-run_one "sp2d_t32_k2_h128_g32_t32_sf0_w0_remat_acc" "kernels_ptodsl/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf0 w0 remat_acc
-run_one "sp2d_t32_k2_h128_g32_t32_sf1_w1_keep_acc"  "kernels_ptodsl/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf1 w1 keep_acc
-run_one "sp2d_t32_k2_h128_g32_t32_sf1_w1_remat_acc" "kernels_ptodsl/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf1 w1 remat_acc
+run_one "sp2d_t32_k2_h128_g32_t32_sf0_w0_keep_acc"  "benches/sp2/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf0 w0 keep_acc
+run_one "sp2d_t32_k2_h128_g32_t32_sf0_w0_remat_acc" "benches/sp2/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf0 w0 remat_acc
+run_one "sp2d_t32_k2_h128_g32_t32_sf1_w1_keep_acc"  "benches/sp2/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf1 w1 keep_acc
+run_one "sp2d_t32_k2_h128_g32_t32_sf1_w1_remat_acc" "benches/sp2/sp2d_dual_gather_wreduce.py" 32 2 128 32 32 sf1 w1 remat_acc
 
 # SP3d fp32 / e8m0
-run_one "sp3d_m32_h128_g32_t32_fp32" "kernels_ptodsl/sp3d_sf_pack_e8m0.py" --arm fp32 --tag sp3d_m32_h128_g32_t32_fp32
-run_one "sp3d_m32_h128_g32_t32_e8m0" "kernels_ptodsl/sp3d_sf_pack_e8m0.py" --arm e8m0 --tag sp3d_m32_h128_g32_t32_e8m0
+run_one "sp3d_m32_h128_g32_t32_fp32" "benches/sp3/sp3d_sf_pack_e8m0.py" --arm fp32 --tag sp3d_m32_h128_g32_t32_fp32
+run_one "sp3d_m32_h128_g32_t32_e8m0" "benches/sp3/sp3d_sf_pack_e8m0.py" --arm e8m0 --tag sp3d_m32_h128_g32_t32_e8m0
 
 # SP4d full-lane mask (pad holes via vsel; no early exit)
-run_one "sp4d_e64_h128_t32_pad25" "kernels_ptodsl/sp4d_pad_gather.py" 64 128 32 25
+run_one "sp4d_e64_h128_t32_pad25" "benches/sp4/sp4d_pad_gather.py" 64 128 32 25
 
 # SP5d sideband (two gathers) vs interleave (one Pack slot, then split)
-run_one "sp5d_n64_h128_g32_qg32_t32_sideband" "kernels_ptodsl/sp5d_sideband_vs_interleave.py" 64 128 32 32 32 sideband
-run_one "sp5d_n64_h128_g32_qg32_t32_interleave" "kernels_ptodsl/sp5d_sideband_vs_interleave.py" 64 128 32 32 32 interleave
+run_one "sp5d_n64_h128_g32_qg32_t32_sideband" "benches/sp5/sp5d_sideband_vs_interleave.py" 64 128 32 32 32 sideband
+run_one "sp5d_n64_h128_g32_qg32_t32_interleave" "benches/sp5/sp5d_sideband_vs_interleave.py" 64 128 32 32 32 interleave
 
 # SP6d soft LUT (gather + vselr) × unpack / unpack_sf
-run_one "sp6d_n32_h128_g32_t32_unpack_gather"    "kernels_ptodsl/sp6d_fp4_unpack.py" 32 128 32 32 unpack gather
-run_one "sp6d_n32_h128_g32_t32_unpack_vselr"     "kernels_ptodsl/sp6d_fp4_unpack.py" 32 128 32 32 unpack vselr
-run_one "sp6d_n32_h128_g32_t32_unpack_sf_gather" "kernels_ptodsl/sp6d_fp4_unpack.py" 32 128 32 32 unpack_sf gather
-run_one "sp6d_n32_h128_g32_t32_unpack_sf_vselr"  "kernels_ptodsl/sp6d_fp4_unpack.py" 32 128 32 32 unpack_sf vselr
+run_one "sp6d_n32_h128_g32_t32_unpack_gather"    "benches/sp6/sp6d_fp4_unpack.py" 32 128 32 32 unpack gather
+run_one "sp6d_n32_h128_g32_t32_unpack_vselr"     "benches/sp6/sp6d_fp4_unpack.py" 32 128 32 32 unpack vselr
+run_one "sp6d_n32_h128_g32_t32_unpack_sf_gather" "benches/sp6/sp6d_fp4_unpack.py" 32 128 32 32 unpack_sf gather
+run_one "sp6d_n32_h128_g32_t32_unpack_sf_vselr"  "benches/sp6/sp6d_fp4_unpack.py" 32 128 32 32 unpack_sf vselr
 
 echo "[ptodsl-sp1d-sp6d] done. SUMMARY:"
 cat "$SUMMARY"

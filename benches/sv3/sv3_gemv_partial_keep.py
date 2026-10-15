@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SV3 (former SV2G) — GEMV / thin-GEMM loop-carried fp32 partial-sum RF stress (SV3).
 
-Replaces topk CF as the SV3 sensitivity story. Legacy topk micros archived under ``kernels/_removed_legacy/``; e2e is SV9.
+Replaces topk CF as the SV3 sensitivity story. Legacy topk micros archived under ``benches/_removed_legacy/``; e2e is SV9.
 
 Math (batched strip / thin GEMM):
   Acc[M, VL] += A[k, M, VL] * x[k]   (broadcast x[k]) for k in 0..K-1

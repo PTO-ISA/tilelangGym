@@ -57,7 +57,7 @@ if [[ "$OUT" == "/tmp/st_simtvf_parallel" ]]; then
 fi
 RUNPY="$OUT/run_opsim_generic.py"
 [[ -f "$RUNPY" ]] || RUNPY=/tmp/run_opsim_generic.py
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py "$OUT"/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py "$OUT"/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 if [[ "${DEPS_PRIVATE:-0}" == "1" ]]; then
@@ -118,7 +118,7 @@ echo "==== PHASE SV5 (small-block reduce → reduced eltwise) ===="
 # Post-reduce inverse-scale residency sensitivity: keep_reg (live fragment/RF)
 # vs ub_reload (store to shared UB, reload in a later Parallel loop).
 # Shape matrix hunts the crossover: R sweep at G=16, then G=8 / G=32 at R=64.
-SV5=$SUITE/kernels/sv5_reduce_small_eltwise.py
+SV5=$SUITE/benches/sv5/sv5_reduce_small_eltwise.py
 # shape-major so each keep_reg/ub_reload pair completes together
 SV5_SHAPES=${SV5_SHAPES:-"64:128:16 128:128:16 256:128:16 64:128:8 64:128:32"}
 for sh in $SV5_SHAPES; do
@@ -142,8 +142,8 @@ fi
 
 if has_phase sv8; then
 echo "==== PHASE SV8 Case-3 (live + spill_dist) ===="
-compile_run_generic "$SUITE/kernels/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
-compile_run_generic "$SUITE/kernels/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
+compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
+compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
 fi
 
 ST_SIMTVF_OUT="$OUT" ST_SIMTVF_REPORTS="$OUT/reports" "$PY" "$SUITE/harvest_report.py" \

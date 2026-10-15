@@ -84,14 +84,14 @@ emit_one() {
 }
 
 # emit-mlir first (cheap compile check)
-emit_one "cf5d_e256_t32_pnear5" "kernels_ptodsl/cf5d_div_ulp_branch.py" 256 32 5
-emit_one "cf6d_e256_t32_pnear5" "kernels_ptodsl/cf6d_newton_branch.py" 256 32 5
+emit_one "cf5d_e256_t32_pnear5" "benches/cf5/cf5d_div_ulp_branch.py" 256 32 5
+emit_one "cf6d_e256_t32_pnear5" "benches/cf6/cf6d_newton_branch.py" 256 32 5
 
 # opsim primary + pnear25 sensitivity
-run_one "cf5d_e256_t32_pnear5" "kernels_ptodsl/cf5d_div_ulp_branch.py" 256 32 5
-run_one "cf5d_e256_t32_pnear25" "kernels_ptodsl/cf5d_div_ulp_branch.py" 256 32 25
-run_one "cf6d_e256_t32_pnear5" "kernels_ptodsl/cf6d_newton_branch.py" 256 32 5
-run_one "cf6d_e256_t32_pnear25" "kernels_ptodsl/cf6d_newton_branch.py" 256 32 25
+run_one "cf5d_e256_t32_pnear5" "benches/cf5/cf5d_div_ulp_branch.py" 256 32 5
+run_one "cf5d_e256_t32_pnear25" "benches/cf5/cf5d_div_ulp_branch.py" 256 32 25
+run_one "cf6d_e256_t32_pnear5" "benches/cf6/cf6d_newton_branch.py" 256 32 5
+run_one "cf6d_e256_t32_pnear25" "benches/cf6/cf6d_newton_branch.py" 256 32 25
 
 echo "[ptodsl-cf5d-cf6d] done. SUMMARY:"
 cat "$SUMMARY"

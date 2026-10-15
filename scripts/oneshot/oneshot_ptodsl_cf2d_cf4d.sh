@@ -81,14 +81,14 @@ emit_one() {
   echo "EMIT_OK $tag lines=$nlines -> $OUT/${tag}.mlir"
 }
 
-emit_one "cf2d_e256_k8_t32_remat" "kernels_ptodsl/cf2d_remat_thresh_kill_shared.py" 256 8 32
-emit_one "cf3d_e256_k8_t32_remat_idx" "kernels_ptodsl/cf3d_remat_idx.py" 256 8 32
-emit_one "cf4d_e256_t32_pfat5" "kernels_ptodsl/cf4d_nested_if.py" 256 32 5
+emit_one "cf2d_e256_k8_t32_remat" "benches/cf2/cf2d_remat_thresh_kill_shared.py" 256 8 32
+emit_one "cf3d_e256_k8_t32_remat_idx" "benches/cf3/cf3d_remat_idx.py" 256 8 32
+emit_one "cf4d_e256_t32_pfat5" "benches/cf4/cf4d_nested_if.py" 256 32 5
 
-run_one "cf2d_e256_k8_t32_remat" "kernels_ptodsl/cf2d_remat_thresh_kill_shared.py" 256 8 32
-run_one "cf3d_e256_k8_t32_remat_idx" "kernels_ptodsl/cf3d_remat_idx.py" 256 8 32
-run_one "cf4d_e256_t32_pfat5" "kernels_ptodsl/cf4d_nested_if.py" 256 32 5
-run_one "cf4d_e256_t32_pfat25" "kernels_ptodsl/cf4d_nested_if.py" 256 32 25
+run_one "cf2d_e256_k8_t32_remat" "benches/cf2/cf2d_remat_thresh_kill_shared.py" 256 8 32
+run_one "cf3d_e256_k8_t32_remat_idx" "benches/cf3/cf3d_remat_idx.py" 256 8 32
+run_one "cf4d_e256_t32_pfat5" "benches/cf4/cf4d_nested_if.py" 256 32 5
+run_one "cf4d_e256_t32_pfat25" "benches/cf4/cf4d_nested_if.py" 256 32 25
 
 echo "[ptodsl-cf2d-cf4d] done. SUMMARY:"
 cat "$SUMMARY"

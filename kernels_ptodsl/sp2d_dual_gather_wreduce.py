@@ -1,1 +1,0 @@
-../benches/sp2/sp2d_dual_gather_wreduce.py

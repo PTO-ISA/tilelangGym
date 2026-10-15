@@ -92,12 +92,12 @@ run_one() {
   echo "RESULT $tag $status wall_us=${wall:-NA} maxabs=${maxabs:-NA} rc=$rc"
 }
 
-run_one "sv7d_r64_c128_g64_t32_multiwarp_ub" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 64 32 multiwarp_ub
-run_one "sv7d_r64_c128_g64_t32_reload" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 64 32 reload
-run_one "sv7d_r64_c128_g128_t32_multiwarp_ub" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 128 32 multiwarp_ub
-run_one "sv7d_r64_c128_g128_t32_reload" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 128 32 reload
-run_one "sv8d_r64_c128_g16_t32_live" "kernels_ptodsl/sv8d_case3_bcast.py" 64 128 16 32 live
-run_one "sv8d_r64_c128_g16_t32_spill_dist" "kernels_ptodsl/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
+run_one "sv7d_r64_c128_g64_t32_multiwarp_ub" "benches/sv7/sv7d_reduce_large.py" 64 128 64 32 multiwarp_ub
+run_one "sv7d_r64_c128_g64_t32_reload" "benches/sv7/sv7d_reduce_large.py" 64 128 64 32 reload
+run_one "sv7d_r64_c128_g128_t32_multiwarp_ub" "benches/sv7/sv7d_reduce_large.py" 64 128 128 32 multiwarp_ub
+run_one "sv7d_r64_c128_g128_t32_reload" "benches/sv7/sv7d_reduce_large.py" 64 128 128 32 reload
+run_one "sv8d_r64_c128_g16_t32_live" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 live
+run_one "sv8d_r64_c128_g16_t32_spill_dist" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
 
 echo "==== RETRY SUMMARY ===="
 cat "$SUMMARY"

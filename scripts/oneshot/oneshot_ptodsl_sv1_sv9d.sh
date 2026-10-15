@@ -92,46 +92,46 @@ run_one() {
 }
 
 # ---- SV1d ----
-run_one "sv1d_e256_t32" "kernels_ptodsl/sv1d_stream_eltwise.py" 256 32
+run_one "sv1d_e256_t32" "benches/sv1/sv1d_stream_eltwise.py" 256 32
 
 # ---- SV2d primary sensitivity ----
-run_one "sv2d_r16_c64_t32_input_keep" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 16 64 32 input_keep
-run_one "sv2d_r32_c64_t32_input_stream" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 32 64 32 input_stream
-run_one "sv2d_r32_c128_t32_input_stream" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 32 128 32 input_stream
-run_one "sv2d_r32_c64_t32_fold_scale_keep" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 32 64 32 fold_scale_keep
-run_one "sv2d_r32_c64_t32_fold_scale_reload" "kernels_ptodsl/sv2d_eltwise_bcast_rf.py" 32 64 32 fold_scale_reload
+run_one "sv2d_r16_c64_t32_input_keep" "benches/sv2/sv2d_eltwise_bcast_rf.py" 16 64 32 input_keep
+run_one "sv2d_r32_c64_t32_input_stream" "benches/sv2/sv2d_eltwise_bcast_rf.py" 32 64 32 input_stream
+run_one "sv2d_r32_c128_t32_input_stream" "benches/sv2/sv2d_eltwise_bcast_rf.py" 32 128 32 input_stream
+run_one "sv2d_r32_c64_t32_fold_scale_keep" "benches/sv2/sv2d_eltwise_bcast_rf.py" 32 64 32 fold_scale_keep
+run_one "sv2d_r32_c64_t32_fold_scale_reload" "benches/sv2/sv2d_eltwise_bcast_rf.py" 32 64 32 fold_scale_reload
 
 # ---- SV3d NEW ----
-run_one "sv3d_m24_vl64_k16_t32_keep" "kernels_ptodsl/sv3d_gemv_partial_keep.py" 24 64 16 32 keep
-run_one "sv3d_m32_vl64_k16_t32_keep" "kernels_ptodsl/sv3d_gemv_partial_keep.py" 32 64 16 32 keep
-run_one "sv3d_m32_vl64_k16_t32_split_cm16" "kernels_ptodsl/sv3d_gemv_partial_keep.py" 32 64 16 32 split_cm16 16
+run_one "sv3d_m24_vl64_k16_t32_keep" "benches/sv3/sv3d_gemv_partial_keep.py" 24 64 16 32 keep
+run_one "sv3d_m32_vl64_k16_t32_keep" "benches/sv3/sv3d_gemv_partial_keep.py" 32 64 16 32 keep
+run_one "sv3d_m32_vl64_k16_t32_split_cm16" "benches/sv3/sv3d_gemv_partial_keep.py" 32 64 16 32 split_cm16 16
 
 # ---- SV4d ----
-run_one "sv4d_e256_b8_t32_keep_idx" "kernels_ptodsl/sv4d_index_gather_psum.py" 256 8 32 keep_idx
-run_one "sv4d_e256_b8_t32_remat_idx" "kernels_ptodsl/sv4d_index_gather_psum.py" 256 8 32 remat_idx
+run_one "sv4d_e256_b8_t32_keep_idx" "benches/sv4/sv4d_index_gather_psum.py" 256 8 32 keep_idx
+run_one "sv4d_e256_b8_t32_remat_idx" "benches/sv4/sv4d_index_gather_psum.py" 256 8 32 remat_idx
 
 # ---- SV5d NEW RF ladder ----
-run_one "sv5d_r64_c128_g16_t32_keep_in_rf" "kernels_ptodsl/sv5d_reduce_small.py" 64 128 16 32 keep_in_rf
-run_one "sv5d_r64_c128_g16_t32_ub_stream" "kernels_ptodsl/sv5d_reduce_small.py" 64 128 16 32 ub_stream
+run_one "sv5d_r64_c128_g16_t32_keep_in_rf" "benches/sv5/sv5d_reduce_small.py" 64 128 16 32 keep_in_rf
+run_one "sv5d_r64_c128_g16_t32_ub_stream" "benches/sv5/sv5d_reduce_small.py" 64 128 16 32 ub_stream
 
 # ---- SV6d NEW ----
-run_one "sv6d_r64_c128_g32_t32_keep_in_warp" "kernels_ptodsl/sv6d_reduce_mid.py" 64 128 32 32 keep_in_warp
-run_one "sv6d_r64_c128_g32_t32_reload" "kernels_ptodsl/sv6d_reduce_mid.py" 64 128 32 32 reload
+run_one "sv6d_r64_c128_g32_t32_keep_in_warp" "benches/sv6/sv6d_reduce_mid.py" 64 128 32 32 keep_in_warp
+run_one "sv6d_r64_c128_g32_t32_reload" "benches/sv6/sv6d_reduce_mid.py" 64 128 32 32 reload
 
 # ---- SV7d NEW ----
-run_one "sv7d_r64_c128_g64_t32_multiwarp_ub" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 64 32 multiwarp_ub
-run_one "sv7d_r64_c128_g64_t32_reload" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 64 32 reload
-run_one "sv7d_r64_c128_g128_t32_multiwarp_ub" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 128 32 multiwarp_ub
-run_one "sv7d_r64_c128_g128_t32_reload" "kernels_ptodsl/sv7d_reduce_large.py" 64 128 128 32 reload
+run_one "sv7d_r64_c128_g64_t32_multiwarp_ub" "benches/sv7/sv7d_reduce_large.py" 64 128 64 32 multiwarp_ub
+run_one "sv7d_r64_c128_g64_t32_reload" "benches/sv7/sv7d_reduce_large.py" 64 128 64 32 reload
+run_one "sv7d_r64_c128_g128_t32_multiwarp_ub" "benches/sv7/sv7d_reduce_large.py" 64 128 128 32 multiwarp_ub
+run_one "sv7d_r64_c128_g128_t32_reload" "benches/sv7/sv7d_reduce_large.py" 64 128 128 32 reload
 
 # ---- SV8d NEW ----
-run_one "sv8d_r64_c128_g16_t32_live" "kernels_ptodsl/sv8d_case3_bcast.py" 64 128 16 32 live
-run_one "sv8d_r64_c128_g16_t32_spill_dist" "kernels_ptodsl/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
+run_one "sv8d_r64_c128_g16_t32_live" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 live
+run_one "sv8d_r64_c128_g16_t32_spill_dist" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
 
 # ---- SV9d ----
-run_one "sv9d_e256_k8_t32_keep" "kernels_ptodsl/sv9d_topk_e2e.py" 256 8 32 keep
-run_one "sv9d_e256_k8_t32_remat_scores" "kernels_ptodsl/sv9d_topk_e2e.py" 256 8 32 remat_scores
-run_one "sv9d_e256_k8_t32_remat_idx" "kernels_ptodsl/sv9d_topk_e2e.py" 256 8 32 remat_idx
+run_one "sv9d_e256_k8_t32_keep" "benches/sv9/sv9d_topk_e2e.py" 256 8 32 keep
+run_one "sv9d_e256_k8_t32_remat_scores" "benches/sv9/sv9d_topk_e2e.py" 256 8 32 remat_scores
+run_one "sv9d_e256_k8_t32_remat_idx" "benches/sv9/sv9d_topk_e2e.py" 256 8 32 remat_idx
 
 echo "[ptodsl-sv1-9d] done. SUMMARY:"
 cat "$SUMMARY"

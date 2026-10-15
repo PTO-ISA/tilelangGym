@@ -35,7 +35,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
   done
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -57,7 +57,7 @@ compile_run_topk() {
   local TAG=$1; shift
   echo "==== COMPILE $TAG ====" | tee -a "$SUMMARY"
   set +e
-  "$PY" "$SUITE/kernels/sv9_topk_e2e.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
+  "$PY" "$SUITE/benches/sv9/sv9_topk_e2e.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
   local RC=${PIPESTATUS[0]}
   set -e
   if [[ "$RC" -ne 0 || ! -f "$OUT/so/${TAG}.so" ]]; then
