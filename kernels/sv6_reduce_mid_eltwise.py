@@ -1,0 +1,1 @@
+../benches/sv6/sv6_reduce_mid_eltwise.py

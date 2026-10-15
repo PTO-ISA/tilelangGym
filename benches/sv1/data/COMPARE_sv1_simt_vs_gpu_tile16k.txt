@@ -1,0 +1,44 @@
+Ascend SimtVF vs GB10 TILE@E=16K — mapping + takeaways
+=======================================================
+
+Mapping
+-------
+GPU:  E=16384, THREADS=128, TILE∈{128..8192}, shared=TILE, serial tiles, Parallel(TILE)
+      ept = TILE/128 → 1,2,4,8,16,32,64
+Ascend tiled (sv1tt_*): E=16384, T=128 (primary), same TILE list.
+      One SimtVF; serial(E/TILE) *inside* VF; Parallel(TILE); full-E UB.
+      ept = TILE/T same as GPU. (SimtVF-per-tile hung camodel — avoided.)
+Ascend untiled (sv1t_*): Parallel(E) with T∈{32,64,128,256,512}; TILE column = E.
+
+Ascend results (T=128 tiled) — VF cycles / elems/cyc / mix
+----------------------------------------------------------
+TILE  ept  VF_cyc  el/cyc  LDS:FADD:STS   IADD_I  pack   ofst0 LDS
+128   1    10456   1.57    1024:512:512   3080    scalar 100%
+256   2     5807   2.82    512:512:256    1800    .64    100%
+512   4     5225   3.14    512:512:256    1416    .64     75%
+1024  8     5146   3.18    512:512:256    1224    .64     62%  ← best tiled T128
+2048 16     5088   3.22    512:512:256    1128    .64     56%  ← best VF_cyc
+4096 32     5164   3.17    512:512:256    1336    .64     78%
+8192 64     5472   2.99    512:512:256    1440    .64     89%
+
+Untiled T sweep (more threads helps Ascend a lot):
+T=32 → 14882 cyc (1.10 el/cyc); T=128 → 5700; T=256 → 4864; T=512 → 4415 (3.71) best overall.
+
+No .128/float4 on Ascend Simt — pack stays .64 once ept≥2 (TILE≥256 @ T128).
+Ratio stays 2:2:1 after float2; IADD_I drops as TILE grows mid-range then creeps up
+(ofst=0 fraction rises again at large TILE — pointer bump wins over imm ladder).
+
+GPU THREADS follow-up (tcopy, kernel_kernel-only reparse)
+---------------------------------------------------------
+Baseline T=128 TILE=2048: 15827 cyc, 1.035 el/cyc, float4 mem
+Best thr sweep: TILE=2048 THR=512 → 12849 cyc, 1.275 el/cyc (~19% fewer cycles)
+               TILE=2048 THR=256 → 12924, 1.268
+TILE=1024 THR=256/512 also beat T128@1024 (16314 → ~14800).
+So yes — more threads helps GPU modestly when TILE stays large enough for float2/4;
+gains plateau ~256–512 thr. THR=1024 @ TILE=2048 still good (13386) but not best.
+
+Paths
+-----
+Ascend: /tmp/sv1_cost_sweep/SUMMARY_sv1_simt_tile16k.tsv (+ MIX_*.txt)
+GPU thr: /tmp/sv1_gpu_sm1/SUMMARY_sv1_gpu_thr16k.tsv (also workspace/sv1_gpu_tile16k/)
+GPU TILE@128: /workspace/sv1_gpu_tile16k/SUMMARY_sv1_gpu_tile16k.tsv

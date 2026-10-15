@@ -1,0 +1,5 @@
+tag	mode	E	VL	status	us	VF_cycles	body_instr	IPC	vecs	cyc_per_vec	el_per_cyc
+sv1d_e256_t32	simd_d	256	64	PASS	0.89	60	21	0.3500	4	15.0	4.2667
+sv1d_e4096_vl64	simd_d	4096	64	PASS	1.62	161	261	1.6211	64	2.5156	25.441
+sv1d_e8192_vl64	simd_d	8192	64	PASS	2.59	280	517	1.8464	128	2.1875	29.2571
+sv1d_e16384_vl64	simd_d	16384	64	PASS	4.55	520	1029	1.9788	256	2.0312	31.5077

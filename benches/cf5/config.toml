@@ -1,0 +1,33 @@
+id = "cf5"
+title = "Div ULP branch"
+family = "cf"
+
+[paths]
+kernel = "cf5_div_ulp_branch.py"
+kernel_vmi = "cf5v_div_ulp_branch.py"
+kernel_dsl = "cf5d_div_ulp_branch.py"
+
+[focus]
+primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
+deferred = ["simt-pto"]
+
+[pins]
+tilelang_tip = "a3012088cc61a7fac36c50ae19caf2524d5bf804"
+tilelang_pr = "https://github.com/PTO-ISA/tilelang/pull/5"
+full_table_stamp = "31483438"
+cann = "cann_92b2/9.2.0-beta.2"
+ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
+soc = "Ascend950PR_9599"
+
+# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[[cases]]
+tag = "cf5_e256_t32_pnear5"
+suite = "gate"
+args = ["256", "32", "5"]
+shape = { E = 256, T = 32, pnear = 5 }
+
+[[cases]]
+tag = "cf5_e256_t32_pnear25"
+suite = "gate"
+args = ["256", "32", "25"]
+shape = { E = 256, T = 32, pnear = 25 }

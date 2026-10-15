@@ -1,0 +1,1 @@
+../benches/sv1/sv1d_stream_eltwise.py

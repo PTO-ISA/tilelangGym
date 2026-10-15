@@ -1,0 +1,62 @@
+id = "sp2"
+title = "Dual gather wreduce"
+family = "sp"
+
+[paths]
+kernel = "sp2_dual_gather_wreduce.py"
+kernel_dsl = "sp2d_dual_gather_wreduce.py"
+
+[focus]
+primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
+deferred = ["simt-pto"]
+
+[pins]
+tilelang_tip = "a3012088cc61a7fac36c50ae19caf2524d5bf804"
+tilelang_pr = "https://github.com/PTO-ISA/tilelang/pull/5"
+full_table_stamp = "31483438"
+cann = "cann_92b2/9.2.0-beta.2"
+ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
+soc = "Ascend950PR_9599"
+
+# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[[cases]]
+tag = "sp2_t32_k2_h128_g32_t32_sf0_w0_keep_acc"
+suite = "gate"
+arm = "sf0_w0_keep_acc"
+args = ["32", "2", "128", "32", "32", "sf0", "w0", "keep_acc"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }
+
+[[cases]]
+tag = "sp2_t32_k2_h128_g32_t32_sf1_w1_keep_acc"
+suite = "gate"
+arm = "sf1_w1_keep_acc"
+args = ["32", "2", "128", "32", "32", "sf1", "w1", "keep_acc"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }
+
+[[cases]]
+tag = "sp2_t32_k2_h128_g32_t32_sf1_w1_remat_acc"
+suite = "gate"
+arm = "sf1_w1_remat_acc"
+args = ["32", "2", "128", "32", "32", "sf1", "w1", "remat_acc"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }
+
+[[cases]]
+tag = "sp2_t32_k2_h128_g32_t32_sf0_w0_remat_acc"
+suite = "gate"
+arm = "sf0_w0_remat_acc"
+args = ["32", "2", "128", "32", "32", "sf0", "w0", "remat_acc"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }
+
+[[cases]]
+tag = "sp2_t32_k2_h128_g32_t32_sf1_w1_keep_pos"
+suite = "gate"
+arm = "sf1_w1_keep_pos"
+args = ["32", "2", "128", "32", "32", "sf1", "w1", "keep_pos"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }
+
+[[cases]]
+tag = "sp2_t32_k2_h128_g32_t32_sf1_w1_remat_pos"
+suite = "gate"
+arm = "sf1_w1_remat_pos"
+args = ["32", "2", "128", "32", "32", "sf1", "w1", "remat_pos"]
+shape = { tok = 32, K = 2, H = 128, G = 32, T = 32 }

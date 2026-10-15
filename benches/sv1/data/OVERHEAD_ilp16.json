@@ -1,0 +1,88 @@
+{
+  "tag": "sv1t_e16384_t128_ilp16",
+  "roof_el_cyc": 16.0,
+  "roof_note": "1R+1W @ 128B each \u2192 16 el/cyc (Lok); pack remains .64",
+  "mix_instr_exe": {
+    "SIMT_LDS": 512,
+    "LDS_type5": 512,
+    "SIMT_STS": 256,
+    "SIMT_FADD": 512,
+    "SIMT_IADD": 740,
+    "SIMT_IADD_I": 740
+  },
+  "mix_rows": {
+    "SIMT_IADD_I": 740,
+    "SIMT_LDS": 512,
+    "SIMT_FADD": 512,
+    "SIMT_STS": 256
+  },
+  "fadd_share_rows": 0.25346534653465347,
+  "accounting_cyc": {
+    "vf_cyc": 4015.0,
+    "prologue_cyc": 30.59383272782921,
+    "body_span_issue": 3683.866373062355,
+    "body_span_complete": 3712.66063778177,
+    "head_15pct_cyc": 556.8990956672656,
+    "mid_70pct_cyc": 2598.862446447239,
+    "tail_15pct_cyc": 556.8990956672656,
+    "epilogue_cyc": 271.7455294904007,
+    "pro_plus_epi": 302.3393622182299,
+    "non_mid_body_cyc": 1113.798191334531,
+    "pct_pro_epi_of_vf": 7.530245634327021,
+    "pct_head_tail_of_vf": 27.740926309701898,
+    "pct_mid_of_vf": 64.72882805597109
+  },
+  "rates": {
+    "el_cyc_vf": 4.080697384806974,
+    "el_cyc_body_complete": 4.413007704843464,
+    "el_cyc_body_issue": 4.447501168827732,
+    "body4_ipc_full": 0.5440842018911008,
+    "mid_body4_med": 0.4666666666666667,
+    "mid_body4_mean": 0.5730893992474373,
+    "mid_body4_peak": 1.8666666666666667,
+    "mid_body4_p90": 1.0666666666666667,
+    "head_body4_ipc": 0.5692234059388744,
+    "tail_body4_ipc": 0.3555401715327986,
+    "mid_fadd_ipc_med": 0.0,
+    "mid_fadd_ipc_mean": 0.13708317114311666,
+    "mid_fadd_ipc_peak": 1.2666666666666666,
+    "mid_el_med_from_fadd_rate": 0.0,
+    "mid_el_mean_from_fadd_rate": 4.386661476579733,
+    "mid_el_peak_from_fadd_rate": 40.53333333333333,
+    "mid_el_from_fadd_count_span": 4.50658710929885,
+    "mid_el_from_sts_count_span": 4.752848699970918,
+    "frac_mid_windows_near_85pct_peak": 0.028026469443363178,
+    "fadd_wait_pct": 13.28125
+  },
+  "loss_vs_roof16": {
+    "roof": 16.0,
+    "vf_el": 4.080697384806974,
+    "pct_roof_vf": 25.504358655043585,
+    "body_el_complete": 4.413007704843464,
+    "pct_roof_body": 27.58129815527165,
+    "mid_el_med": 0.0,
+    "pct_roof_mid_med": 0.0,
+    "mid_el_peak": 40.53333333333333,
+    "pct_roof_mid_peak": 253.33333333333331,
+    "mid_el_mean": 4.386661476579733,
+    "pct_roof_mid_mean": 27.416634228623334,
+    "mid_el_via_fadd_count": 4.50658710929885,
+    "pct_roof_mid_fadd_count": 28.166169433117812
+  },
+  "hypothetical": {
+    "if_body_at_mid_med_fadd_plus_pro_epi_el": null,
+    "if_body_at_mid_peak_fadd_plus_pro_epi_el": 23.188737647378645,
+    "hypo_vf_at_mid_med": null,
+    "hypo_vf_at_mid_peak": 706.5498885340194
+  },
+  "prologue_instr": {
+    "SIMT_S2R": 2,
+    "SIMT_SHFI": 1,
+    "SIMT_LEA": 1
+  },
+  "epilogue_instr": {
+    "SET_FLAG": 1,
+    "MOV_SRC_TO_DST_ALIGNv2": 1
+  },
+  "kernel_launch_note": "Keep-trace is VF-scoped; host/kernel-launch cost is NOT in VF_cyc. SUMMARY el/cyc = E/VF_cyc already excludes launch. Overhead inside VF = prologue + epilogue + head/tail schedule ramp."
+}

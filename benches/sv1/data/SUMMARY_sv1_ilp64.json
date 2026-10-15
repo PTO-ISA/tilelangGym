@@ -1,0 +1,107 @@
+[
+  {
+    "tag": "sv1t_e16384_t128_ilp16",
+    "vf_cyc": 4015,
+    "el_cyc": 4.080697384806974,
+    "body4_n": 2020,
+    "body_span": 3712.66063778177,
+    "body4_ipc": 0.5440842018911008,
+    "pct_cap4": 13.60210504727752,
+    "mid_med": 0.4666666666666667,
+    "mid_peak": 1.8666666666666667,
+    "fadd_n": 512,
+    "fadd_wait_pct": 13.28125,
+    "mix": {
+      "SIMT_LDS": 512,
+      "LDS_type5": 512,
+      "SIMT_STS": 256,
+      "SIMT_FADD": 512,
+      "SIMT_IADD": 740,
+      "SIMT_IADD_I": 740
+    }
+  },
+  {
+    "tag": "sv1t_e16384_t128_ilp4",
+    "vf_cyc": 4643,
+    "el_cyc": 3.5287529614473403,
+    "body4_n": 2020,
+    "body_span": 4183.92106508592,
+    "body4_ipc": 0.4828006954663992,
+    "pct_cap4": 12.07001738665998,
+    "mid_med": 0.5,
+    "mid_peak": 1.1333333333333333,
+    "fadd_n": 512,
+    "fadd_wait_pct": 50.0,
+    "mix": {
+      "SIMT_LDS": 512,
+      "LDS_type5": 512,
+      "SIMT_STS": 256,
+      "SIMT_FADD": 512,
+      "SIMT_IADD": 740,
+      "SIMT_IADD_I": 740
+    }
+  },
+  {
+    "tag": "sv1t_e16384_t128_ilp8",
+    "vf_cyc": 4271,
+    "el_cyc": 3.8361039569187545,
+    "body4_n": 2020,
+    "body_span": 3905.6344524362767,
+    "body4_ipc": 0.5172015007036703,
+    "pct_cap4": 12.930037517591758,
+    "mid_med": 0.43333333333333335,
+    "mid_peak": 1.4666666666666666,
+    "fadd_n": 512,
+    "fadd_wait_pct": 25.0,
+    "mix": {
+      "SIMT_LDS": 512,
+      "LDS_type5": 512,
+      "SIMT_STS": 256,
+      "SIMT_FADD": 512,
+      "SIMT_IADD": 740,
+      "SIMT_IADD_I": 740
+    }
+  },
+  {
+    "tag": "sv1t_e16384_t128",
+    "vf_cyc": 5700,
+    "el_cyc": 2.8743859649122805,
+    "body4_n": 2020,
+    "body_span": 5404.83099366286,
+    "body4_ipc": 0.3737397158890705,
+    "pct_cap4": 9.343492897226763,
+    "mid_med": 0.4,
+    "mid_peak": 0.5,
+    "fadd_n": 512,
+    "fadd_wait_pct": 50.0,
+    "mix": {
+      "SIMT_LDS": 512,
+      "LDS_type5": 512,
+      "SIMT_STS": 256,
+      "SIMT_FADD": 512,
+      "SIMT_IADD": 740,
+      "SIMT_IADD_I": 740
+    }
+  },
+  {
+    "tag": "sv1t_e16384_t2048",
+    "vf_cyc": 4279,
+    "el_cyc": 3.828931993456415,
+    "body4_n": 2048,
+    "body_span": 4217.794404999415,
+    "body4_ipc": 0.4855618371470347,
+    "pct_cap4": 12.139045928675868,
+    "mid_med": 0.4666666666666667,
+    "mid_peak": 1.5,
+    "fadd_n": 512,
+    "fadd_wait_pct": 50.0,
+    "mix": {
+      "SIMT_LDS": 512,
+      "LDS_type5": 512,
+      "SIMT_STS": 256,
+      "SIMT_FADD": 512,
+      "SIMT_IADD": 768,
+      "SIMT_IADD_I": 768
+    }
+  }
+]

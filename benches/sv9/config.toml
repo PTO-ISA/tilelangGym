@@ -1,0 +1,49 @@
+id = "sv9"
+title = "TopK e2e keep / remat"
+family = "sv"
+
+[paths]
+kernel = "sv9_topk_e2e.py"
+kernel_vmi = "sv9v_topk_e2e.py"
+kernel_dsl = "sv9d_topk_e2e.py"
+
+[focus]
+primary = ["simt-asc", "simd-pto", "handwritten-simd-dsl"]
+deferred = ["simt-pto"]
+
+[pins]
+tilelang_tip = "a3012088cc61a7fac36c50ae19caf2524d5bf804"
+tilelang_pr = "https://github.com/PTO-ISA/tilelang/pull/5"
+full_table_stamp = "31483438"
+cann = "cann_92b2/9.2.0-beta.2"
+ptoas = "0.67@1b36b6f58e6a9cf4db6e76b98206411a8f9d1f80"
+soc = "Ascend950PR_9599"
+
+# Cases: gate = oneshot regress; explore = SV1-style size/thread ladder (optional).
+[[cases]]
+tag = "sv9_e256_k1_t32_keep"
+suite = "gate"
+arm = "keep"
+args = ["256", "1", "32", "keep"]
+shape = { E = 256, K = 1, T = 32 }
+
+[[cases]]
+tag = "sv9_e256_k8_t32_keep"
+suite = "gate"
+arm = "keep"
+args = ["256", "8", "32", "keep"]
+shape = { E = 256, K = 8, T = 32 }
+
+[[cases]]
+tag = "sv9_e256_k8_t32_remat_scores"
+suite = "gate"
+arm = "remat_scores"
+args = ["256", "8", "32", "remat_scores"]
+shape = { E = 256, K = 8, T = 32 }
+
+[[cases]]
+tag = "sv9_e256_k8_t32_remat_idx"
+suite = "gate"
+arm = "remat_idx"
+args = ["256", "8", "32", "remat_idx"]
+shape = { E = 256, K = 8, T = 32 }

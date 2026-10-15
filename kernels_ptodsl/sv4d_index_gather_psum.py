@@ -1,0 +1,1 @@
+../benches/sv4/sv4d_index_gather_psum.py
