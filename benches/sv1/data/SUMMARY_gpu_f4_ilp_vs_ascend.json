@@ -1,0 +1,60 @@
+{
+  "ascend_ilp16_T128": {
+    "el_cyc": 4.0807,
+    "roof": 16.0,
+    "pct_roof": 25.504375000000003,
+    "pack": ".64"
+  },
+  "gpu_tl_tile2048_T128": {
+    "el": 1.0352,
+    "cyc": 15827,
+    "note": "TILE2048@T128 tcopy; float4 CUDA; SASS dump often .64"
+  },
+  "gpu_hand_float4_128": {
+    "unroll_multiCTA": {
+      "active": 7617,
+      "elapsed": 11099,
+      "el_active": 2.1509780753577523,
+      "el_elapsed": 1.4761690242364176
+    },
+    "ilp4_multiCTA": {
+      "active": 8457,
+      "elapsed": 11996,
+      "el_active": 1.9373300224665957,
+      "el_elapsed": 1.3657885961987328
+    },
+    "ilp16_multiCTA": {
+      "active": 17408,
+      "elapsed": 21031,
+      "el_active": 0.9411764705882353,
+      "el_elapsed": 0.7790404640768389
+    },
+    "ilp4_1cta": {
+      "active": 18673,
+      "elapsed": 22178,
+      "el_active": 0.8774165907995501,
+      "el_elapsed": 0.7387501127243215
+    },
+    "ilp16_1cta": {
+      "active": 21456,
+      "elapsed": 24952,
+      "el_active": 0.7636092468307233,
+      "el_elapsed": 0.6566207117665919
+    },
+    "tcopy_recreate_1cta": {
+      "active": 27355,
+      "elapsed": 30819,
+      "el_active": 0.5989398647413635,
+      "el_elapsed": 0.5316201044810019
+    }
+  },
+  "primary_fair_1cta": {
+    "gpu_ilp4_1cta_el_active": 0.8774165907995501,
+    "gpu_tl_el": 1.0352,
+    "ascend_ilp16_el": 4.0807,
+    "ascend_over_gpu_1cta": 4.650812445068359,
+    "ascend_over_gpu_tl": 3.941943585780526
+  },
+  "best_gpu_schedule_multiCTA_el_active": 2.1509780753577523,
+  "sass": "LDG.E.128/STG.E.128 only on hand kernels"
+}

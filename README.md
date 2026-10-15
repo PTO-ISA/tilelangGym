@@ -46,6 +46,20 @@ Detail: [`docs/regression/PINS_AND_RESULTS_20261013.md`](docs/regression/PINS_AN
 
 ## How to run
 
+### Weekly SV1 gate (E=8192, T=128 + T=512)
+
+Single regression script — stock **simt-asc**, no schedule rewrites. Expect both cases **PASS**:
+
+```bash
+# after setting TILELANG_DEPS / CAMODEL_DEPS / ASCEND_HOME_PATH / PY / SIM_DSL (see below)
+bash oneshot_sv1_e8192_t128_t512.sh
+```
+
+Details: [`docs/regression/REGRESS_SV1_E8192_T128_T512.md`](docs/regression/REGRESS_SV1_E8192_T128_T512.md).
+
+## How to run (full suite)
+
+
 Host: Ascend lab box (e.g. pto-b10) with TileLang tip built and CANN `cann_92b2` sourced. For **simd-pto** / PTO-DSL, also install PTOAS 0.67 into `CAMODEL_DEPS` (`.camodel_deps_nightly067` or lab equivalent).
 
 ```bash

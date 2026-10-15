@@ -89,7 +89,13 @@ Full opcode dumps: `data/MIX_sv1_simt_tile16k.txt`.
 
 ---
 
-## Rooftop — LDS/STS.64 vs .128 and 32 el/cyc
+## Rooftop — LDS/STS.64 vs .128 (**Lok: roof = 16 el/cyc**)
+
+> **2026-10-15 correction (Lok):** SimtVF **1R+1W @ 128B each → 16 el/cyc**, **not** 32.
+> The historical “32” below treated `.64` as if the R port were 256B. Use **16** going forward.
+> Pack remains **LDS/STS.64 only**. See `analysis/NOTE_sv1_rooftop_corrected.md` and `plots/sv1_rooftop_corrected_summary.png`.
+
+## Rooftop — LDS/STS.64 vs .128 and 32 el/cyc (historical; superseded)
 
 ### What the hw/trace shows
 
@@ -129,7 +135,7 @@ Ideal issue mix for that roof (no IADD): `{LDS_A, LDS_B, FADD, STS}` = **4 issue
 1. **Tile size:** sweet spot ~1024–2048 @ T128; TILE=128 stays scalar and ~2× worse VF_cyc.
 2. **Thread count:** T=32→512 cuts VF_cyc ~3.4× on untiled E=16K; IPC climbs 0.14→0.48.
 3. **Pack width:** Simt locks at `.64`; float4 / `.128` needs TileLang `max_vector_bits` + SoftLib f32x4 path (see agent float4 notes) — not one-liner.
-4. **Simd DSL / simd-pto:** large-E ladder measured — E=16K **31.5 el/cyc**, α≈**1.87** ⇒ asym ~**34 el/cyc** (NOT ~64). See §SIMD DSL large-E size ladder + `data/SUMMARY_sv1d_size_ladder.tsv`.
+4. **Simd DSL / simd-pto:** size-ladder kernels exist (`sv1d_e*_vl64`); fold measured VF/α here when remeasured on current pins — plot script `scripts/plot_and_fit.py` (cost-sweep) expects paired `SUMMARY_sv1_cost.tsv` + `SUMMARY_sv1d_cost.tsv`.
 
 ## Artifacts to regenerate plots
 
@@ -140,22 +146,32 @@ python3 ../../scripts/plot_sv1_sensitivity.py   # or re-run the generator that w
 
 ---
 
-## SIMD DSL (sv1d / VMI PTO-DSL) large-E size ladder
+## 2026-10-15 update — roof 16, ILP@T128, bubbles, GPU
 
-Measured 2026-10-14 HKT on Ascend950PR_9599 opsim (pto-b10), VL=64, full-resident A+B+C in UB.
-Raw: `data/SUMMARY_sv1d_size_ladder.tsv` · note: `data/NOTE_sv1d_size_ladder.md`.
+### Corrected Simt roof = **16**
 
-| E | VF_cyc | body_instr | IPC | cyc/vec | **el/cyc** |
-|--:|-------:|-----------:|----:|--------:|-----------:|
-| 256 | 60 | 21 | 0.35 | 15.0 | **4.27** |
-| 4096 | 161 | 261 | 1.62 | 2.52 | **25.44** |
-| 8192 | 280 | 517 | 1.85 | 2.19 | **29.26** |
-| **16384** | **520** | **1029** | **1.98** | **2.03** | **31.51** |
+| Case | el/cyc | % of **16** |
+|------|-------:|------------:|
+| TILE2048@T128 stock | 3.22 | 20.1% |
+| Untiled T512 stock | 3.71 | 23.2% |
+| Untiled T2048 stock | 3.83 | 23.9% |
+| **ILP16 @ T128 (.64)** | **4.08** | **25.5%** |
+| Mid sustained (ILP16) | ~4.51 | ~28% |
 
-**Asymptotic:** slope α ≈ **1.87** cyc/vec (E≥4K) ⇒ **~34 el/cyc**. At largest measured **E=16K: 31.5 el/cyc**.
+Body4 mix-cap IPC ≈ **4** (wrap schedulers). Mid-median Body4 IPC stays ~**0.47** for T≥256; mid-peak rises with T/ILP but is bursty.
 
-**vs theory α≈1 → 64 el/cyc:** **NOT approached** (~2× gap; consistent with ~2 cyc/vec for 2×vload+vadd+vstore when LD/ST/EX do not collapse to 1 issue/cyc). E=32K skipped (3·E·4 exceeds UB for full-resident).
+### Bubbles T128 vs T512
 
-![simd size vs el](plots/sv1_simd_size_vs_el.png)
+Dependency/scoreboard RAW (FADD wait **50%**). T↑ cuts pathological max idle (**244→32**, mostly drain) and lifts Body4 IPC **0.376→0.468**; mid-median barely moves. Prefer **fixed-T schedule** over more warps. Details: `analysis/NOTE_sv1_simt_bubbles_T128_vs_T512.md`.
 
-![simt vs simd overlay](plots/sv1_simt_vs_simd_el_overlay.png)
+### ILP reschedule @ T=128 (.64 only)
+
+GPU-style many-LDS → FADD → STS via CCE ASC rewrite. **ILP16 beats T2048** (+6.6% el/cyc); FADD wait **50%→13%**. Overhead: **~92.5% body**; launch not in VF; pro+epi ~7.5%. Notes: `analysis/NOTE_sv1_simt_ilp64_T128.md`, plots `sv1_ilp16_*`.
+
+### GPU float4/.128 (ncu GB10, order-of-magnitude)
+
+Ascend ILP16 **4.08** vs GPU hand .128 1CTA **~0.88** / multi-CTA **~2.15** / TL TILE2048 **~1.04**. Different roofs/clocks — see `analysis/NOTE_sv1_gpu_vs_ascend_ilp16_elcyc.md`.
+
+### Next (todos)
+
+T=128 instruction scheduling: deeper ILP, IADD cut, mid-median toward 16; I-cache (~6 KB aicore text @ ILP16 OK); MRF 128 KB vs E=8K 96 KB + regs. Listed in `VERDICT.md`.
