@@ -31,14 +31,15 @@ Kernels: `benches/sv1/sv1d_stream_eltwise.py` (DSL) · `benches/sv1/sv1_stream_e
 | Stock best | untiled T512 ≈ **3.71** el/cyc (**23%** of 16) |
 | ILP16 @ T=128 | **4.08** el/cyc (**25.5%** of 16); mid ~**4.5** — still mid-body stall / IADD tax, not launch |
 
-![ILP16@T128 overhead waterfall (4.08 vs roof 16)](plots/sv1_ilp16_overhead_waterfall.png)
-
 Simt needs schedule work at fixed T=128 to climb toward roof 16; SIMD already does not.
+
+**Simt overhead / bubbles:** **TBD** — not reviewed for release yet; plots and numeric claims held back (see Detail).
 
 ## Todos — Simt T=128 scheduling (not SIMD)
 
 - [ ] Deeper ILP at fixed T=128 (keep `.64`)
 - [ ] Cut IADD tax; raise mid-median Body4 IPC toward roof **16**
+- [ ] Review Simt overhead / bubbles (pro/epi/idle/wait) — **TBD before publish**
 - [ ] I-cache / MRF checks on deeper unroll
 
 ## Weekly gate
@@ -72,7 +73,7 @@ Scope: E=16384 fp32 **2R+1W** stream on Ascend950PR_9599 opsim unless noted. Hos
 | Simt untiled T512 | 4415 | **3.71** | Body4 mean ≈ **0.47**; mid-med ≈ **0.37–0.47** | **23%** of 16 |
 | Simt ILP16 @ T128 | 4015 | **4.08** | mean **0.54** / mid-med **0.47** / peak **1.87**; mid sustained ~**4.5** el/cyc | **25.5%** of 16 |
 
-Peak Body4 IPC (**1.87**) is **short bursts** — mid-median (**~0.47**) and ~**65–69%** idle set wall time, not the spikes.
+Peak Body4 IPC (**1.87**) is **short bursts** — mid-median (**~0.47**) sets wall time, not the spikes.
 
 ![Simt Body4 EX IPC (30-cyc window)](plots/sv1_simt_e16k_body4_ex_ipc_30cyc.png)
 
@@ -80,32 +81,16 @@ Peak Body4 IPC (**1.87**) is **short bursts** — mid-median (**~0.47**) and ~**
 
 ### Overhead / bubbles
 
-**SIMD DSL (E16K):** VF wrap **520** vs body **~482** ⇒ ~**38c** pro+epi (~7% of VF). Body is near-roof; gap to 42.67 is mostly that wrap + small mid slack, **not** schedule.
+**SIMD DSL (E16K) — OK to publish:** VF wrap **520** vs body **~482** ⇒ ~**38c** pro+epi (~7% of VF). Body is near-roof; gap to 42.67 is mostly that wrap + small mid slack, **not** schedule.
 
-**Simt ILP16 @ T128 (VF-scoped):**
+**Simt — TBD (do not release yet):** pro/epi shares, idle-bubble location, T128 vs T512 bubble stats, dep-chain bubble schematics, and wait-tax breakdowns need another review pass. Those plots are **held out of tree** until then:
 
-| Piece | Share of VF | Note |
-|-------|------------:|------|
-| Prologue | **~0.8–1%** | S2R / SHFI / LEA |
-| Mid body (70% span) | **~65%** | rate that matters |
-| Head+tail ramp | **~28%** | schedule ramp inside body |
-| Epilogue | **~6.8–7%** | SET_FLAG / MOV |
-| Host launch | **0% of VF** | not in 4.08 el/cyc |
+- ~~`sv1_ilp16_overhead_waterfall.png`~~
+- ~~`sv1_simt_T128_idle_bubble_location.png`~~
+- ~~`sv1_simt_bubble_T128_vs_T512.png`~~
+- ~~`sv1_simt_bubble_dep_chain_T128.png`~~
 
-Idle / issue width (stock untiled, Body4 window):
-
-| Arm | % idle (width 0) | mean issue width | idle bubble p50 / p90 / max |
-|-----|-----------------:|-----------------:|----------------------------|
-| T128 | **~69%** | **0.38** | 1 / 7 / 244 |
-| T512 | **~68%** | **0.47** | 1 / 6 / 32 |
-
-![T128 idle bubble location](plots/sv1_simt_T128_idle_bubble_location.png)
-
-![Bubble T128 vs T512](plots/sv1_simt_bubble_T128_vs_T512.png)
-
-![Dep-chain bubble schematic @ T128](plots/sv1_simt_bubble_dep_chain_T128.png)
-
-Wait tax: ~**35–36%** of ops have non-zero wait; LDS wait_nz ≈ **44%**, FADD wait_nz ≈ **50%** (ILP16 can cut FADD wait share toward ~**13%**). Gap to roof **16** is **mid-body stall / IADD / issue**, not launch/head–tail (those only cost ~**0.43** el/cyc vs mid ~4.5 → VF 4.08).
+Until review: treat Simt gap-to-16 as **mid-body stall / IADD / issue** at a high level only; no published bubble waterfall numbers.
 
 ### TODO / remarks
 
@@ -113,6 +98,7 @@ Wait tax: ~**35–36%** of ops have non-zero wait; LDS wait_nz ≈ **44%**, FADD
 
 - [ ] Deeper ILP at fixed T=128 (keep `.64`; no warp-yield)
 - [ ] Cut IADD tax; raise **mid-median** Body4 IPC toward roof **16** (not peak spikes)
+- [ ] **Review + release** Simt overhead / bubbles section (currently TBD)
 - [ ] I-cache / code-size check on deeper unroll
 - [ ] MRF live-set check if full-unroll E=8K (~96 KB vs 128 KB MRF)
 
@@ -132,12 +118,10 @@ Wait tax: ~**35–36%** of ops have non-zero wait; LDS wait_nz ≈ **44%**, FADD
 | `sv1_large_tile_instr_breakdown.png` | Instr mix |
 | `sv1_simt_e16k_body4_ex_ipc_30cyc.png` | Simt Body4 IPC |
 | `sv1_ilp16_T128_timeline_ipc_el.png` | ILP16 timeline |
-| `sv1_ilp16_overhead_waterfall.png` | ILP16 4.08 vs roof 16 |
-| `sv1_simt_T128_idle_bubble_location.png` | Idle bubble location |
-| `sv1_simt_bubble_T128_vs_T512.png` | Bubble T128 vs T512 |
-| `sv1_simt_bubble_dep_chain_T128.png` | Dep-chain bubbles |
 
-Pruned (stale roof-32 overlay, high-T fill sweep, FADD-only IPC slice, size/tile ladders, schematic twin): `sv1_simt_vs_simd_el_overlay.png`, `sv1_simd_size_vs_el.png`, `sv1_simt_e16k_fadd_ex_ipc_30cyc.png`, `sv1_simt_highT_fill_sweep.png`, `sv1_tile_vs_vf_el_instr.png`, `sv1_simt_bubble_dep_schematic.png`, `sv1_thread_vs_ipc_el.png`.
+**Held (Simt overhead/bubbles TBD — not in tree):** waterfall, idle-bubble location, bubble T128 vs T512, dep-chain bubble.
+
+**Also pruned earlier:** roof-32 overlay, high-T fill, FADD-only IPC, size/tile ladders, schematic twin, thread-vs-ipc.
 
 ### How to re-measure
 
