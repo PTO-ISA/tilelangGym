@@ -6,7 +6,7 @@ Interactive report: `SV1_report.ipynb` (plots from `data/` offline; optional ops
 
 ```bash
 cd ~/projects/tilelangGym
-git fetch origin && git checkout feat/seed-st-suite-sv-cf-sp && git pull
+git fetch origin && git checkout chore/reorg-scripts-layout && git pull
 
 # Prefer a small venv so we don't disturb .venv-npu torch stack
 python3 -m venv ~/venvs/sv1-jupyter

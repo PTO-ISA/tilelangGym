@@ -8,7 +8,7 @@ benches/<id>/
   <kernel_vmi>.py      # optional VMI twin
   <kernel_dsl>.py      # optional handwritten SIMD / PTO-DSL twin
   config.toml          # shapes / arms / argv (gate + explore)
-  VERDICT.md           # per-case testing verdict
+  VERDICT.md           # per-case testing verdict (SV1: ANALYSIS.md only)
 ```
 
 - **Primary focus:** simt-asc, simd-pto, handwritten SIMD DSL.
