@@ -40,7 +40,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 # Backup + restore deps lib (never leave overlay)
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
@@ -129,8 +129,8 @@ compile_run_topk sv4 256 8 32
 compile_run_topk sv4 256 8 128
 
 echo "==== PHASE SV1 SV7 SV8 ===="
-compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e256_t32 256 32
-compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e2048_t32 2048 32
+compile_run_generic "$SUITE/benches/sv1/sv1_stream_eltwise.py" sv1_e256_t32 256 32
+compile_run_generic "$SUITE/benches/sv1/sv1_stream_eltwise.py" sv1_e2048_t32 2048 32
 compile_run_generic "$SUITE/kernels/sv7_block_reduce_128.py" sv7_n128_t32 128 32
 compile_run_generic "$SUITE/kernels/sv7_block_reduce_128.py" sv7_n128_t128 128 128
 compile_run_generic "$SUITE/kernels/sv8_block_reduce_32x32.py" sv8_32x32_t32 32

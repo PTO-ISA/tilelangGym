@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SV9 — Topk e2e (KEEP / remat_scores / remat_idx).
 
-Extracted from ``kernels/_removed_legacy/sv2_topk_keep.py`` (+ SV3/SV4 remat forks).
+Extracted from ``benches/_removed_legacy/sv2_topk_keep.py`` (+ SV3/SV4 remat forks).
 Replaces the three legacy topk micros with one e2e ST and three arms.
 
 Math (stable min-index-on-ties top-K):

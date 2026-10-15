@@ -60,7 +60,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -106,26 +106,26 @@ compile_run_generic() {
 }
 
 echo "==== PHASE CF1 thresh kill KEEP ===="
-compile_run_generic "$SUITE/kernels/cf1_pred_thresh_keep.py" cf1_e256_k1_t32_keep 256 1 32
-compile_run_generic "$SUITE/kernels/cf1_pred_thresh_keep.py" cf1_e256_k8_t32_keep 256 8 32
+compile_run_generic "$SUITE/benches/cf1/cf1_pred_thresh_keep.py" cf1_e256_k1_t32_keep 256 1 32
+compile_run_generic "$SUITE/benches/cf1/cf1_pred_thresh_keep.py" cf1_e256_k8_t32_keep 256 8 32
 
 echo "==== PHASE CF2 remat + kill-in-shared ===="
-compile_run_generic "$SUITE/kernels/cf2_remat_thresh_kill_shared.py" cf2_e256_k8_t32_remat 256 8 32
+compile_run_generic "$SUITE/benches/cf2/cf2_remat_thresh_kill_shared.py" cf2_e256_k8_t32_remat 256 8 32
 
 echo "==== PHASE CF3 remat_idx ===="
-compile_run_generic "$SUITE/kernels/cf3_remat_idx.py" cf3_e256_k8_t32_remat_idx 256 8 32
+compile_run_generic "$SUITE/benches/cf3/cf3_remat_idx.py" cf3_e256_k8_t32_remat_idx 256 8 32
 
 echo "==== PHASE CF4 nested if ===="
-compile_run_generic "$SUITE/kernels/cf4_nested_if.py" cf4_e256_t32_pfat5 256 32 5
-compile_run_generic "$SUITE/kernels/cf4_nested_if.py" cf4_e256_t32_pfat25 256 32 25
+compile_run_generic "$SUITE/benches/cf4/cf4_nested_if.py" cf4_e256_t32_pfat5 256 32 5
+compile_run_generic "$SUITE/benches/cf4/cf4_nested_if.py" cf4_e256_t32_pfat25 256 32 25
 
 echo "==== PHASE CF5 div+near0 branch ===="
-compile_run_generic "$SUITE/kernels/cf5_div_ulp_branch.py" cf5_e256_t32_pnear5 256 32 5
-compile_run_generic "$SUITE/kernels/cf5_div_ulp_branch.py" cf5_e256_t32_pnear25 256 32 25
+compile_run_generic "$SUITE/benches/cf5/cf5_div_ulp_branch.py" cf5_e256_t32_pnear5 256 32 5
+compile_run_generic "$SUITE/benches/cf5/cf5_div_ulp_branch.py" cf5_e256_t32_pnear25 256 32 25
 
 echo "==== PHASE CF6 Newton+near0 ===="
-compile_run_generic "$SUITE/kernels/cf6_newton_branch.py" cf6_e256_t32_pnear5 256 32 5
-compile_run_generic "$SUITE/kernels/cf6_newton_branch.py" cf6_e256_t32_pnear25 256 32 25
+compile_run_generic "$SUITE/benches/cf6/cf6_newton_branch.py" cf6_e256_t32_pnear5 256 32 5
+compile_run_generic "$SUITE/benches/cf6/cf6_newton_branch.py" cf6_e256_t32_pnear25 256 32 25
 
 echo "==== SUMMARY_cf1_cf6_raw ===="
 cat "$SUMMARY"

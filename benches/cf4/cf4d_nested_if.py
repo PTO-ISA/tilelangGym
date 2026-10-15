@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-CF4d — PTO-DSL explicit twin of Simt CF4 (nested if via nested vsel).
 
-Simt twin: kernels/cf4_nested_if.py
+Simt twin: benches/cf4/cf4_nested_if.py
 Primary tags: cf4d_e256_t32_pfat5 / cf4d_e256_t32_pfat25
 Mapping (2): nested vsel — x>hi → hi; else x<lo → lo; else x*scale (fat).
 pfat is host-data skew only (tag), not a kernel param. No AABBCC / vf_fuse.

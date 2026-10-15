@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-CF6d — PTO-DSL explicit twin of Simt CF6 (Newton recip + near-0).
 
-Simt twin: kernels/cf6_newton_branch.py
+Simt twin: benches/cf6/cf6_newton_branch.py
 CF6v ABI tax (DO NOT copy): Newton in Kernel-serial *outside* SimdVF → ~12.35µs.
 This *d* keeps seed recip + N_FAST=3 Newton iters entirely in vregs
 (vdiv/vmul/vsub + vmax abs + vcmp/vsel) — no outside-VF serial / UB remat of y.

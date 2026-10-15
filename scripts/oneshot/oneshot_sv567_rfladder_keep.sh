@@ -37,7 +37,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -82,8 +82,8 @@ compile_run_generic() {
 }
 
 echo "==== FOCUSED: keep arms only (keep_in_rf / keep_in_warp) ===="
-compile_run_generic "$SUITE/kernels/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_in_rf 64 128 16 32 keep_in_rf
-compile_run_generic "$SUITE/kernels/sv6_reduce_mid_eltwise.py" sv6_r64_c128_g32_t32_keep_in_warp 64 128 32 32 keep_in_warp
+compile_run_generic "$SUITE/benches/sv5/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_in_rf 64 128 16 32 keep_in_rf
+compile_run_generic "$SUITE/benches/sv6/sv6_reduce_mid_eltwise.py" sv6_r64_c128_g32_t32_keep_in_warp 64 128 32 32 keep_in_warp
 
 "$PY" "$SUITE/harvest_sv567_rfladder.py" "$OUT" 2>&1 | tee "$OUT/harvest_sv567_rfladder_run.log" || true
 cp -f "$OUT/RESULT.md" "$OUT/RESULT_sv567_rfladder.md" 2>/dev/null || true

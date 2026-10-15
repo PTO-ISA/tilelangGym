@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SV3d — PTO-DSL Layer D twin of Simt SV3 (GEMV Acc KEEP vs split).
 
-Simt: kernels/sv3_gemv_partial_keep.py
+Simt: benches/sv3/sv3_gemv_partial_keep.py
 Tags: sv3d_m{M}_vl{VL}_k{K}_t{T}_{keep|split_cm{CM}}
 
 Math: Acc[M, VL] += A[k, M, VL] * x[k]  (broadcast), then Out = Acc.

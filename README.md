@@ -10,7 +10,7 @@ Moved out of `PTO-ISA/tilelang` `examples/ascend/t_parallel_st_suite` so the sui
 |----------|------|-------|
 | **Primary** | **simt-asc** | Ascend SoftLib SimtVF (`target=ascend`, cython). Main regression gate — **all PASS** on remat tip below. |
 | **Primary** | **simd-pto** | `VectorizeParallelToPTO` / VL `vload`/`vstore` (not CUDA float4). |
-| **Primary** | **Handwritten SIMD DSL** | PTO-DSL `*d` twins under `kernels_ptodsl/` (`@pto.jit`). |
+| **Primary** | **Handwritten SIMD DSL** | PTO-DSL `*d` twins under `benches/<id>/` (`@pto.jit`). |
 
 Per-case shapes and verdicts: `benches/<id>/config.toml` + `benches/<id>/VERDICT.md`. SV1 explore analysis: [`benches/sv1/ANALYSIS.md`](benches/sv1/ANALYSIS.md).
 
@@ -19,7 +19,7 @@ Per-case shapes and verdicts: `benches/<id>/config.toml` + `benches/<id>/VERDICT
 | Path | Contents |
 |------|----------|
 | **`benches/<id>/`** | **Per-benchmark home:** kernel(s) + `config.toml` (shapes/arms) + `VERDICT.md` (SV1…SV9, CF*, SP*) |
-| `kernels/` / `kernels_ptodsl/` | Symlinks into `benches/` for legacy oneshot compatibility |
+| `benches/<id>/` | Kernel sources (harness + oneshots point here directly) |
 | `scripts/oneshot/` | Family oneshot runners |
 | `scripts/regression/` | Weekly / CI gates (SV1 E=8192 T128+T512) |
 | `scripts/laptop/` | Optional `run_via_laptop_*.ps1` relays |
@@ -27,7 +27,7 @@ Per-case shapes and verdicts: `benches/<id>/config.toml` + `benches/<id>/VERDICT
 | `oneshot_sv1_e8192_t128_t512.sh` | **Compat wrapper** → `scripts/regression/oneshot_sv1_e8192_t128_t512.sh` |
 | `common_asc_harness.py` / `common_pto_harness.py` / `vf_mode.py` | Shared compile + opsim harness |
 | `docs/regression/` | Pins, PASS notes, probes |
-| `reports/` | Design docs and PASS tables |
+| `reports/PASS_FAIL_PERF.md` | Single PASS/FAIL+perf table |
 
 See [`benches/README.md`](benches/README.md). Each bench `config.toml` lists gate cases (oneshot) and, where useful (e.g. SV1), `suite = "explore"` size/thread ladders.
 
@@ -93,7 +93,7 @@ Laptop relays (optional): `scripts/laptop/run_via_laptop_*.ps1` SSH to the lab h
 Env notes:
 - **simt-asc:** `target=ascend` + cython backend (not pto); deps-native `libtilelang.so`
 - **simd-pto:** `VectorizeParallelToPTO` / VL `vload` (not CUDA float4)
-- **Handwritten SIMD DSL:** `kernels_ptodsl/` `@pto.jit` twins
+- **Handwritten SIMD DSL:** `benches/<id>/*d_*.py` `@pto.jit` twins
 - Do not mix overlay and deps-native libs in one run
 
 ## Current regression snapshot
@@ -109,7 +109,7 @@ With that tip + cann_92b2, the simt-asc gate matrix (including SV4 remat_idx arm
 | Mode | Notes |
 |------|-------|
 | **simd-pto** | Active focus (`VectorizeParallelToPTO` / VL). |
-| **PTO-DSL `*d`** | Handwritten SIMD DSL twins under `kernels_ptodsl/` — active focus. |
+| **PTO-DSL `*d`** | Handwritten SIMD DSL twins under `benches/<id>/` — active focus. |
 
 ## Design docs
 

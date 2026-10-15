@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SP4d — PTO-DSL SIMD twin of Simt SP4 (pad gather, full-lane mask).
 
-Simt twin: kernels/sp4_pad_gather.py
+Simt twin: benches/sp4/sp4_pad_gather.py
 Primary tag: sp4d_e64_h128_t32_pad25
 
 Gold (same as Simt / run_opsim_generic): ``Out[p,j] = Buf[p,j] if Expert[p] >= 0 else 0``.

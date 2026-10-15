@@ -36,7 +36,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -83,11 +83,11 @@ compile_run_generic() {
 
 echo "==== PHASE SV2 input KEEP vs STREAM (scale ALWAYS KEEP) ===="
 # R≈16 input_keep primary: C=32 NCH=1 (C=64 keep = layout COMPILE_FAIL — optional foil)
-compile_run_generic "$SUITE/kernels/sv2_eltwise_bcast_rf.py" sv2_r16_c32_t32_input_keep 16 32 32 input_keep
+compile_run_generic "$SUITE/benches/sv2/sv2_eltwise_bcast_rf.py" sv2_r16_c32_t32_input_keep 16 32 32 input_keep
 # R≥32 input_stream (stream x; scale fragment KEEP)
-compile_run_generic "$SUITE/kernels/sv2_eltwise_bcast_rf.py" sv2_r32_c32_t32_input_stream 32 32 32 input_stream
-compile_run_generic "$SUITE/kernels/sv2_eltwise_bcast_rf.py" sv2_r32_c64_t32_input_stream 32 64 32 input_stream
-compile_run_generic "$SUITE/kernels/sv2_eltwise_bcast_rf.py" sv2_r64_c64_t32_input_stream 64 64 32 input_stream
+compile_run_generic "$SUITE/benches/sv2/sv2_eltwise_bcast_rf.py" sv2_r32_c32_t32_input_stream 32 32 32 input_stream
+compile_run_generic "$SUITE/benches/sv2/sv2_eltwise_bcast_rf.py" sv2_r32_c64_t32_input_stream 32 64 32 input_stream
+compile_run_generic "$SUITE/benches/sv2/sv2_eltwise_bcast_rf.py" sv2_r64_c64_t32_input_stream 64 64 32 input_stream
 
 "$PY" "$SUITE/harvest_report.py" 2>&1 | tee "$OUT/harvest_sv2.log" || true
 

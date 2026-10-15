@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SP3d — PTO-DSL twin of SP3: A5 bit-reinterpret e8m0→fp compose.
 
-Simt twin: kernels/sp3_sf_pack_ue8m0.py
+Simt twin: benches/sp3/sp3_sf_pack_ue8m0.py
 Primary tags: sp3d_m32_h128_g32_t32_{fp32,e8m0}
 
 **A5 path (pto-isa authoritative — Ascend950PR):**

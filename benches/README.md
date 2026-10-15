@@ -12,17 +12,17 @@ benches/<id>/
 ```
 
 - **Primary focus:** simt-asc, simd-pto, handwritten SIMD DSL.
-- **Deferred:** simt-pto SoftLib lowering (kernels still runnable via legacy oneshots).
-- Legacy paths `kernels/` and `kernels_ptodsl/` are **symlinks** into these folders so existing `oneshot_*.sh` keep working.
+- **Deferred:** simt-pto SoftLib lowering (sources still under benches/; deferred path not a focus).
+- Oneshots / harness call `benches/<id>/…` directly (no separate `kernels/` symlink layer).
 
 Run a single gate case (example SV1):
 
 ```bash
 python benches/sv1/sv1_stream_eltwise.py 256 32
 # or via symlink:
-python kernels/sv1_stream_eltwise.py 256 32
+python benches/sv1/sv1_stream_eltwise.py 256 32
 ```
 
 Case matrices are declared in each `config.toml` `[[cases]]` (see SV1 `suite = "explore"` for the size/thread ladder).
 
-SV1 full Simt/Simd explore case list, sensitivity plots (tile/thread), instruction breakdown, and LDS/STS.64/.128 rooftop: [`benches/sv1/ANALYSIS.md`](sv1/ANALYSIS.md).
+SV1 full Simt/Simd explore case list, sensitivity plots (tile/thread), instruction breakdown, and SIMD keynote (~85% of ~44 el/cyc): [`benches/sv1/ANALYSIS.md`](sv1/ANALYSIS.md).

@@ -66,6 +66,6 @@ run_one() {
   fi
   echo -e "${tag}\t${status}\t${wall:-NA}\t${maxabs:-NA}\trc=${rc}" | tee -a "$SUMMARY"
 }
-run_one "sv8d_r64_c128_g16_t32_live" "kernels_ptodsl/sv8d_case3_bcast.py" 64 128 16 32 live
-run_one "sv8d_r64_c128_g16_t32_spill_dist" "kernels_ptodsl/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
+run_one "sv8d_r64_c128_g16_t32_live" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 live
+run_one "sv8d_r64_c128_g16_t32_spill_dist" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
 echo "==== SV8 RETRY SUMMARY ===="; cat "$SUMMARY"

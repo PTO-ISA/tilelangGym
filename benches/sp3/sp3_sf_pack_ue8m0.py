@@ -29,7 +29,7 @@ Arms:
 live on the *d twin. Status until opsim: may be COMPILE_FAIL / UNRUN if Ascend
 lowering rejects reinterpret inside SimtVF — still prefer that over a LUT.
 
-**PTO-DSL twin:** ``kernels_ptodsl/sp3d_sf_pack_e8m0.py`` (VMI bit-shift compose).
+**PTO-DSL twin:** ``benches/sp3/sp3d_sf_pack_e8m0.py`` (VMI bit-shift compose).
 
 Workload remark: MX / UE8M0 scale path (pack/ISA micro, not KEEP/remat schedule).
 

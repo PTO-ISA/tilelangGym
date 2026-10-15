@@ -54,7 +54,7 @@ cp -f "$SUITE"/run_opsim_generic.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/run_opsim_topk.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_simt_vmi_compare.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 if [[ ! -f "$OV/build/lib/libtilelang.so" ]]; then
@@ -106,18 +106,18 @@ compile_run_generic() {
 }
 
 echo "==== PHASE SV5V (G=16: keep_in_rf vs ub_stream, lane-legal 1-D Parallel) ===="
-compile_run_generic "$SUITE/kernels/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_ub_stream  64 128 16 64 ub_stream
-compile_run_generic "$SUITE/kernels/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_keep_in_rf 64 128 16 64 keep_in_rf
+compile_run_generic "$SUITE/benches/sv5/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_ub_stream  64 128 16 64 ub_stream
+compile_run_generic "$SUITE/benches/sv5/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_keep_in_rf 64 128 16 64 keep_in_rf
 
 echo "==== PHASE SV6V (G=32: primary reload; optional keep probe) ===="
-compile_run_generic "$SUITE/kernels/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64_reload       64 128 32 64 reload
-compile_run_generic "$SUITE/kernels/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64_keep_in_warp 64 128 32 64 keep_in_warp
+compile_run_generic "$SUITE/benches/sv6/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64_reload       64 128 32 64 reload
+compile_run_generic "$SUITE/benches/sv6/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64_keep_in_warp 64 128 32 64 keep_in_warp
 
 echo "==== PHASE SV7V (G=128 + G=64: reload + chunked multiwarp_ub) ===="
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64_reload       64 128 128 64 reload
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64_multiwarp_ub 64 128 128 64 multiwarp_ub
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64_reload        64 128 64 64 reload
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64_multiwarp_ub  64 128 64 64 multiwarp_ub
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64_reload       64 128 128 64 reload
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64_multiwarp_ub 64 128 128 64 multiwarp_ub
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64_reload        64 128 64 64 reload
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64_multiwarp_ub  64 128 64 64 multiwarp_ub
 
 "$PY" "$SUITE/harvest_sv567_rfladder.py" "$OUT" 2>&1 | tee "$OUT/harvest_sv567_rfladder_run.log" || true
 cp -f "$OUT/RESULT.md" "$OUT/RESULT_sv567_rfladder.md" 2>/dev/null || true

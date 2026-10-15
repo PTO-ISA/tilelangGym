@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SP5d — PTO-DSL SIMD twin of Simt SP5 (sideband vs interleave).
 
-Simt twin: kernels/sp5_sideband_vs_interleave.py
+Simt twin: benches/sp5/sp5_sideband_vs_interleave.py
 Primary tags:
   sp5d_n64_h128_g32_qg32_t32_sideband
   sp5d_n64_h128_g32_qg32_t32_interleave

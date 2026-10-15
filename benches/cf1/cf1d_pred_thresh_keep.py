@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-CF1d — PTO-DSL explicit twin of Simt CF1 (thresh kill KEEP).
 
-Simt twin: kernels/cf1_pred_thresh_keep.py
+Simt twin: benches/cf1/cf1_pred_thresh_keep.py
 Primary tag: cf1d_e256_k8_t32_keep
 Mapping (3) scores KEEP in vregs; vcmp+vsel. No AABBCC / vf_fuse.
 """

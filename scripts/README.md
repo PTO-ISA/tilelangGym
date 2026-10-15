@@ -13,4 +13,4 @@ Repo-root `oneshot_sv1_e8192_t128_t512.sh` is a thin wrapper that `exec`s
 `regression/oneshot_sv1_e8192_t128_t512.sh` so the historic path still works.
 
 Oneshot and regression scripts `cd` to the repo root and prepend it to
-`PYTHONPATH`, so `common_*_harness.py` / `vf_mode.py` / `kernels/` keep working.
+`PYTHONPATH`, so `common_*_harness.py` / `vf_mode.py` / `benches/` keep working.

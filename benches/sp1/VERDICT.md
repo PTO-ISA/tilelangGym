@@ -1,8 +1,16 @@
-# VERDICT — SP1: Dual scatter KEEP/remat pos
+# VERDICT — SP1
+
+## Highlight
+
+See per-case table below. Suite rollup: [`reports/PASS_FAIL_PERF.md`](../../reports/PASS_FAIL_PERF.md).
 
 **Focus paths:** simt-asc (gate), simd-pto, handwritten SIMD DSL. **Deferred:** simt-pto SoftLib.
 
 **Pins:** TileLang remat tip `a3012088` ([tilelang#5](https://github.com/PTO-ISA/tilelang/pull/5)); full-table stamp `31483438` (2026-10-10); CANN cann_92b2; PTOAS 0.67.
+
+## Verdict
+
+Per-case status:
 
 ## Per-case (simt-asc)
 

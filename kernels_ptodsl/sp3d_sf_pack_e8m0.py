@@ -1,1 +1,0 @@
-../benches/sp3/sp3d_sf_pack_e8m0.py

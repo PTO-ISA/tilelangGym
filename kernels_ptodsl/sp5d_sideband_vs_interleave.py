@@ -1,1 +1,0 @@
-../benches/sp5/sp5d_sideband_vs_interleave.py

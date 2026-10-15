@@ -55,7 +55,7 @@ cp -f "$SUITE"/run_opsim_generic.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/run_opsim_topk.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_simt_vmi_compare.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 if [[ ! -f "$OV/build/lib/libtilelang.so" ]]; then
@@ -109,44 +109,44 @@ echo "==== PHASE SV1 stream eltwise (SimdVF via ST_VF_MODE) ===="
 # SV1: one T.Parallel file; mode via ST_VF_MODE (no sv1v_* twin)
 (
   export ST_VF_MODE=simd-pto
-  compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e256_t64 256 64
-  compile_run_generic "$SUITE/kernels/sv1_stream_eltwise.py" sv1_e2048_t64 2048 64
+  compile_run_generic "$SUITE/benches/sv1/sv1_stream_eltwise.py" sv1_e256_t64 256 64
+  compile_run_generic "$SUITE/benches/sv1/sv1_stream_eltwise.py" sv1_e2048_t64 2048 64
 )
 
 echo "==== PHASE SV2V live RF eltwise + scale bcast (SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv2v_eltwise_bcast_rf.py" sv2v_r32_c32_t64_frag_live 32 32 64 frag_live
-compile_run_generic "$SUITE/kernels/sv2v_eltwise_bcast_rf.py" sv2v_r32_c32_t64_reload 32 32 64 reload
+compile_run_generic "$SUITE/benches/sv2/sv2v_eltwise_bcast_rf.py" sv2v_r32_c32_t64_frag_live 32 32 64 frag_live
+compile_run_generic "$SUITE/benches/sv2/sv2v_eltwise_bcast_rf.py" sv2v_r32_c32_t64_reload 32 32 64 reload
 
 echo "==== PHASE SV3V GEMV Acc KEEP / split (SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv3v_gemv_partial_keep.py" sv3v_m24_vl64_k16_t64_keep 24 64 16 64 keep
-compile_run_generic "$SUITE/kernels/sv3v_gemv_partial_keep.py" sv3v_m32_vl64_k16_t64_keep 32 64 16 64 keep
-compile_run_generic "$SUITE/kernels/sv3v_gemv_partial_keep.py" sv3v_m32_vl64_k16_t64_split_cm16 32 64 16 64 split 16
+compile_run_generic "$SUITE/benches/sv3/sv3v_gemv_partial_keep.py" sv3v_m24_vl64_k16_t64_keep 24 64 16 64 keep
+compile_run_generic "$SUITE/benches/sv3/sv3v_gemv_partial_keep.py" sv3v_m32_vl64_k16_t64_keep 32 64 16 64 keep
+compile_run_generic "$SUITE/benches/sv3/sv3v_gemv_partial_keep.py" sv3v_m32_vl64_k16_t64_split_cm16 32 64 16 64 split 16
 
 echo "==== PHASE SV4V gather+psum keep_idx / remat_idx (SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv4v_index_gather_psum.py" sv4v_e256_b8_t64_keep_idx 256 8 64 keep_idx
-compile_run_generic "$SUITE/kernels/sv4v_index_gather_psum.py" sv4v_e256_b8_t64_remat_idx 256 8 64 remat_idx
-compile_run_generic "$SUITE/kernels/sv4v_index_gather_psum.py" sv4v_e256_b16_t64_keep_idx 256 16 64 keep_idx
-compile_run_generic "$SUITE/kernels/sv4v_index_gather_psum.py" sv4v_e256_b16_t64_remat_idx 256 16 64 remat_idx
+compile_run_generic "$SUITE/benches/sv4/sv4v_index_gather_psum.py" sv4v_e256_b8_t64_keep_idx 256 8 64 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4v_index_gather_psum.py" sv4v_e256_b8_t64_remat_idx 256 8 64 remat_idx
+compile_run_generic "$SUITE/benches/sv4/sv4v_index_gather_psum.py" sv4v_e256_b16_t64_keep_idx 256 16 64 keep_idx
+compile_run_generic "$SUITE/benches/sv4/sv4v_index_gather_psum.py" sv4v_e256_b16_t64_remat_idx 256 16 64 remat_idx
 
 echo "==== PHASE SV5V (small-G reduce → reduced eltwise, SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_keep_reg 64 128 16 64 keep_reg
-compile_run_generic "$SUITE/kernels/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_ub_reload 64 128 16 64 ub_reload
-compile_run_generic "$SUITE/kernels/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64 64 128 32 64
+compile_run_generic "$SUITE/benches/sv5/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_keep_reg 64 128 16 64 keep_reg
+compile_run_generic "$SUITE/benches/sv5/sv5v_reduce_small_eltwise.py" sv5v_r64_c128_g16_t64_ub_reload 64 128 16 64 ub_reload
+compile_run_generic "$SUITE/benches/sv6/sv6v_reduce_mid_eltwise.py" sv6v_r64_c128_g32_t64 64 128 32 64
 
 echo "==== PHASE SV7V (large-G reduce → reduced eltwise, SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64 64 128 64 64
-compile_run_generic "$SUITE/kernels/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64 64 128 128 64
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g64_t64 64 128 64 64
+compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64 64 128 128 64
 
 echo "==== PHASE SV8V Case-3 (live + spill_dist, SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
-compile_run_generic "$SUITE/kernels/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
+compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
+compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
 
 echo "==== PHASE SV9V topk e2e (SimdVF) ===="
 compile_run_topk() {
   local TAG=$1; shift
   echo "==== COMPILE $TAG (SimdVF/pto/overlay) ====" | tee -a "$SUMMARY"
   set +e
-  "$PY" "$SUITE/kernels/sv9v_topk_e2e.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
+  "$PY" "$SUITE/benches/sv9/sv9v_topk_e2e.py" "$@" 2>&1 | tee "$OUT/logs/compile_${TAG}.log"
   local RC=${PIPESTATUS[0]}
   set -e
   if [[ "$RC" -ne 0 || ! -f "$OUT/so/${TAG}.so" ]]; then

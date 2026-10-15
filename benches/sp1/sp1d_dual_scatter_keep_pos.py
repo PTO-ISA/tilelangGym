@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SP1d — PTO-DSL explicit twin of Simt SP1 keep_pos (dual scatter V,Sf).
 
-Simt twin: kernels/sp1_dual_scatter_vsf.py arm=keep_pos
+Simt twin: benches/sp1/sp1_dual_scatter_vsf.py arm=keep_pos
 Primary tag: sp1d_t32_k2_h128_g32_t32_keep_pos
 
 Fidelity:

@@ -80,22 +80,22 @@ emit_one() {
   echo "EMIT_OK $tag lines=$(wc -l < "$OUT/${tag}.mlir" | tr -d ' ')"
 }
 
-emit_one "cf1d_e256_k8_t32_keep" "kernels_ptodsl/cf1d_pred_thresh_keep.py" 256 8 32
-emit_one "cf2d_e256_k8_t32_remat" "kernels_ptodsl/cf2d_remat_thresh_kill_shared.py" 256 8 32
-emit_one "cf3d_e256_k8_t32_remat_idx" "kernels_ptodsl/cf3d_remat_idx.py" 256 8 32
-emit_one "cf4d_e256_t32_pfat5" "kernels_ptodsl/cf4d_nested_if.py" 256 32 5
-emit_one "cf5d_e256_t32_pnear5" "kernels_ptodsl/cf5d_div_ulp_branch.py" 256 32 5
-emit_one "cf6d_e256_t32_pnear5" "kernels_ptodsl/cf6d_newton_branch.py" 256 32 5
+emit_one "cf1d_e256_k8_t32_keep" "benches/cf1/cf1d_pred_thresh_keep.py" 256 8 32
+emit_one "cf2d_e256_k8_t32_remat" "benches/cf2/cf2d_remat_thresh_kill_shared.py" 256 8 32
+emit_one "cf3d_e256_k8_t32_remat_idx" "benches/cf3/cf3d_remat_idx.py" 256 8 32
+emit_one "cf4d_e256_t32_pfat5" "benches/cf4/cf4d_nested_if.py" 256 32 5
+emit_one "cf5d_e256_t32_pnear5" "benches/cf5/cf5d_div_ulp_branch.py" 256 32 5
+emit_one "cf6d_e256_t32_pnear5" "benches/cf6/cf6d_newton_branch.py" 256 32 5
 
-run_one "cf1d_e256_k8_t32_keep" "kernels_ptodsl/cf1d_pred_thresh_keep.py" 256 8 32
-run_one "cf2d_e256_k8_t32_remat" "kernels_ptodsl/cf2d_remat_thresh_kill_shared.py" 256 8 32
-run_one "cf3d_e256_k8_t32_remat_idx" "kernels_ptodsl/cf3d_remat_idx.py" 256 8 32
-run_one "cf4d_e256_t32_pfat5" "kernels_ptodsl/cf4d_nested_if.py" 256 32 5
-run_one "cf4d_e256_t32_pfat25" "kernels_ptodsl/cf4d_nested_if.py" 256 32 25
-run_one "cf5d_e256_t32_pnear5" "kernels_ptodsl/cf5d_div_ulp_branch.py" 256 32 5
-run_one "cf5d_e256_t32_pnear25" "kernels_ptodsl/cf5d_div_ulp_branch.py" 256 32 25
-run_one "cf6d_e256_t32_pnear5" "kernels_ptodsl/cf6d_newton_branch.py" 256 32 5
-run_one "cf6d_e256_t32_pnear25" "kernels_ptodsl/cf6d_newton_branch.py" 256 32 25
+run_one "cf1d_e256_k8_t32_keep" "benches/cf1/cf1d_pred_thresh_keep.py" 256 8 32
+run_one "cf2d_e256_k8_t32_remat" "benches/cf2/cf2d_remat_thresh_kill_shared.py" 256 8 32
+run_one "cf3d_e256_k8_t32_remat_idx" "benches/cf3/cf3d_remat_idx.py" 256 8 32
+run_one "cf4d_e256_t32_pfat5" "benches/cf4/cf4d_nested_if.py" 256 32 5
+run_one "cf4d_e256_t32_pfat25" "benches/cf4/cf4d_nested_if.py" 256 32 25
+run_one "cf5d_e256_t32_pnear5" "benches/cf5/cf5d_div_ulp_branch.py" 256 32 5
+run_one "cf5d_e256_t32_pnear25" "benches/cf5/cf5d_div_ulp_branch.py" 256 32 25
+run_one "cf6d_e256_t32_pnear5" "benches/cf6/cf6d_newton_branch.py" 256 32 5
+run_one "cf6d_e256_t32_pnear25" "benches/cf6/cf6d_newton_branch.py" 256 32 25
 
 echo "[ptodsl-cf1d-cf6d] done. SUMMARY:"
 cat "$SUMMARY"

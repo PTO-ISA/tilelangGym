@@ -151,9 +151,9 @@ else
     harvest_one "$tag" "$OUT/${tag}.log" "$odir"
   }
 
-  emit_one "cf6bd_e256_t32_phard5" "kernels_ptodsl/cf6bd_fat_hard_newton.py" 256 32 5
-  run_dsl "cf6bd_e256_t32_phard5" "kernels_ptodsl/cf6bd_fat_hard_newton.py" 256 32 5
-  run_dsl "cf6bd_e256_t32_phard25" "kernels_ptodsl/cf6bd_fat_hard_newton.py" 256 32 25
+  emit_one "cf6bd_e256_t32_phard5" "benches/cf6b/cf6bd_fat_hard_newton.py" 256 32 5
+  run_dsl "cf6bd_e256_t32_phard5" "benches/cf6b/cf6bd_fat_hard_newton.py" 256 32 5
+  run_dsl "cf6bd_e256_t32_phard25" "benches/cf6b/cf6bd_fat_hard_newton.py" 256 32 25
 fi
 
 echo "[cf6b-cf6bd] done. SUMMARY_harvest:"

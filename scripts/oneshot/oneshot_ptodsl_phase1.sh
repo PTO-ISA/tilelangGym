@@ -61,8 +61,8 @@ run_one() {
   fi
 }
 
-run_one "sv1d_e256_t32" "kernels_ptodsl/sv1d_stream_eltwise.py" 256 32
-run_one "cf1d_e256_k8_t32_keep" "kernels_ptodsl/cf1d_pred_thresh_keep.py" 256 8 32
-run_one "sp1d_t32_k2_h128_g32_t32_keep_pos" "kernels_ptodsl/sp1d_dual_scatter_keep_pos.py" 32 2 128 32 32
+run_one "sv1d_e256_t32" "benches/sv1/sv1d_stream_eltwise.py" 256 32
+run_one "cf1d_e256_k8_t32_keep" "benches/cf1/cf1d_pred_thresh_keep.py" 256 8 32
+run_one "sp1d_t32_k2_h128_g32_t32_keep_pos" "benches/sp1/sp1d_dual_scatter_keep_pos.py" 32 2 128 32 32
 
 echo "[ptodsl-phase1] done. Logs under $OUT"

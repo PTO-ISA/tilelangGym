@@ -1,1 +1,0 @@
-../benches/sv8/sv8v_case3_bcast.py

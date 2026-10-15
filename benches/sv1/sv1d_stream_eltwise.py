@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SV1d — PTO-DSL explicit twin of Simt SV1 (stream eltwise).
 
-Simt twin: kernels/sv1_stream_eltwise.py
+Simt twin: benches/sv1/sv1_stream_eltwise.py
 Primary tag: sv1d_e256_t32
 Mapping (1) ld+st+compute per VL chunk. No AABBCC / vf_fuse.
 """

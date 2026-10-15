@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run the Simt-family ST oneshots under the four ST_VF_MODE frame×target pairs.
-# Same kernels/T.Parallel source; vf_region picks T.SimtVF or T.SimdVF and
-# compile_target picks ascend or pto. kernels_ptodsl/ is not part of this regress.
+# Same T.Parallel source under benches/; vf_region picks T.SimtVF or T.SimdVF and
+# compile_target picks ascend or pto. benches/ is not part of this regress.
 #
 #   simt-asc   T.SimtVF  target=ascend   (aliases: simt, simtvf, simt-ascend)
 #   simt-pto   T.SimtVF  target=pto       (alias: simtvf-pto)

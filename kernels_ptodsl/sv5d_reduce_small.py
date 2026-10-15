@@ -1,1 +1,0 @@
-../benches/sv5/sv5d_reduce_small.py

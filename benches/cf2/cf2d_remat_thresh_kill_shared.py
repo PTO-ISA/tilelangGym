@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-CF2d — PTO-DSL explicit twin of Simt CF2 (remat + kill-in-shared).
 
-Simt twin: kernels/cf2_remat_thresh_kill_shared.py
+Simt twin: benches/cf2/cf2_remat_thresh_kill_shared.py
 Primary tag: cf2d_e256_k8_t32_remat
 Mapping (1): remat scores from UB each K; kill writes back to shared UB.
 Contrast CF1d mapping (3) KEEP scores in vregs across K.

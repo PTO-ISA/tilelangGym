@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-CF3d — PTO-DSL explicit twin of Simt CF3 (remat_idx kill).
 
-Simt twin: kernels/cf3_remat_idx.py
+Simt twin: benches/cf3/cf3_remat_idx.py
 Primary tag: cf3d_e256_k8_t32_remat_idx
 Mapping (3)+remat i: scores KEEP in vregs; remat lane index via vci each use;
 kill where i == victim[k]. No idxs KEEP buffer. No AABBCC / vf_fuse.

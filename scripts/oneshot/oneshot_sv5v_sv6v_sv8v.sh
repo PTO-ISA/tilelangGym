@@ -61,7 +61,7 @@ if [[ "$OUT" == "/tmp/st_simtvf_parallel" ]]; then
 fi
 RUNPY="$OUT/run_opsim_generic.py"
 [[ -f "$RUNPY" ]] || RUNPY=/tmp/run_opsim_generic.py
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py "$OUT"/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py "$OUT"/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 if [[ ! -f "$OV/build/lib/libtilelang.so" ]]; then
@@ -127,7 +127,7 @@ if has_phase sv5v; then
 echo "==== PHASE SV5V (small-G reduce → reduced eltwise, SimdVF) ===="
 # Twin of the Simt SV5 arm sweep: keep_reg (fragment/RF) vs ub_reload (shared UB
 # store + reload in a later Parallel loop). Same gold, arm suffix in the tag.
-SV5V=$SUITE/kernels/sv5v_reduce_small_eltwise.py
+SV5V=$SUITE/benches/sv5/sv5v_reduce_small_eltwise.py
 SV5V_SHAPES=${SV5V_SHAPES:-"64:128:16 128:128:16 64:128:8 64:128:32"}
 for sh in $SV5V_SHAPES; do
   IFS=: read -r SR SC SG <<< "$sh"
@@ -145,8 +145,8 @@ fi
 
 if has_phase sv8v; then
 echo "==== PHASE SV8V Case-3 (live + spill_dist, SimdVF) ===="
-compile_run_generic "$SUITE/kernels/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
-compile_run_generic "$SUITE/kernels/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
+compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
+compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
 fi
 
 ST_SIMTVF_OUT="$OUT" ST_SIMTVF_REPORTS="$OUT/reports" "$PY" "$SUITE/harvest_report.py" \

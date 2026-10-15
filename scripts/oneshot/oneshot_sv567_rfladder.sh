@@ -37,7 +37,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -82,23 +82,23 @@ compile_run_generic() {
 }
 
 echo "==== PHASE SV5 (G=16 small: group fits SIMD~32 regs / one SIMT thread) ===="
-compile_run_generic "$SUITE/kernels/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_in_rf 64 128 16 32 keep_in_rf
-compile_run_generic "$SUITE/kernels/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_ub_stream  64 128 16 32 ub_stream
+compile_run_generic "$SUITE/benches/sv5/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_in_rf 64 128 16 32 keep_in_rf
+compile_run_generic "$SUITE/benches/sv5/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_ub_stream  64 128 16 32 ub_stream
 
 echo "==== PHASE SV6 (G=32 mid: SIMD must reload; SIMT one-warp keep) ===="
-compile_run_generic "$SUITE/kernels/sv6_reduce_mid_eltwise.py" sv6_r64_c128_g32_t32_keep_in_warp 64 128 32 32 keep_in_warp
-compile_run_generic "$SUITE/kernels/sv6_reduce_mid_eltwise.py" sv6_r64_c128_g32_t32_reload       64 128 32 32 reload
+compile_run_generic "$SUITE/benches/sv6/sv6_reduce_mid_eltwise.py" sv6_r64_c128_g32_t32_keep_in_warp 64 128 32 32 keep_in_warp
+compile_run_generic "$SUITE/benches/sv6/sv6_reduce_mid_eltwise.py" sv6_r64_c128_g32_t32_reload       64 128 32 32 reload
 
 echo "==== PHASE SV7 (G=128 primary + G=64: needs ~4 warps + UB allreduce) ===="
-compile_run_generic "$SUITE/kernels/sv7_reduce_large_eltwise.py" sv7_r64_c128_g128_t32_multiwarp_ub 64 128 128 32 multiwarp_ub
-compile_run_generic "$SUITE/kernels/sv7_reduce_large_eltwise.py" sv7_r64_c128_g128_t32_reload       64 128 128 32 reload
-compile_run_generic "$SUITE/kernels/sv7_reduce_large_eltwise.py" sv7_r64_c128_g64_t32_multiwarp_ub  64 128 64 32 multiwarp_ub
-compile_run_generic "$SUITE/kernels/sv7_reduce_large_eltwise.py" sv7_r64_c128_g64_t32_reload        64 128 64 32 reload
+compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c128_g128_t32_multiwarp_ub 64 128 128 32 multiwarp_ub
+compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c128_g128_t32_reload       64 128 128 32 reload
+compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c128_g64_t32_multiwarp_ub  64 128 64 32 multiwarp_ub
+compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c128_g64_t32_reload        64 128 64 32 reload
 
 if [[ "${WITH_LEGACY:-0}" == "1" ]]; then
   echo "==== PHASE SV5 legacy post-reduce scale residency (historical rows) ===="
-  compile_run_generic "$SUITE/kernels/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_reg  64 128 16 32 keep_reg
-  compile_run_generic "$SUITE/kernels/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_ub_reload 64 128 16 32 ub_reload
+  compile_run_generic "$SUITE/benches/sv5/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_keep_reg  64 128 16 32 keep_reg
+  compile_run_generic "$SUITE/benches/sv5/sv5_reduce_small_eltwise.py" sv5_r64_c128_g16_t32_ub_reload 64 128 16 32 ub_reload
 fi
 
 "$PY" "$SUITE/harvest_sv567_rfladder.py" "$OUT" 2>&1 | tee "$OUT/harvest_sv567_rfladder_run.log" || true

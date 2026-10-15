@@ -56,7 +56,7 @@ fi
 export ST_SIMTVF_OUT=$OUT
 export PYTHONPATH="$SUITE:${PYTHONPATH:-}"
 
-KERNEL="$SUITE/kernels/sv1_stream_eltwise.py"
+KERNEL="$SUITE/benches/sv1/sv1_stream_eltwise.py"
 if [[ ! -f "$KERNEL" ]]; then
   KERNEL="$SUITE/benches/sv1/sv1_stream_eltwise.py"
 fi

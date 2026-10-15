@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SP2d — PTO-DSL twin of Simt SP2 (indexed gather→reduce).
 
-Simt twin: kernels/sp2_dual_gather_wreduce.py
+Simt twin: benches/sp2/sp2_dual_gather_wreduce.py
 Primary tags:
   sp2d_t32_k2_h128_g32_t32_{sf0|sf1}_{w0|w1}_{keep_acc|remat_acc}
 

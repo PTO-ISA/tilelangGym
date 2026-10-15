@@ -36,7 +36,7 @@ if [[ ! -f /tmp/run_cf_mb_opsim.py ]]; then
 fi
 cp -f "$SUITE"/run_opsim_*.py /tmp/ 2>/dev/null || true
 cp -f "$SUITE"/harvest_report.py /tmp/ 2>/dev/null || true
-sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/kernels/*.py /tmp/run_opsim_*.py 2>/dev/null || true
+sed -i 's/\r$//' "$SUITE"/*.py "$SUITE"/benches/*/*.py /tmp/run_opsim_*.py 2>/dev/null || true
 
 if [[ ! -f "$BK" ]]; then cp -a "$DEPS/build/lib/libtilelang.so" "$BK"; fi
 cp -a "$BK" "$DEPS/build/lib/libtilelang.so"
@@ -82,9 +82,9 @@ compile_run_generic() {
 
 echo "==== PHASE SV3 (GEMV partial-sum) ===="
 # M=24 keep, M=32 keep, M=32 split — VL=64 K=16 T=32
-compile_run_generic "$SUITE/kernels/sv3_gemv_partial_keep.py" sv3_m24_vl64_k16_t32_keep 24 64 16 32 keep
-compile_run_generic "$SUITE/kernels/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_keep 32 64 16 32 keep
-compile_run_generic "$SUITE/kernels/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_split_cm16 32 64 16 32 split 16
+compile_run_generic "$SUITE/benches/sv3/sv3_gemv_partial_keep.py" sv3_m24_vl64_k16_t32_keep 24 64 16 32 keep
+compile_run_generic "$SUITE/benches/sv3/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_keep 32 64 16 32 keep
+compile_run_generic "$SUITE/benches/sv3/sv3_gemv_partial_keep.py" sv3_m32_vl64_k16_t32_split_cm16 32 64 16 32 split 16
 
 "$PY" "$SUITE/harvest_report.py" 2>&1 | tee "$OUT/harvest_sv3.log" || true
 

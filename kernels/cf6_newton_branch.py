@@ -1,1 +1,0 @@
-../benches/cf6/cf6_newton_branch.py

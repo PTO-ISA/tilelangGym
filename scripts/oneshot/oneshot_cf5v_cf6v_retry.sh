@@ -42,9 +42,9 @@ run1() {
   set -e
   echo "$TAG $(grep -E '^PASS|^FAIL' "$OUT/opsim_${TAG}.log" | tail -1) us=$(grep core0.veccore0 "$OUT/opsim_${TAG}.log" | head -2 | tr '\n' ' ')" | tee -a "$SUMMARY"
 }
-run1 "$SUITE/kernels/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear5 256 64 5
-run1 "$SUITE/kernels/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear25 256 64 25
-run1 "$SUITE/kernels/cf6v_newton_branch.py" cf6v_e256_t64_pnear5 256 64 5
-run1 "$SUITE/kernels/cf6v_newton_branch.py" cf6v_e256_t64_pnear25 256 64 25
+run1 "$SUITE/benches/cf5/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear5 256 64 5
+run1 "$SUITE/benches/cf5/cf5v_div_ulp_branch.py" cf5v_e256_t64_pnear25 256 64 25
+run1 "$SUITE/benches/cf6/cf6v_newton_branch.py" cf6v_e256_t64_pnear5 256 64 5
+run1 "$SUITE/benches/cf6/cf6v_newton_branch.py" cf6v_e256_t64_pnear25 256 64 25
 cat "$SUMMARY"
 echo DONE_CF5V_CF6V_RETRY

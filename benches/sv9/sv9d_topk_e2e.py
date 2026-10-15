@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SV9d — PTO-DSL twin of Simt SV9 (topk e2e KEEP / remat).
 
-Simt: kernels/sv9_topk_e2e.py
+Simt: benches/sv9/sv9_topk_e2e.py
 Phase2: keep @ sv9d_e256_k8_t32_keep; also remat_scores, remat_idx
 
 Mapping:

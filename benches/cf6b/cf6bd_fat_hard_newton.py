@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-CF6bd — PTO-DSL lockstep twin of CF6b (fat hard / thin easy).
 
-Simt twin: kernels/cf6b_fat_hard_newton.py
+Simt twin: benches/cf6b/cf6b_fat_hard_newton.py
 Design: reports/ST_CF6_DIVERGENCE_CASE.md
 
 Fair vector rooftop: ALWAYS run the fat hard pipeline (seed + N_HARD Newton

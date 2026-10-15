@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ST-SP6d — SIMD (PTO-DSL) soft 4-bit e2m1 LUT dequant (pack-decode appendix).
 
-Simt twin: kernels/sp6_fp4_unpack.py
+Simt twin: benches/sp6/sp6_fp4_unpack.py
 Primary tags:
   sp6d_n32_h128_g32_t32_{unpack|unpack_sf}_{gather|vselr}
 
