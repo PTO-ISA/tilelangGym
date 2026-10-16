@@ -24,7 +24,17 @@ def build_sv1(E: int, threads: int):
     import tilelang.language as T
 
     mode = resolve_vf_mode()
-    use_shared_temps = mode.startswith("simd")
+    # ST_SV1_TEMPS: fragment|shared force temps layout; else simd→shared, simt→fragment.
+    temps_env = (os.environ.get("ST_SV1_TEMPS") or "").strip().lower()
+    if temps_env in ("fragment", "frag", "rf"):
+        use_shared_temps = False
+        temps_tag = "frag"
+    elif temps_env in ("shared", "ub", "ubuf"):
+        use_shared_temps = True
+        temps_tag = "shared"
+    else:
+        use_shared_temps = mode.startswith("simd")
+        temps_tag = "shared" if use_shared_temps else "frag"
 
     @T.prim_func
     def main(
@@ -54,7 +64,7 @@ def build_sv1(E: int, threads: int):
                     c_ub[i] = t3[i]
             T.copy(c_ub, C)
 
-    return main
+    return main, temps_tag
 
 
 def main():
@@ -62,9 +72,10 @@ def main():
     boot()
     E = int(sys.argv[1]) if len(sys.argv) > 1 else 256
     threads = int(sys.argv[2]) if len(sys.argv) > 2 else 32
-    # Tag is shape-only; ST_VF_MODE selects frame/target (logged by harness).
-    tag = f"sv1_e{E}_t{threads}"
-    so = compile_prim(build_sv1(E, threads), tag)
+    # Tag includes temps mode so so/logs don't collide across ST_SV1_TEMPS.
+    prim, temps_tag = build_sv1(E, threads)
+    tag = f"sv1_e{E}_t{threads}_{temps_tag}"
+    so = compile_prim(prim, tag)
     print("SO", so) if so else None
     return 0 if so else 1
 

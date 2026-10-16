@@ -1,0 +1,421 @@
+[
+  {
+    "tag": "sv1_e8192_t128_frag",
+    "temps": "frag",
+    "E": 8192,
+    "T": 128,
+    "wall_us": 2.6,
+    "VF_cyc": 4680,
+    "el_per_cyc": 1.7504273504273504,
+    "LDS": 128,
+    "STS": 64,
+    "FADD": 256,
+    "IADD": 192,
+    "opsim": "PASS maxabs=0.0",
+    "float_arrays": [
+      "float t1[64]",
+      "float t2[64]",
+      "float t3[64]"
+    ],
+    "top": [
+      [
+        "SIMT_SHFI",
+        644
+      ],
+      [
+        "SIMT_LOP3",
+        512
+      ],
+      [
+        "SIMT_FADD",
+        256
+      ],
+      [
+        "SIMT_MOV",
+        256
+      ],
+      [
+        "SIMT_IADD_I",
+        192
+      ],
+      [
+        "SIMT_LDS",
+        128
+      ],
+      [
+        "SIMT_STS",
+        64
+      ],
+      [
+        "MOV_XD_IMM",
+        20
+      ],
+      [
+        "MOVK",
+        13
+      ],
+      [
+        "MOV_XD_SPR",
+        9
+      ],
+      [
+        "SIMT_S2R",
+        8
+      ],
+      [
+        "MOV_SPR_XN",
+        6
+      ],
+      [
+        "SIMT_LEA",
+        4
+      ],
+      [
+        "SIMT_END",
+        4
+      ],
+      [
+        "SBITSET",
+        4
+      ]
+    ],
+    "compile": "OK"
+  },
+  {
+    "tag": "sv1_e8192_t128_shared",
+    "temps": "shared",
+    "E": 8192,
+    "T": 128,
+    "wall_us": 4.14,
+    "VF_cyc": 7450,
+    "el_per_cyc": 1.0995973154362415,
+    "LDS": 128,
+    "STS": 256,
+    "FADD": 256,
+    "IADD": 384,
+    "opsim": "PASS maxabs=0.0",
+    "float_arrays": [],
+    "top": [
+      [
+        "SIMT_SHFI",
+        644
+      ],
+      [
+        "SIMT_LOP3",
+        512
+      ],
+      [
+        "SIMT_IADD_I",
+        384
+      ],
+      [
+        "SIMT_STS",
+        256
+      ],
+      [
+        "SIMT_FADD",
+        256
+      ],
+      [
+        "SIMT_MOV",
+        256
+      ],
+      [
+        "SIMT_LDS",
+        128
+      ],
+      [
+        "MOV_XD_IMM",
+        20
+      ],
+      [
+        "MOVK",
+        13
+      ],
+      [
+        "MOV_XD_SPR",
+        9
+      ],
+      [
+        "SIMT_S2R",
+        8
+      ],
+      [
+        "MOV_SPR_XN",
+        6
+      ],
+      [
+        "SIMT_END",
+        4
+      ],
+      [
+        "SIMT_LEA",
+        4
+      ],
+      [
+        "SBITSET",
+        4
+      ]
+    ],
+    "compile": "OK"
+  },
+  {
+    "tag": "sv1_e8192_t512_frag",
+    "temps": "frag",
+    "E": 8192,
+    "T": 512,
+    "wall_us": 1.89,
+    "VF_cyc": 3405,
+    "el_per_cyc": 2.4058737151248164,
+    "LDS": 128,
+    "STS": 64,
+    "FADD": 256,
+    "IADD": 192,
+    "opsim": "PASS maxabs=0.0",
+    "float_arrays": [
+      "float t1[16]",
+      "float t2[16]",
+      "float t3[16]"
+    ],
+    "top": [
+      [
+        "SIMT_SHFI",
+        656
+      ],
+      [
+        "SIMT_LOP3",
+        512
+      ],
+      [
+        "SIMT_FADD",
+        256
+      ],
+      [
+        "SIMT_MOV",
+        256
+      ],
+      [
+        "SIMT_IADD_I",
+        192
+      ],
+      [
+        "SIMT_LDS",
+        128
+      ],
+      [
+        "SIMT_STS",
+        64
+      ],
+      [
+        "SIMT_S2R",
+        32
+      ],
+      [
+        "MOV_XD_IMM",
+        20
+      ],
+      [
+        "SIMT_LEA",
+        16
+      ],
+      [
+        "SIMT_END",
+        16
+      ],
+      [
+        "MOVK",
+        13
+      ],
+      [
+        "MOV_XD_SPR",
+        9
+      ],
+      [
+        "MOV_SPR_XN",
+        6
+      ],
+      [
+        "SBITSET",
+        4
+      ]
+    ],
+    "compile": "OK"
+  },
+  {
+    "tag": "sv1_e8192_t512_shared",
+    "temps": "shared",
+    "E": 8192,
+    "T": 512,
+    "wall_us": 3.8,
+    "VF_cyc": 6840,
+    "el_per_cyc": 1.1976608187134503,
+    "LDS": 128,
+    "STS": 256,
+    "FADD": 256,
+    "IADD": 384,
+    "opsim": "PASS maxabs=0.0",
+    "float_arrays": [],
+    "top": [
+      [
+        "SIMT_SHFI",
+        656
+      ],
+      [
+        "SIMT_LOP3",
+        512
+      ],
+      [
+        "SIMT_IADD_I",
+        384
+      ],
+      [
+        "SIMT_STS",
+        256
+      ],
+      [
+        "SIMT_FADD",
+        256
+      ],
+      [
+        "SIMT_MOV",
+        256
+      ],
+      [
+        "SIMT_LDS",
+        128
+      ],
+      [
+        "SIMT_S2R",
+        32
+      ],
+      [
+        "MOV_XD_IMM",
+        20
+      ],
+      [
+        "SIMT_LEA",
+        16
+      ],
+      [
+        "SIMT_END",
+        16
+      ],
+      [
+        "MOVK",
+        13
+      ],
+      [
+        "MOV_XD_SPR",
+        9
+      ],
+      [
+        "MOV_SPR_XN",
+        6
+      ],
+      [
+        "SBITSET",
+        4
+      ]
+    ],
+    "compile": "OK"
+  },
+  {
+    "tag": "sv1_e16384_t128_frag",
+    "temps": "frag",
+    "E": 16384,
+    "T": 128,
+    "wall_us": 5.02,
+    "VF_cyc": 9031,
+    "el_per_cyc": 1.814195548665707,
+    "LDS": 256,
+    "STS": 128,
+    "FADD": 512,
+    "IADD": 384,
+    "opsim": "PASS maxabs=0.0",
+    "float_arrays": [
+      "float t1[128]",
+      "float t2[128]",
+      "float t3[128]"
+    ],
+    "top": [
+      [
+        "SIMT_SHFI",
+        1284
+      ],
+      [
+        "SIMT_LOP3",
+        1024
+      ],
+      [
+        "SIMT_FADD",
+        512
+      ],
+      [
+        "SIMT_MOV",
+        512
+      ],
+      [
+        "SIMT_IADD_I",
+        384
+      ],
+      [
+        "SIMT_LDS",
+        256
+      ],
+      [
+        "SIMT_STS",
+        128
+      ],
+      [
+        "MOV_XD_IMM",
+        20
+      ],
+      [
+        "MOVK",
+        15
+      ],
+      [
+        "MOV_XD_SPR",
+        9
+      ],
+      [
+        "SIMT_S2R",
+        8
+      ],
+      [
+        "MOV_SPR_XN",
+        6
+      ],
+      [
+        "SIMT_LEA",
+        4
+      ],
+      [
+        "SIMT_END",
+        4
+      ],
+      [
+        "SBITSET",
+        4
+      ]
+    ],
+    "compile": "OK"
+  },
+  {
+    "tag": "sv1_e16384_t128_shared",
+    "temps": "shared",
+    "E": 16384,
+    "T": 128,
+    "wall_us": null,
+    "VF_cyc": null,
+    "el_per_cyc": null,
+    "LDS": 0,
+    "STS": 0,
+    "FADD": 0,
+    "IADD": 0,
+    "opsim": "FAIL maxabs=492.489990234375",
+    "float_arrays": [],
+    "top": [],
+    "compile": "OK"
+  }
+]
