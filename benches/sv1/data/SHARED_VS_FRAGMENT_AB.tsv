@@ -1,0 +1,7 @@
+tag	temps	E	T	compile	opsim	maxabs	wall_us	VF_cyc	el_per_cyc	LDS	STS	FADD	IADD	layout_note
+sv1_e8192_t128_frag	frag	8192	128	OK	PASS maxabs=0.0	0.0	2.6000	4680	1.7504	0	0	256	0	src=sv1_e8192_t128_frag_source.txt;t1[]=['64'];t2[]=['64'];t3[]=['64'];has___ubuf__;expect_RF_per_thread_arrays;saw_t1_array;float_arrays=t1[64],t2[64],t3[64]
+sv1_e8192_t128_shared	shared	8192	128	OK	PASS maxabs=0.0	0.0	4.1400	7450	1.0996	0	0	256	0	src=sv1_e8192_t128_shared_source.txt;has___ubuf__;expect_UB_shared_temps
+sv1_e8192_t512_frag	frag	8192	512	OK	PASS maxabs=0.0	0.0	1.8900	3405	2.4059	0	0	256	0	src=sv1_e8192_t512_frag_source.txt;t1[]=['16'];t2[]=['16'];t3[]=['16'];has___ubuf__;expect_RF_per_thread_arrays;saw_t1_array;float_arrays=t1[16],t2[16],t3[16]
+sv1_e8192_t512_shared	shared	8192	512	OK	PASS maxabs=0.0	0.0	3.8000	6840	1.1977	0	0	256	0	src=sv1_e8192_t512_shared_source.txt;has___ubuf__;expect_UB_shared_temps
+sv1_e16384_t128_frag	frag	16384	128	OK	PASS maxabs=0.0	0.0	5.0200	9031	1.8142	0	0	512	0	src=sv1_e16384_t128_frag_source.txt;t1[]=['128'];t2[]=['128'];t3[]=['128'];has___ubuf__;expect_RF_per_thread_arrays;saw_t1_array;float_arrays=t1[128],t2[128],t3[128]
+sv1_e16384_t128_shared	shared	16384	128	OK	FAIL maxabs=492.489990234375	492.489990234375				0	0	0	0	src=sv1_e16384_t128_shared_source.txt;has___ubuf__;expect_UB_shared_temps
