@@ -60,3 +60,16 @@ Compare point: **Simt TILE=8192 @ T512 = 2.4006 el/cyc** vs **SIMD E=16384 = 31.
 
 ## Mix note (codegen)
 New tip: LDS:FADD:STS ≈ 256:512:128 (vs old 512:512:256 .64). Consistent with float4 / wider vector default on e700041f — higher LDS width but lower el/cyc in this tight-add schedule.
+
+## §4.2 extension — T=1024 / T=2048 (2026-10-17 17:40–17:41 Asia/Hong_Kong)
+
+Same OUT `/tmp/sv1_aligned_e16k_tile8k_20261017`, same pins (cann_92b2 / e700041f / Ascend950PR_9599 / ST_VF_MODE=simt-asc). Script: `oneshot_extend_T1024_2048.sh`.
+
+| T | VF_cyc | el/cyc | IPC_body | us | status |
+|---|--------|--------|----------|-----|--------|
+| 1024 | 6857 | **2.3894** | 0.6160 | 8.1 | PASS |
+| 2048 | 11270 | **1.4538** | 0.5395 | 10.55 | PASS |
+
+**Turning point:** at E=16K TILE=8K, el/cyc rises 128→256→**512 (2.40 peak)**, then **flat/slight drop @1024 (2.39)**, then **sharp drop @2048 (1.45)**. Not monotonic beyond T512.
+
+Full ladder (TILE=8192): T128 **1.99** · T256 **2.33** · T512 **2.40** · T1024 **2.39** · T2048 **1.45**.

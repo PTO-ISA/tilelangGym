@@ -106,5 +106,41 @@
     "IPC_body": "0.6190",
     "source": "new",
     "csv": "/tmp/sv1_aligned_e16k_tile8k_20261017/opsim_sv1tt_e16384_tile16384_t512/OPPROF_20261017151308_PNPPPBTTKWWEGWPO/simulator/core0.veccore0/core0.veccore0_instr_exe.csv"
+  },
+  {
+    "tag": "sv1tt_e16384_tile8192_t1024",
+    "E": 16384,
+    "TILE": 8192,
+    "T": 1024,
+    "ept": 8,
+    "status": "PASS",
+    "us": "8.1",
+    "VF_cyc": 6857,
+    "elems_per_cyc": "2.3894",
+    "LDS": 256,
+    "FADD": 512,
+    "STS": 128,
+    "IADD": 768,
+    "IPC_body": "0.6160",
+    "source": "new",
+    "csv": "/tmp/sv1_aligned_e16k_tile8k_20261017/opsim_sv1tt_e16384_tile8192_t1024/OPPROF_20261017174018_KGTOFRZPCMIKLCEU/simulator/core0.veccore0/core0.veccore0_instr_exe.csv"
+  },
+  {
+    "tag": "sv1tt_e16384_tile8192_t2048",
+    "E": 16384,
+    "TILE": 8192,
+    "T": 2048,
+    "ept": 4,
+    "status": "PASS",
+    "us": "10.55",
+    "VF_cyc": 11270,
+    "elems_per_cyc": "1.4538",
+    "LDS": 256,
+    "FADD": 512,
+    "STS": 128,
+    "IADD": 768,
+    "IPC_body": "0.5395",
+    "source": "new",
+    "csv": "/tmp/sv1_aligned_e16k_tile8k_20261017/opsim_sv1tt_e16384_tile8192_t2048/OPPROF_20261017174057_CHPQQKVTGEAAEGJA/simulator/core0.veccore0/core0.veccore0_instr_exe.csv"
   }
 ]
