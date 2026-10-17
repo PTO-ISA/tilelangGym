@@ -3,6 +3,9 @@
 
 Multi-VF (one VF per tile): sum VF cycles for overall; compute mid-body
 IPC inside each VF interval (15–85%), then pool. Inter-tile MTE gaps excluded.
+
+Plot series: one segment per VF with NaN breaks between VFs so matplotlib
+does not draw a diagonal across the inter-tile MTE gap.
 """
 from __future__ import annotations
 
@@ -21,7 +24,7 @@ import numpy as np
 WIN_CYC = 30.0
 STEP = 1.0
 ROOF_DERIVED = 42.67
-ROOF_LOK = 44.0
+ROOF_THEORY = 44.0  # theory rooftop (design target)
 VL = 64
 
 
@@ -78,6 +81,12 @@ def sliding(vld, vst, vadd, vfs, vf_rows, vf_cyc, E: int):
         def to_plot(ts):
             return (ts - global_t0) * us2cyc_plot
 
+        # Break series between VFs so ax.plot does not connect across MTE gap
+        if all_ts:
+            all_ts.append(float("nan"))
+            all_ipcs.append(float("nan"))
+            all_els.append(float("nan"))
+
         # issues belonging to this VF window
         t_end = vf_ts + vf_dur
         local_issues = []
@@ -88,7 +97,6 @@ def sliding(vld, vst, vadd, vfs, vf_rows, vf_cyc, E: int):
             local_issues.append(
                 {
                     "c": to_local(e["ts"]),
-                    "plot_c": to_plot(e["ts"]),
                     "name": name,
                     "el_st": VL if name == "RV_VSTI" else 0,
                 }
@@ -97,7 +105,6 @@ def sliding(vld, vst, vadd, vfs, vf_rows, vf_cyc, E: int):
             continue
         ic = [x["c"] for x in local_issues]
         el_st = [x["el_st"] for x in local_issues]
-        plot_c = [x["plot_c"] for x in local_issues]
         body_start, body_end = ic[0], ic[-1]
         span = body_end - body_start
         mid_lo = body_start + 0.15 * span
@@ -113,10 +120,9 @@ def sliding(vld, vst, vadd, vfs, vf_rows, vf_cyc, E: int):
             n = hi - lo
             ipc = n / WIN_CYC
             el = sum(el_st[lo:hi]) / WIN_CYC
-            # plot x at center in global plot coords
-            # approximate: map local center via linear from body
-            frac = ((t + WIN_CYC / 2) - body_start) / span if span > 0 else 0
-            center_plot = plot_c[0] + frac * (plot_c[-1] - plot_c[0])
+            # Real wall→plot cycle of the window center (not frac of first/last issue)
+            wall_center = vf_ts + (t + WIN_CYC / 2) / us2cyc
+            center_plot = to_plot(wall_center)
             all_ts.append(center_plot)
             all_ipcs.append(ipc)
             all_els.append(el)
@@ -149,15 +155,16 @@ def sliding(vld, vst, vadd, vfs, vf_rows, vf_cyc, E: int):
         "peak_excl_fill_drain_ipc": peak_excl,
         "peak_mid_ipc": pct(mid25_ipcs, 95) if mid25_ipcs else float("nan"),
         "early_fill_ipc": early_ipc,
-        "n_windows": len(all_ipcs),
+        "n_windows": int(np.sum(~np.isnan(all_ipcs))) if all_ipcs else 0,
         "n_mid_windows": len(mid_ipcs),
     }
-    return np.array(all_ts), np.array(all_ipcs), np.array(all_els), summary
+    return np.array(all_ts, dtype=float), np.array(all_ipcs, dtype=float), np.array(all_els, dtype=float), summary
 
 
 def plot(ts, ipcs, els, summary, out_png: Path, title: str, E: int):
     fig, ax1 = plt.subplots(figsize=(11, 5.2))
     ax2 = ax1.twinx()
+    # NaNs between VFs create blank gaps (no diagonal across inter-tile MTE)
     ax1.plot(ts, ipcs, color="C0", lw=1.0, label="IPC (30-cyc win, per-VF)")
     ax2.plot(ts, els, color="C1", lw=1.0, alpha=0.85, label="el/cyc via ST (30-cyc)")
     ax1.axhline(
@@ -169,7 +176,13 @@ def plot(ts, ipcs, els, summary, out_png: Path, title: str, E: int):
         label=f"mid-med IPC={summary['mid_med_ipc']:.2f}",
     )
     ax2.axhline(ROOF_DERIVED, color="0.35", ls=":", lw=1.2, label=f"derived roof {ROOF_DERIVED}")
-    ax2.axhline(ROOF_LOK, color="0.55", ls="-.", lw=1.0, label=f"Lok ~{ROOF_LOK}")
+    ax2.axhline(
+        ROOF_THEORY,
+        color="0.55",
+        ls="-.",
+        lw=1.0,
+        label=f"theory rooftop ~{ROOF_THEORY:.0f}",
+    )
     ax1.set_xlabel("cycle (from first VF start; gaps = inter-tile MTE)")
     ax1.set_ylabel("IPC")
     ax2.set_ylabel("el/cyc")
@@ -180,8 +193,8 @@ def plot(ts, ipcs, els, summary, out_png: Path, title: str, E: int):
         f"mid-med IPC={summary['mid_med_ipc']:.2f} → {summary['mid_med_el']:.1f} el/cyc  |  "
         f"peak excl fill/drain IPC={summary['peak_excl_fill_drain_ipc']:.2f}  "
         f"peak mid≈{summary['peak_mid_ipc']:.2f}  early fill={summary['early_fill_ipc']:.2f}  |  "
-        f"vs roof {ROOF_DERIVED}: mid {100 * summary['mid_med_el'] / ROOF_DERIVED:.0f}%  "
-        f"overall {100 * summary['overall_el_per_cyc'] / ROOF_LOK:.0f}% of ~{ROOF_LOK}"
+        f"vs derived roof {ROOF_DERIVED}: mid {100 * summary['mid_med_el'] / ROOF_DERIVED:.0f}%  "
+        f"overall {100 * summary['overall_el_per_cyc'] / ROOF_THEORY:.0f}% of theory rooftop (~{ROOF_THEORY:.0f})"
     )
     fig.text(0.5, 0.01, footer, ha="center", va="bottom", fontsize=8, wrap=True)
     h1, l1 = ax1.get_legend_handles_labels()

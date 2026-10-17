@@ -44,17 +44,17 @@ Handwritten DSL **VL=64**, **tiled** short-live stream @ fixed **E=16384** (`dat
 
 Kernel: `sv1dt_*` / `scripts/gen_sv1dt_kernel.py` — per tile MTE load A/B → VL=64 vload/vadd/vstore → MTE store C. Tag `sv1dt_e16384_tile{TILE}_vl64`.
 
-**Theory est (Lok): ~44 el/cyc.** Plot SoT on `plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png` uses derived roof **42.67** (IPC→el conversion); cite Lok’s **~44** as the design target and **42.67** as the plot’s derived roof.
+**Theory rooftop: ~44 el/cyc.** Plot SoT on `plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png` uses derived roof **42.67** (IPC→el conversion); cite **theory rooftop ~44** as the design target and **42.67** as the plot’s derived roof.
 
 From that same plot footer (authoritative mid-body IPC @ **E=16K TILE=8K**):
 
 | Metric | Value | vs roof |
 |--------|------:|---------|
-| Mid-body median IPC | **2.20** → **~34.1 el/cyc** | **≈80%** of 42.67 · **≈78%** of 44 |
+| Mid-body median IPC | **2.20** → **~34.1 el/cyc** | **≈80%** of 42.67 · **≈78%** of theory rooftop (~44) |
 | Peak excl fill/drain IPC | 2.77 | — |
 | Peak mid IPC | 2.63 | — |
 | Early fill IPC | 3.37 | — |
-| Overall VF (TILE8K) | **29.26 el/cyc** | **≈66%** of 44 · **≈69%** of 42.67 |
+| Overall VF (TILE8K) | **29.26 el/cyc** | **≈66%** of theory rooftop (~44) · **≈69%** of 42.67 |
 
 ![SIMD E16K TILE8K IPC](plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png)
 
@@ -67,7 +67,7 @@ From that same plot footer (authoritative mid-body IPC @ **E=16K TILE=8K**):
 | **8192** | **29.26** | **2.40** | **~12×** |
 | 16384 | 31.51 | 2.44 | ~13× |
 
-**Takeaway:** at matched **TILE=8K E=16K**, SIMD DSL lands **29.26 el/cyc** overall VF (~66% of Lok’s ~44). Vs Simt TILE8K@T512 (**2.40**), SIMD is ~**12×**. Larger TILE amortizes per-tile MTE fill/drain (2K→16K: 19.9→31.5 el/cyc). Prior whole-E E-ladder is appendix-only — not the §3 compare SoT.
+**Takeaway:** at matched **TILE=8K E=16K**, SIMD DSL lands **29.26 el/cyc** overall VF (~66% of theory rooftop ~44). Vs Simt TILE8K@T512 (**2.40**), SIMD is ~**12×**. Larger TILE amortizes per-tile MTE fill/drain (2K→16K: 19.9→31.5 el/cyc). Prior whole-E E-ladder is appendix-only — not the §3 compare SoT.
 
 
 
@@ -175,13 +175,13 @@ SoftLib CCE A-only LDS.b32+const, E=8192 T=128 (reports under `/workspace/st_out
 
 | Path | Measured | Roof framing | % of roof |
 |------|----------|--------------|----------:|
-| **SIMD DSL VL=64 (TILE8K@E16K)** | **29.26 el/cyc** overall VF; mid-body **~34.1** | Lok **~44** (plot **42.67**) | **~66%** overall · mid **~80%** of 42.67 |
+| **SIMD DSL VL=64 (TILE8K@E16K)** | **29.26 el/cyc** overall VF; mid-body **~34.1** | theory rooftop **~44** (plot derived **42.67**) | **~66%** overall · mid **~80%** of 42.67 |
 | **Simt aligned stock (TILE8K@T512)** | **2.40** el/cyc | LD.64 A+B **~8** | **~30%** |
 | same Simt vs alt roof | 2.40 | 1R+1W@128B **16** | **~15%** |
 | CCE hand (A-only LDS window) | **101 B/cyc** | 128 B | **79%** window BW |
 | CCE manual T128 whole-VF | **9.29** el/cyc | T1024 **9.89** / LDS-win **25.3** | **~94%** of T1024 · **~37%** of LDS-win roof |
 
-**Bottom line:** SIMD DSL tiled @ **E=16K TILE=8K** delivers **29.26 el/cyc** overall VF (**~66% of ~44**). Aligned Simt stock (**TILE=8192 @ T=512**) is **2.40 el/cyc** — about **30%** of the **~8** LD.64 A+B theory (**~15%** on the 16 el/cyc 1R+1W roof). Matched-TILE head-to-head: SIMD **29.26** vs Simt **2.40** (~**12×**). CCE hand work shows LDS BW *can* approach the 128 B roof on A-only windows (~79%); manual T128 schedule reaches **9.29** el/cyc (**~94%** of T1024) but **MI-off is worse** — need more warps for the whole-VF roof, not just a better MI order.
+**Bottom line:** SIMD DSL tiled @ **E=16K TILE=8K** delivers **29.26 el/cyc** overall VF (**~66% of theory rooftop ~44**). Aligned Simt stock (**TILE=8192 @ T=512**) is **2.40 el/cyc** — about **30%** of the **~8** LD.64 A+B theory (**~15%** on the 16 el/cyc 1R+1W roof). Matched-TILE head-to-head: SIMD **29.26** vs Simt **2.40** (~**12×**). CCE hand work shows LDS BW *can* approach the 128 B roof on A-only windows (~79%); manual T128 schedule reaches **9.29** el/cyc (**~94%** of T1024) but **MI-off is worse** — need more warps for the whole-VF roof, not just a better MI order.
 
 ---
 
