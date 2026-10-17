@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """30-cyc sliding-window IPC / el/cyc for SV1d tiled SIMD (chrome-trace).
 
-Handles multi-VF kernels (one VF per tile): sums VF cycles, and only
-slides windows inside VF intervals so inter-tile MTE gaps do not zero mid-IPC.
+Multi-VF (one VF per tile): sum VF cycles for overall; compute mid-body
+IPC inside each VF interval (15–85%), then pool. Inter-tile MTE gaps excluded.
 """
 from __future__ import annotations
 
@@ -32,93 +32,99 @@ def load(trace: Path, instr: Path):
     vld = sorted([e for e in rv if e["name"] == "RV_VLDI"], key=lambda e: e["ts"])
     vst = sorted([e for e in rv if e["name"] == "RV_VSTI"], key=lambda e: e["ts"])
     vadd = sorted([e for e in rv if e["name"] == "RV_VADD"], key=lambda e: e["ts"])
-    vfs = sorted(
-        [e for e in rv if e.get("name") == "VF" or str(e.get("name", "")).startswith("VF")],
-        key=lambda e: e["ts"],
-    )
-    vf_cyc = 0
+    vfs = sorted([e for e in rv if e.get("name") == "VF"], key=lambda e: e["ts"])
+    vf_rows = []
     for r in csv.DictReader(open(instr)):
         name = (r.get("instr") or "").strip()
         if name in ("VF", "VF_SIMD", "VF_SIMT") or name.startswith("VF_"):
-            vf_cyc += int(float(r["cycles"]))
+            vf_rows.append(int(float(r["cycles"])))
+    vf_cyc = sum(vf_rows)
     if vf_cyc <= 0 or not vfs or not vld or not vst or not vadd:
         raise RuntimeError(
             f"incomplete: vf_cyc={vf_cyc} vfs={len(vfs)} vld={len(vld)} vst={len(vst)} vadd={len(vadd)}"
         )
-    return vld, vst, vadd, vfs, vf_cyc
+    # Pair VF events with cycle counts (same order)
+    if len(vf_rows) != len(vfs):
+        # fall back: equal split
+        each = vf_cyc // len(vfs)
+        vf_rows = [each] * len(vfs)
+        vf_rows[-1] = vf_cyc - each * (len(vfs) - 1)
+    return vld, vst, vadd, vfs, vf_rows, vf_cyc
 
 
-def sliding(vld, vst, vadd, vfs, vf_cyc, E: int):
-    # Calibrate us→cyc from total VF duration vs total VF cycles
-    vf_dur = sum(float(v.get("dur") or 0) for v in vfs)
-    ghz = vf_cyc / (vf_dur * 1000.0) if vf_dur > 0 else 1.8
-    us2cyc = ghz * 1000.0
-    t0 = vfs[0]["ts"]
-
-    def to_cyc(ts_us):
-        return (ts_us - t0) * us2cyc
-
-    # VF intervals in cycles (from first VF start)
-    vf_intervals = []
-    for v in vfs:
-        a = to_cyc(v["ts"])
-        b = to_cyc(v["ts"] + float(v.get("dur") or 0))
-        vf_intervals.append((a, b))
-
-    def in_vf(c):
-        return any(a <= c <= b for a, b in vf_intervals)
-
-    issues = []
-    for e in sorted(vld + vst + vadd, key=lambda z: z["ts"]):
-        name = e["name"]
-        c = to_cyc(e["ts"])
-        if not in_vf(c):
-            continue
-        issues.append(
-            {
-                "c": c,
-                "name": name,
-                "el_st": VL if name == "RV_VSTI" else 0,
-                "el_add": VL if name == "RV_VADD" else 0,
-            }
-        )
-    if len(issues) < 10:
-        raise RuntimeError(f"too few issues in VF intervals: {len(issues)}")
-
-    ic = [x["c"] for x in issues]
-    el_st = [x["el_st"] for x in issues]
-    body_start, body_end = ic[0], ic[-1]
-
-    ts, ipcs, els = [], [], []
+def sliding(vld, vst, vadd, vfs, vf_rows, vf_cyc, E: int):
+    all_ts, all_ipcs, all_els = [], [], []
     mid_ipcs, mid_els = [], []
-    mid_lo = body_start + 0.15 * (body_end - body_start)
-    mid_hi = body_start + 0.85 * (body_end - body_start)
-    mid25 = body_start + 0.25 * (body_end - body_start)
-    mid75 = body_start + 0.75 * (body_end - body_start)
     mid25_ipcs = []
     peak_ipc = -1.0
     peak_excl = -1.0
     early_ipc = -1.0
+    global_t0 = vfs[0]["ts"]
+    # wall→plot-x: use mean GHz from total
+    total_dur = sum(float(v.get("dur") or 0) for v in vfs)
+    ghz = vf_cyc / (total_dur * 1000.0) if total_dur > 0 else 1.8
+    us2cyc_plot = ghz * 1000.0
 
-    # Slide only inside each VF interval to avoid MTE gaps
-    for a, b in vf_intervals:
-        t = max(a, body_start)
-        max_t = min(b, body_end) - WIN_CYC
+    for vi, (vf_e, vf_c) in enumerate(zip(vfs, vf_rows)):
+        vf_ts = vf_e["ts"]
+        vf_dur = float(vf_e.get("dur") or 0)
+        if vf_dur <= 0 or vf_c <= 0:
+            continue
+        us2cyc = vf_c / (vf_dur * 1000.0) * 1000.0  # = vf_c / vf_dur
+
+        def to_local(ts):
+            return (ts - vf_ts) * us2cyc
+
+        def to_plot(ts):
+            return (ts - global_t0) * us2cyc_plot
+
+        # issues belonging to this VF window
+        t_end = vf_ts + vf_dur
+        local_issues = []
+        for e in sorted(vld + vst + vadd, key=lambda z: z["ts"]):
+            if not (vf_ts <= e["ts"] <= t_end):
+                continue
+            name = e["name"]
+            local_issues.append(
+                {
+                    "c": to_local(e["ts"]),
+                    "plot_c": to_plot(e["ts"]),
+                    "name": name,
+                    "el_st": VL if name == "RV_VSTI" else 0,
+                }
+            )
+        if len(local_issues) < 5:
+            continue
+        ic = [x["c"] for x in local_issues]
+        el_st = [x["el_st"] for x in local_issues]
+        plot_c = [x["plot_c"] for x in local_issues]
+        body_start, body_end = ic[0], ic[-1]
+        span = body_end - body_start
+        mid_lo = body_start + 0.15 * span
+        mid_hi = body_start + 0.85 * span
+        mid25 = body_start + 0.25 * span
+        mid75 = body_start + 0.75 * span
+
+        t = body_start
+        max_t = body_end - WIN_CYC
         while t <= max_t + 1e-9:
-            t1 = t + WIN_CYC
             lo = bisect.bisect_left(ic, t)
-            hi = bisect.bisect_left(ic, t1)
+            hi = bisect.bisect_left(ic, t + WIN_CYC)
             n = hi - lo
             ipc = n / WIN_CYC
             el = sum(el_st[lo:hi]) / WIN_CYC
+            # plot x at center in global plot coords
+            # approximate: map local center via linear from body
+            frac = ((t + WIN_CYC / 2) - body_start) / span if span > 0 else 0
+            center_plot = plot_c[0] + frac * (plot_c[-1] - plot_c[0])
+            all_ts.append(center_plot)
+            all_ipcs.append(ipc)
+            all_els.append(el)
             center = t + WIN_CYC / 2
-            ts.append(center)
-            ipcs.append(ipc)
-            els.append(el)
-            if mid_lo <= center <= mid_hi and ipc > 0:
+            if mid_lo <= center <= mid_hi:
                 mid_ipcs.append(ipc)
                 mid_els.append(el)
-            if mid25 <= center <= mid75 and ipc > 0:
+            if mid25 <= center <= mid75:
                 mid25_ipcs.append(ipc)
                 peak_excl = max(peak_excl, ipc)
             if center < mid_lo:
@@ -143,18 +149,16 @@ def sliding(vld, vst, vadd, vfs, vf_cyc, E: int):
         "peak_excl_fill_drain_ipc": peak_excl,
         "peak_mid_ipc": pct(mid25_ipcs, 95) if mid25_ipcs else float("nan"),
         "early_fill_ipc": early_ipc,
-        "body_start": body_start,
-        "body_end": body_end,
-        "n_windows": len(ipcs),
+        "n_windows": len(all_ipcs),
         "n_mid_windows": len(mid_ipcs),
     }
-    return np.array(ts), np.array(ipcs), np.array(els), summary
+    return np.array(all_ts), np.array(all_ipcs), np.array(all_els), summary
 
 
 def plot(ts, ipcs, els, summary, out_png: Path, title: str, E: int):
     fig, ax1 = plt.subplots(figsize=(11, 5.2))
     ax2 = ax1.twinx()
-    ax1.plot(ts, ipcs, color="C0", lw=1.0, label="IPC (30-cyc win, in-VF)")
+    ax1.plot(ts, ipcs, color="C0", lw=1.0, label="IPC (30-cyc win, per-VF)")
     ax2.plot(ts, els, color="C1", lw=1.0, alpha=0.85, label="el/cyc via ST (30-cyc)")
     ax1.axhline(
         summary["mid_med_ipc"],
@@ -202,13 +206,15 @@ def main():
     ap.add_argument("--title", default="")
     args = ap.parse_args()
     title = args.title or f"SV1d SIMD VL=64 — E={args.E} TILE={args.TILE} — 30-cyc IPC / el/cyc"
-    vld, vst, vadd, vfs, vf_cyc = load(Path(args.trace), Path(args.instr))
-    ts, ipcs, els, summary = sliding(vld, vst, vadd, vfs, vf_cyc, args.E)
+    vld, vst, vadd, vfs, vf_rows, vf_cyc = load(Path(args.trace), Path(args.instr))
+    ts, ipcs, els, summary = sliding(vld, vst, vadd, vfs, vf_rows, vf_cyc, args.E)
     summary["E"] = args.E
     summary["TILE"] = args.TILE
     plot(ts, ipcs, els, summary, Path(args.out), title, args.E)
     meta = Path(args.out).with_suffix(".json")
-    meta.write_text(json.dumps(summary, indent=2))
+    # JSON-safe NaN
+    safe = {k: (None if isinstance(v, float) and (v != v) else v) for k, v in summary.items()}
+    meta.write_text(json.dumps(safe, indent=2))
     print(f"WROTE {meta}")
 
 

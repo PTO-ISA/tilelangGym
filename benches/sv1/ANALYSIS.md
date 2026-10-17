@@ -50,10 +50,10 @@ From that same plot footer (authoritative mid-body IPC @ **E=16K TILE=8K**):
 
 | Metric | Value | vs roof |
 |--------|------:|---------|
-| Mid-body median IPC | **nan** → **~nan el/cyc** | **≈nan%** of 42.67 · **≈nan%** of 44 |
-| Peak excl fill/drain IPC | -1.00 | — |
-| Peak mid IPC | nan | — |
-| Early fill IPC | 3.27 | — |
+| Mid-body median IPC | **2.20** → **~34.1 el/cyc** | **≈80%** of 42.67 · **≈78%** of 44 |
+| Peak excl fill/drain IPC | 2.77 | — |
+| Peak mid IPC | 2.63 | — |
+| Early fill IPC | 3.37 | — |
 | Overall VF (TILE8K) | **29.26 el/cyc** | **≈66%** of 44 · **≈69%** of 42.67 |
 
 ![SIMD E16K TILE8K IPC](plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png)
