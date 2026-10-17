@@ -175,7 +175,7 @@ SoftLib CCE A-only LDS.b32+const, E=8192 T=128 (reports under `/workspace/st_out
 
 | Path | Measured | Roof framing | % of roof |
 |------|----------|--------------|----------:|
-| **SIMD DSL VL=64 (TILE8K@E16K)** | **29.26 el/cyc** overall VF; mid-body **~nan** | Lok **~44** (plot **42.67**) | **~66%** overall · mid **~nan%** of 42.67 |
+| **SIMD DSL VL=64 (TILE8K@E16K)** | **29.26 el/cyc** overall VF; mid-body **~34.1** | Lok **~44** (plot **42.67**) | **~66%** overall · mid **~80%** of 42.67 |
 | **Simt aligned stock (TILE8K@T512)** | **2.40** el/cyc | LD.64 A+B **~8** | **~30%** |
 | same Simt vs alt roof | 2.40 | 1R+1W@128B **16** | **~15%** |
 | CCE hand (A-only LDS window) | **101 B/cyc** | 128 B | **79%** window BW |
