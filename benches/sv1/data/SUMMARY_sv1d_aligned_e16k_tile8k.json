@@ -1,0 +1,62 @@
+[
+  {
+    "tag": "sv1dt_e16384_tile2048_vl64",
+    "mode": "simd_d",
+    "E": 16384,
+    "TILE": 2048,
+    "VL": 64,
+    "status": "PASS",
+    "us": "7.69",
+    "VF_cycles": 824,
+    "body_instr": 1064,
+    "IPC": "1.2913",
+    "vecs": 256,
+    "cyc_per_vec": 3.2188,
+    "el_per_cyc": 19.8835
+  },
+  {
+    "tag": "sv1dt_e16384_tile4096_vl64",
+    "mode": "simd_d",
+    "E": 16384,
+    "TILE": 4096,
+    "VL": 64,
+    "status": "PASS",
+    "us": "5.87",
+    "VF_cycles": 644,
+    "body_instr": 1044,
+    "IPC": "1.6211",
+    "vecs": 256,
+    "cyc_per_vec": 2.5156,
+    "el_per_cyc": 25.441
+  },
+  {
+    "tag": "sv1dt_e16384_tile8192_vl64",
+    "mode": "simd_d",
+    "E": 16384,
+    "TILE": 8192,
+    "VL": 64,
+    "status": "PASS",
+    "us": "4.99",
+    "VF_cycles": 560,
+    "body_instr": 1034,
+    "IPC": "1.8464",
+    "vecs": 256,
+    "cyc_per_vec": 2.1875,
+    "el_per_cyc": 29.2571
+  },
+  {
+    "tag": "sv1dt_e16384_tile16384_vl64",
+    "mode": "simd_d",
+    "E": 16384,
+    "TILE": 16384,
+    "VL": 64,
+    "status": "PASS",
+    "us": "4.55",
+    "VF_cycles": 520,
+    "body_instr": 1029,
+    "IPC": "1.9788",
+    "vecs": 256,
+    "cyc_per_vec": 2.0312,
+    "el_per_cyc": 31.5077
+  }
+]
