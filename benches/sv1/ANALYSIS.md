@@ -183,6 +183,8 @@ A-only rooftop framing **~16** el/cyc. Dual-input A+B (same motif, §6.4) uses r
 
 **Working hand motif (measured):** **phase-separated IADD-then-LDS** plus **`loadall_barrier` / `iadd_first`**. Addr+load go first as a packed phase; FADD/STS tail is hidden across warps (T256/T512/T1024), not stuffed into LDS gaps. Full phase pack (all IADD → all LDS → …) is the same idea.
 
+**Controllable schedule baseline = MI-off stage-sep.** With `-mllvm -enable-misched=false -mllvm -enable-post-misched=false`, the same `loadall_barrier` / `iadd_first` source is the **hand-controlled** baseline: easy same-latency-per-stage (all IADD → all LDS → FADD → STS), but **cannot** rely on MI mixed-issue to overlap compute / ld / st across stages. **Simple IADD→LDS.32** deps are easier to schedule well under this regime; a **full mix** (IADD|LDS|FADD|STS in one window) is difficult — SWP falsified below, and MI-off hand IL-mix loses to stage-sep (§6.3).
+
 **SWP / Body4 packing was tried and lost.** A 4-walk software pipeline that packs IADD / FADD / STS into LD gaps is **not** the winning schedule on this machine for the A-only probe: SWP @ T128 landed ~**3.4** el/cyc (LDS median gap ≈**27** → needs ~**14** outstanding) — **falsified** vs the phase-sep + barrier motif. See SoftLib `SW_PIPELINE_AONLY_4x128.md` (under `/workspace/st_out_cce_vadds_const_sched/reports/`).
 
 Lok’s earlier “SWP or full-unroll matched stage latency → ~9.x/16” intuition for the **ceiling** was right on the ballpark for the **winning** motif; the implementation that actually hits ~9–10 el/cyc is **phase-sep + barrier / warp hide**, not Body4 SWP.
@@ -207,7 +209,7 @@ T1024 same SoftLib `-O2` style: VF **828** → **9.89** el/cyc (**62%** of 16) �
 
 #### Arm B — Manual phase-sep (`loadall_barrier` / `iadd_first`)
 
-Baseline “**each stage same instruction**” schedule: phase-pack IADD→LDS (then FADD/STS), with barrier / iadd-first to keep the LDS window clean. **This is the SoftLib A-only ceiling.**
+Baseline “**each stage same instruction**” schedule: phase-pack IADD→LDS (then FADD/STS), with barrier / iadd-first to keep the LDS window clean. Under **default MI-on** this is the SoftLib A-only **ceiling**; under **MI-off** it is the **controllable** schedule baseline (§6.2).
 
 | T | warps | VF | whole-VF el/cyc | LDS-win B/cyc | % of roof 16 | tag |
 |--:|------:|---:|----------------:|--------------:|-------------:|---|
@@ -215,9 +217,19 @@ Baseline “**each stage same instruction**” schedule: phase-pack IADD→LDS (
 | **256** | **8** | **759** | **10.79** | **94.71** | **67.5%** | `sched_b32_loadall_barrier_e8192_t256` |
 | 512 | 16 | 796 | **10.29** | 55.07 | **64%** | `sched_b32_loadall_barrier_e8192_t512` |
 
-- **Best whole-VF:** T256 **10.79** (**67.5%** of 16) — beats T1024 `-O2` **9.89**.
+- **Best whole-VF (MI-on):** T256 **10.79** (**67.5%** of 16) — beats T1024 `-O2` **9.89**.
 - Manual vs `-O2` same T: T128 **9.29 vs 4.54** (~2×); T256 **10.79 vs 6.87**; T512 **10.29 vs 8.5**.
 - Wider T hides the FADD/STS tail up to T256, then turns down (T512 10.29 · T1024 `-O2` 9.89).
+
+**MI-off vs MI-on @ T256 (same barrier / iadd_first source):**
+
+| role | MI | VF | el/cyc | note |
+|------|----|---:|-------:|------|
+| **Controllable baseline** | **OFF** | **942** | **8.70** | stage-sep under hand control — easy same-latency/stage; no MI mixed-issue overlap (`T256_MIOFF_BASELINE.md`) |
+| SoftLib ceiling (compiler helps) | ON | **759** | **10.79** | MI compresses schedule (−183 VF / +2.10 el/cyc); already mixes IADD↔LDS.32 in the LDS window (`T256_MI_ON_VS_OFF.md`) |
+| MI-off hand IL-mix (iadd_il / swp_k* / chunk4) | OFF | 1351 | **~6.06** | **loses** to MI-off stage-sep 8.70 — full mix is hard (`T256_ILMIX_OPSIM.md`) |
+
+Both MI-on and MI-off already show I↔L mix inside the LDS window (in-win I **326** vs **257**); MI does **not** invent mix — it shortens LDS-win (−65) and post_L→STS (−119). Further hand-schedule work should compare against **MI-off 8.70**, not MI-on 10.79.
 
 #### Arm C — Hand-craft can be *worse* than `-O2` / phase-sep
 
@@ -233,7 +245,7 @@ A carefully written “classic” schedule is **not** automatically better. Fat-
 
 **Why T256/T512 stay hard:** more warps help latency hide, but the winning motif still needs **controlled phase boundaries / yield** (barrier or iadd-first) so FADD/STS do not leak into the LDS window. Blind SWP-in-gap or “same-cycle all four” does not get there (all-four IADD+LDS+FADD+STS same cycle: **0** cycles at T128/512/1024 — schedule/port limited, not latency-alone forbidden).
 
-**Footnote — compiler off makes it worse (not a third main arm):** MI-off T128 **3.44** / T256 **6.06** / T512 **7.15**; `-O0` T128 **2.42**. Default `-O2` MI is already useful for the LDS|IADD burst; turning it off is not a hand ceiling.
+**Footnote — MI-off without stage-sep is worse; MI-off *with* stage-sep is the controllable baseline:** contig/loadall MI-off T128 **3.44** / T256 **~6.06** / T512 **7.15**; `-O0` T128 **2.42**. Those are **not** the schedule-control baseline — that is MI-off `loadall_barrier` / `iadd_first` @ T256 **8.70** (VF **942**, above). Default `-O2` MI still helps compress toward **10.79**; turning MI off on a barrier source does not erase the stage-sep win, but MI-off hand full-mix (~**6.06**) loses to it.
 
 ### 6.4 Dual-input A+B hand schedule (LDS.b64)
 
