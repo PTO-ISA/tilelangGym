@@ -164,6 +164,14 @@ Prior SoftLib T128 ~**101 B/cyc** (section 5.5 / §6 baseline) was **compiler IA
 
 Stock Simt on this UB ld-bound case leaves a **scheduling bubble with long-latency LDS** (§5.6 H2H takeaway: TILE8K hub SIMD **29.26** vs Simt T512 **2.40**, ~**12×**). SoftLib hand schedules below are the **proof of that claim** and a **hand ceiling** — not a sudden side note. We simplify the kernel so the schedule difficulty is visible in isolation, then show what a working hand motif can recover (and what fails).
 
+### SoftLib T256 schedule headline (Lok 2026-10-19)
+
+| Controllable baseline | SoftLib ceiling |
+|----------------------|-----------------|
+| **MI-off** stage-sep `loadall_barrier` / `iadd_first` → **≈ 8.x** el/cyc (measured **8.70**, VF=942) | **MI-on** same source → **≈ 10.8** (measured **10.79**, VF=759) |
+
+**Δ ≈ +2.1 el/cyc from MI.** Hand IL-mix / recipe-shaped MI-off reimpls stayed ≤ **~6.06** (idx[] IL) or ~**5.6** (F/S bleed) — **did not beat MI-off 8.70**. Scheduling gain is **MI’s**, not C source-order mix.
+
 ### 6.1 Claim + simplify
 
 **Claim:** the stock Simt gap is schedule / LDS-latency, not “need a bigger TILE.”
@@ -229,7 +237,7 @@ Baseline “**each stage same instruction**” schedule: phase-pack IADD→LDS (
 | SoftLib ceiling (compiler helps) | ON | **759** | **10.79** | MI compresses schedule (−183 VF / +2.10 el/cyc); already mixes IADD↔LDS.32 in the LDS window (`T256_MI_ON_VS_OFF.md`) |
 | MI-off hand IL-mix (iadd_il / swp_k* / chunk4) | OFF | 1351 | **~6.06** | **loses** to MI-off stage-sep 8.70 — full mix is hard (`T256_ILMIX_OPSIM.md`) |
 
-Both MI-on and MI-off already show I↔L mix inside the LDS window (in-win I **326** vs **257**); MI does **not** invent mix — it shortens LDS-win (−65) and post_L→STS (−119). Further hand-schedule work should compare against **MI-off 8.70**, not MI-on 10.79.
+Both MI-on and MI-off already show I↔L mix inside the LDS window (in-win I **326** vs **257**); MI does **not** invent mix — it shortens LDS-win (−65) and post_L→STS (−119). Further hand-schedule work should compare against **MI-off 8.70**, not MI-on 10.79. Hand MI-off reimpl from the MI-on phase recipe (`T256_MION_REIMPL.md`) also **failed** to beat 8.70 (~**5.6** el/cyc) — same conclusion: gain is MI's, not source-order mix.
 
 #### Arm C — Hand-craft can be *worse* than `-O2` / phase-sep
 
