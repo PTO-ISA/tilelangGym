@@ -28,10 +28,21 @@ Kernel: one TileLang file `sv1_stream_eltwise.py` (`vf_region` + `ST_VF_MODE`); 
 
 This set is the full sensitivity for the UB-bound case: **tile size**, **thread dim**, **Simt vs SIMD**, and whether current `T.Parallel` / DSL already meet **xx%** of the Simt / SIMD rooftops (sections below).
 
-**Pin note:** aligned Stock Simt + tiled SIMD numbers below are from **2026-10-17** opsim under **cann_92b2 + tip e700041f** (Simt) / **cann_92b2** (SIMD DSL). Prior whole-E SIMD size ladder (`SUMMARY_sv1d_size_ladder.tsv`) and older cann_91b3 Simt tables are **appendix-only** — do not mix into §3 / §4.1–4.2 primary tables.
+**Pin note:** aligned Stock Simt + tiled SIMD numbers below are from **2026-10-17** opsim under **cann_92b2 + tip e700041f** (Simt) / **cann_92b2** (SIMD DSL). Prior whole-E SIMD size ladder (`SUMMARY_sv1d_size_ladder.tsv`) and older cann_91b3 Simt tables are **appendix-only** — do not mix into §4 / §5.1–5.2 primary tables.
 
 
-## 3. SIMD performance
+## 3. Best schedule
+
+**Target** for this short-live stream (load → add → store; UB-bound) is path-specific:
+
+| Path | Target best schedule |
+|------|----------------------|
+| **SIMD / VMI DSL** (`sv1d` / `sv1dt`, VL=64) | Keep the kernel as a **simple load → add → store** loop on the data. No fancy instruction schedule is required — VL=64 UB vector ld/st + VADD is the design target. |
+| **SIMT** (`T.Parallel` / SimtVF) | Best schedule does **not** hinge on fragment vs shared temps for this case (direct GM→shared ties fragment — see later shared-vs-fragment section). What matters is a **relatively large thread dim (T=256 / T=512)** for **latency hiding** on UB ld/st, because the kernel is **UB load-bound**. |
+
+Later SIMD / SIMT sections measure how close stock + hand paths land relative to these targets (SIMD near theory rooftop with the simple VL loop; Simt stock peaking around T512 on the TILE=8K hub).
+
+## 4. SIMD performance
 
 Handwritten DSL **VL=64**, **tiled** short-live stream @ fixed **E=16384** (`data/SUMMARY_sv1d_aligned_e16k_tile8k.tsv`):
 
@@ -44,42 +55,42 @@ Handwritten DSL **VL=64**, **tiled** short-live stream @ fixed **E=16384** (`dat
 
 Kernel: `sv1dt_*` / `scripts/gen_sv1dt_kernel.py` — per tile MTE load A/B → VL=64 vload/vadd/vstore → MTE store C. Tag `sv1dt_e16384_tile{TILE}_vl64`.
 
-**Theory rooftop: ~44 el/cyc.** Plot SoT on `plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png` uses derived roof **42.67** (IPC→el conversion); cite **theory rooftop ~44** as the design target and **42.67** as the plot’s derived roof.
+**Theory rooftop: ~44 el/cyc.** Plot SoT on `plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png` is a **single VF** 30-cyc window (first body VF; dual-tile ping/pong gap omitted). Derived roof **42.67** (IPC→el conversion); cite **theory rooftop ~44** as the design target and **42.67** as the plot’s derived roof.
 
 From that same plot footer (authoritative mid-body IPC @ **E=16K TILE=8K**):
 
 | Metric | Value | vs roof |
 |--------|------:|---------|
-| Mid-body median IPC | **2.20** → **~34.1 el/cyc** | **≈80%** of 42.67 · **≈78%** of theory rooftop (~44) |
+| Mid-body median IPC | **2.17** → **~34.1 el/cyc** | **≈80%** of 42.67 · **≈78%** of theory rooftop (~44) |
 | Peak excl fill/drain IPC | 2.77 | — |
 | Peak mid IPC | 2.63 | — |
-| Early fill IPC | 3.37 | — |
+| Early fill IPC | 3.27 | — |
 | Overall VF (TILE8K) | **29.26 el/cyc** | **≈66%** of theory rooftop (~44) · **≈69%** of 42.67 |
 
 ![SIMD E16K TILE8K IPC](plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png)
 
 **Head-to-head vs aligned Simt (same E=16K, matched TILE):**
 
-| TILE | SIMD el/cyc | Simt T512 el/cyc (§4.1) | ratio |
+| TILE | SIMD el/cyc | Simt T512 el/cyc (§5.1) | ratio |
 |-----:|------------:|------------------------:|------:|
 | 2048 | 19.88 | 2.44 | ~8× |
 | 4096 | 25.44 | 2.45 | ~10× |
 | **8192** | **29.26** | **2.40** | **~12×** |
 | 16384 | 31.51 | 2.44 | ~13× |
 
-**Takeaway:** at matched **TILE=8K E=16K**, SIMD DSL lands **29.26 el/cyc** overall VF (~66% of theory rooftop ~44). Vs Simt TILE8K@T512 (**2.40**), SIMD is ~**12×**. Larger TILE amortizes per-tile MTE fill/drain (2K→16K: 19.9→31.5 el/cyc). Prior whole-E E-ladder is appendix-only — not the §3 compare SoT.
+**Takeaway:** at matched **TILE=8K E=16K**, SIMD DSL lands **29.26 el/cyc** overall VF (~66% of theory rooftop ~44). Vs Simt TILE8K@T512 (**2.40**), SIMD is ~**12×**. Larger TILE amortizes per-tile MTE fill/drain (2K→16K: 19.9→31.5 el/cyc). Prior whole-E E-ladder is appendix-only — not the §4 compare SoT.
 
 
 
-## 4. SIMT performance
+## 5. SIMT performance
 
 Stock pack under tip e700041f is wider-vector (LDS:FADD:STS ≈ **256:512:128** in the aligned harvest — float4-class). Lead framing still uses Lok’s **LD.64 A+B ≈ 8 el/cyc** roof for % columns (same A+B dual-load story).
 
-**Lead framing (Lok):** LD.64 A+B theory ≈ **8 el/cyc**. Aligned stock Simt lands **~2.40–2.45 el/cyc** → about **~30%** of that ~8 roof under **cann_92b2 + e700041f**. Thread ladder **peaks @ T512** then drops @ T2048 (§4.2). Alternate 1R+1W@16 is a footnote in §4.3.
+**Lead framing (Lok):** LD.64 A+B theory ≈ **8 el/cyc**. Aligned stock Simt lands **~2.40–2.45 el/cyc** → about **~30%** of that ~8 roof under **cann_92b2 + e700041f**. Thread ladder **peaks @ T512** then drops @ T2048 (§5.2). Alternate 1R+1W@16 is a footnote in §5.3.
 
 Data: `data/SUMMARY_sv1_aligned_e16k_tile8k.tsv` (+ `.json`, `NOTES_sv1_aligned_e16k_tile8k.md`).
 
-### 4.1 Tile-size performance (E=16384, fixed T=512)
+### 5.1 Tile-size performance (E=16384, fixed T=512)
 
 | Case | VF_cyc | el/cyc | % of LD.64 A+B (~8) |
 |------|-------:|-------:|--------------------:|
@@ -92,7 +103,7 @@ Data: `data/SUMMARY_sv1_aligned_e16k_tile8k.tsv` (+ `.json`, `NOTES_sv1_aligned_
 
 **Point:** at fixed T=512, tile size is **flat (~2.40–2.45 el/cyc)**. **8K** remains the focus tile for Simt↔SIMD compare (footprint / hub), not because it uniquely wins the ladder.
 
-### 4.2 Thread-dim performance (E=16384, TILE=8192)
+### 5.2 Thread-dim performance (E=16384, TILE=8192)
 
 | Case | VF_cyc | el/cyc | IPC_body | % of LD.64 A+B (~8) |
 |------|-------:|-------:|---------:|--------------------:|
@@ -112,11 +123,11 @@ Data: `data/SUMMARY_sv1_aligned_e16k_tile8k.tsv` (+ `.json`, `NOTES_sv1_aligned_
 **Forward (not run):** later try **T128/T256 fully unroll** and let **ccec** schedule, then compare vs hand/manual — do not treat as SoT until measured.
 
 
-### 4.3 Footnote — alternate roof only (do not mix into §4.1–4.2)
+### 5.3 Footnote — alternate roof only (do not mix into §5.1–5.2)
 
 Prior pack docs also used **1R+1W @ 128 B each → 16 el/cyc**. Against that roof: aligned TILE8K@T512 ≈ **15%**. Lead framing for Simt stock stays **~8**; keep **16** only here.
 
-### 4.4 Side note: LD.32
+### 5.4 Side note: LD.32
 
 - Theory: LD.32 can do **128 B/cyc**, but **too many instructions / hard to schedule**.
 - For LD.32 A+B (dual load on one R port), **theory best ~8 el/cyc**.
@@ -127,11 +138,11 @@ Prior pack docs also used **1R+1W @ 128 B each → 16 el/cyc**. Against that roo
 - SoftLib A-only LDS.b32 contig T128: LDS-window **101 B/cyc (79% of 128)**, LDS-window elems **25.3**; whole-VF elems **4.54** — see `/workspace/st_out_cce_vadds_const/reports/`.
 - SoftLib A+B LDS.b32 contig T128: **~52 B/cyc** (~41% of 128) from LDS width BW report.
 
-### 4.5 SoftLib LDS.b32 / LDS.b64 BW — PURE port isolation (2026-10-17)
+### 5.5 SoftLib LDS.b32 / LDS.b64 BW — PURE port isolation (2026-10-17)
 
 **SoT:** `/workspace/st_out_cce_lds_bw_confirm/reports/LD32_LD64_BW_CONFIRM.md` (pto-b10, Ascend950PR_9599, E=8192 T=128).
 
-Prior SoftLib T128 ~**101 B/cyc** (section 4.5 / §5 baseline) was **compiler IADD↔LDS interleave** (`I1L1…`) — **not** LDS-port isolation. Confirmed PURE numbers below require:
+Prior SoftLib T128 ~**101 B/cyc** (section 5.5 / §6 baseline) was **compiler IADD↔LDS interleave** (`I1L1…`) — **not** LDS-port isolation. Confirmed PURE numbers below require:
 
 1. **Self-scheduled (自己排好):** hand/manual schedule with explicit **IADD-then-LDS** separation (`sep_ptr` — all address IADD/LEA first, hard phase barrier, then LDS burst alone). Disasm must show LDS region with **zero** IADD/LEA (`separation_ok=True`, motif `L64` / `L32`).
 2. **MI schedule disabled** (Lok: 「MR schedule disabled」 → SoftLib/SV1 flag): `-mllvm -enable-misched=false -mllvm -enable-post-misched=false`. Default MI keeps MIXED interleave even with `sep_ptr`.
@@ -143,11 +154,11 @@ Prior SoftLib T128 ~**101 B/cyc** (section 4.5 / §5 baseline) was **compiler IA
 
 † LD64 short-window rolling peak can exceed 128 (1× LDS.b64/cyc × 256 B); **claim metric is sustained first→last = 64.50**.
 
-**One-liner:** under PURE / MI-off / self-scheduled IADD→LDS: **LD32 peak 128 B/cyc, sustained ~115; LD64 ~64.5 B/cyc (~half)**. Isolation costs whole-VF (LD32 PURE whole-VF **7.19** el/cyc vs T1024 **9.89**) — do not mix PURE port-BW with MIXED whole-VF chase (§5).
+**One-liner:** under PURE / MI-off / self-scheduled IADD→LDS: **LD32 peak 128 B/cyc, sustained ~115; LD64 ~64.5 B/cyc (~half)**. Isolation costs whole-VF (LD32 PURE whole-VF **7.19** el/cyc vs T1024 **9.89**) — do not mix PURE port-BW with MIXED whole-VF chase (§6).
 
 ---
 
-## 5. CCE T128 manual-schedule side note + verdict
+## 6. CCE T128 manual-schedule side note + verdict
 
 SoftLib CCE A-only LDS.b32+const, E=8192 T=128 (reports under `/workspace/st_out_cce_vadds_const_sched/reports/` + `/workspace/st_out_cce_vadds_const/reports/`):
 
@@ -178,7 +189,7 @@ SoftLib CCE A-only LDS.b32+const, E=8192 T=128 (reports under `/workspace/st_out
 
 ---
 
-## 6. Shared vs fragment — direct GM→shared only (no S-MEM staging tower)
+## 7. Shared vs fragment — direct GM→shared only (no S-MEM staging tower)
 
 **S-MEM tower removed.** The old shared arm used `t1/t2/t3 = alloc_shared` staging (shared→shared copies) and looked **−37%/−50%** vs fragment — that pattern is **gone**. No shared→fragment `T.copy` either.
 
@@ -201,7 +212,7 @@ Instr mix identical (`SIMT_LDS/STS/FADD/IADD`). See `data/SHARED_VS_FRAGMENT_AB_
 
 ---
 
-## 7. Meta / pins
+## 8. Meta / pins
 
 | Pin | Value |
 |-----|-------|
@@ -213,8 +224,8 @@ Instr mix identical (`SIMT_LDS/STS/FADD/IADD`). See `data/SHARED_VS_FRAGMENT_AB_
 
 ### Artifacts
 
-- `data/` — **`SUMMARY_sv1_aligned_e16k_tile8k.tsv`** (+ `.json`, `NOTES_sv1_aligned_e16k_tile8k.md`; primary Simt §4.1–4.2), **`SUMMARY_sv1d_aligned_e16k_tile8k.tsv`** (+ `.json`, `NOTES_…`; primary SIMD §3 TILE@E16K), appendix `SUMMARY_sv1d_size_ladder.tsv`, `SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md` (+ `.tsv`/`.json`), legacy `SUMMARY_sv1_simt_tile16k.tsv` / `SUMMARY_sv1_simt_T_dim_rooftop.tsv` (older cann_91b3 / untiled — do not mix into §4.1–4.2), `OVERHEAD_ilp16.json`, bubbles / MIX / GPU compare
-- `plots/` — **`sv1d_e16k_tile8k_ex_ipc_30cyc.png`** (SIMD §3 SoT @ E16K TILE8K), `sv1_tile_vs_vf_el_instr.png` (**aligned TILE@T512**), `sv1_thread_vs_ipc_el.png` (**aligned TILE8K×T**), **`sv1_simt_e16k_tile8k_body4_ex_ipc_30cyc.png`** (aligned Simt Body4), legacy `sv1d_e16k_ex_ipc_30cyc.png` / `sv1_simt_e16k_body4_ex_ipc_30cyc.png` (whole-E / untiled — appendix), ILP timeline / waterfall
+- `data/` — **`SUMMARY_sv1_aligned_e16k_tile8k.tsv`** (+ `.json`, `NOTES_sv1_aligned_e16k_tile8k.md`; primary Simt §5.1–5.2), **`SUMMARY_sv1d_aligned_e16k_tile8k.tsv`** (+ `.json`, `NOTES_…`; primary SIMD §4 TILE@E16K), appendix `SUMMARY_sv1d_size_ladder.tsv`, `SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md` (+ `.tsv`/`.json`), legacy `SUMMARY_sv1_simt_tile16k.tsv` / `SUMMARY_sv1_simt_T_dim_rooftop.tsv` (older cann_91b3 / untiled — do not mix into §5.1–5.2), `OVERHEAD_ilp16.json`, bubbles / MIX / GPU compare
+- `plots/` — **`sv1d_e16k_tile8k_ex_ipc_30cyc.png`** (SIMD §4 SoT @ E16K TILE8K, **single VF**), `sv1_tile_vs_vf_el_instr.png` (**aligned TILE@T512**), `sv1_thread_vs_ipc_el.png` (**aligned TILE8K×T**), **`sv1_simt_e16k_tile8k_body4_ex_ipc_30cyc.png`** (aligned Simt Body4), legacy `sv1d_e16k_ex_ipc_30cyc.png` / `sv1_simt_e16k_body4_ex_ipc_30cyc.png` (whole-E / untiled — appendix), ILP timeline / waterfall
 - SoftLib CCE — `/workspace/st_out_cce_vadds_const/reports/VADDS_CONST_B32_OPSIM.md`, `VADDS_CONST_T512_1024_OPSIM.md`; schedule dig `/workspace/st_out_cce_vadds_const_sched/reports/VERDICT.md`; **PURE LD32/LD64 BW** `/workspace/st_out_cce_lds_bw_confirm/reports/LD32_LD64_BW_CONFIRM.md`
 - SoftLib LDS BW — `/workspace/st_out_cce_lds_bw_confirm/reports/LD32_LD64_BW_CONFIRM.md` (+ `COMBINED_LDS_PORT_AND_MI_OFF.md`)
 - Aligned opsim OUT (pto-b10) — Simt `/tmp/sv1_aligned_e16k_tile8k_20261017/` · SIMD tiled `/tmp/sv1d_aligned_e16k_tile8k_20261017/`

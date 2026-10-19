@@ -1,16 +1,17 @@
 {
   "vf_cyc": 560,
   "n_vf": 2,
-  "ghz": 1.7999999348606406,
+  "vf_index": 0,
+  "vf_cyc_selected": 280,
   "overall_el_per_cyc": 29.257142857142856,
-  "mid_med_ipc": 2.2,
+  "mid_med_ipc": 2.1666666666666665,
   "mid_med_el": 34.13333333333333,
-  "peak_ipc": 3.3666666666666667,
+  "peak_ipc": 3.2666666666666666,
   "peak_excl_fill_drain_ipc": 2.7666666666666666,
   "peak_mid_ipc": 2.6333333333333333,
-  "early_fill_ipc": 3.3666666666666667,
-  "n_windows": 411,
-  "n_mid_windows": 328,
+  "early_fill_ipc": 3.2666666666666666,
+  "n_windows": 205,
+  "n_mid_windows": 164,
   "E": 16384,
   "TILE": 8192
 }
