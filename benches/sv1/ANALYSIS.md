@@ -69,16 +69,7 @@ From that same plot footer (authoritative mid-body IPC @ **E=16K TILE=8K**):
 
 ![SIMD E16K TILE8K IPC](plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png)
 
-**Head-to-head vs aligned Simt (same E=16K, matched TILE):**
-
-| TILE | SIMD el/cyc | Simt T512 el/cyc (§5.1) | ratio |
-|-----:|------------:|------------------------:|------:|
-| 2048 | 19.88 | 2.44 | ~8× |
-| 4096 | 25.44 | 2.45 | ~10× |
-| **8192** | **29.26** | **2.40** | **~12×** |
-| 16384 | 31.51 | 2.44 | ~13× |
-
-**Takeaway:** at matched **TILE=8K E=16K**, SIMD DSL lands **29.26 el/cyc** overall VF (~66% of theory rooftop ~44). Vs Simt TILE8K@T512 (**2.40**), SIMD is ~**12×**. Larger TILE amortizes per-tile MTE fill/drain (2K→16K: 19.9→31.5 el/cyc). Prior whole-E E-ladder is appendix-only — not the §4 compare SoT.
+**Takeaway (SIMD alone):** at **TILE=8K E=16K**, SIMD DSL lands **29.26 el/cyc** overall VF (~66% of theory rooftop ~44); mid-body ~**34.1** el/cyc (~78% of ~44). Larger TILE amortizes per-tile MTE fill/drain (2K→16K: 19.9→31.5 el/cyc). Prior whole-E E-ladder is appendix-only — not the §4 compare SoT. Head-to-head vs Simt is after §5.
 
 
 
@@ -156,6 +147,17 @@ Prior SoftLib T128 ~**101 B/cyc** (section 5.5 / §6 baseline) was **compiler IA
 
 **One-liner:** under PURE / MI-off / self-scheduled IADD→LDS: **LD32 peak 128 B/cyc, sustained ~115; LD64 ~64.5 B/cyc (~half)**. Isolation costs whole-VF (LD32 PURE whole-VF **7.19** el/cyc vs T1024 **9.89**) — do not mix PURE port-BW with MIXED whole-VF chase (§6).
 
+### 5.6 Head-to-head vs SIMD (E=16K, matched TILE ≤8K)
+
+| TILE | SIMD el/cyc | Simt T512 el/cyc (§5.1) | ratio |
+|-----:|------------:|------------------------:|------:|
+| 2048 | 19.88 | 2.44 | ~8× |
+| 4096 | 25.44 | 2.45 | ~10× |
+| **8192** | **29.26** | **2.40** | **~12×** |
+
+**Takeaway:** at the TILE=8K hub, SIMD is ~**12×** Simt T512 (**29.26** vs **2.40**). Simt tile ladder is already **flat** (§5.1) — growing TILE does **not** close the gap. The gap is still a **scheduling bubble with long-latency LDS** on the stock Simt path (UB ld-bound; latency hiding helps with T but does not remove the bubble), not a “need bigger TILE” story.
+
+
 ---
 
 ## 6. CCE T128 manual-schedule side note + verdict
@@ -184,7 +186,7 @@ SoftLib CCE A-only LDS.b32+const, E=8192 T=128 (reports under `/workspace/st_out
 | **2. SoftLib / hand reschedule best** | **10.79** (A-only LDS.b32+const, T256 `loadall_barrier`; T512 10.29 · T1024 9.89 · T128 hand 9.29) | A-only **~16** | **~67%** of 16 (**label: A-only — not A+B**) |
 | **3. SIMD best** (handwritten DSL VL=64 @ E=16K) | **31.51** (TILE16384; TILE8K hub **29.26**) | theory rooftop **~44** | **~72%** of 44 (TILE8K **~66%**) |
 
-**Bottom line:** stock Simt TILE8K peaks at **T512 = 2.40 el/cyc (~30% of ~8)** and turns down by T2048. SoftLib hand A-only can reach **10.79 (~67% of 16)** — different problem (A-only). SIMD tiled best is **31.51 el/cyc (~72% of ~44)**; matched TILE8K hub SIMD **29.26** vs Simt **2.40** (~**12×**).
+**Bottom line:** stock Simt TILE8K peaks at **T512 = 2.40 el/cyc (~30% of ~8)** and turns down by T2048. SoftLib hand A-only can reach **10.79 (~67% of 16)** — different problem (A-only). SIMD tiled best is **31.51 el/cyc (~72% of ~44)**; matched TILE8K hub SIMD **29.26** vs Simt **2.40** (~**12×**) — gap is LDS-latency scheduling bubble on Simt, not TILE size (§5.6).
 
 
 ---
