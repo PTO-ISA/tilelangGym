@@ -318,7 +318,7 @@ SoT: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS32_AB_TWO_SOURCE.md` (pto-
 | **2. SoftLib / hand reschedule best (A+B fair arm)** | A+B LDS.b32 **7.42** @ T512 `loadall_barrier` (T256 7.32 · §6.5); LDS.b64 width compare **4.82** @ T256 (§6.4) | A+B **~8** | b32 **~93%** of 8 · b64 **~60%** of 8 |
 | **3. SIMD best** (handwritten DSL VL=64 @ E=16K) | **31.51** (TILE16384; TILE8K hub **29.26**) | theory rooftop **~44** | **~72%** of 44 (TILE8K **~66%**) |
 
-**Bottom line:** stock Simt TILE8K peaks at **T512 = 2.40 el/cyc (~30% of ~8)** and turns down by T2048 — gap is a **scheduling bubble + long-latency LDS** (§5.6), not TILE size (LD port itself is fine — PURE ~115–128 B/cyc; SoftLib whole-VF gap is post-LDS FADD/STS yield + warp outstanding for LDS latency ≈27). SoftLib proves the claim in §6.3 (1-in VADDS+const schedule-proof — **not** a fair SIMD H2H arm): phase-sep IADD-then-LDS + barrier (not Body4 SWP) reaches A-only **10.79 (~67.5% of 16)**. Fair A+B arm: same motif on LDS.b32 reaches **7.42 (~93% of 8)** @ T512 (§6.5; exceeds Lok’s ~5–6); LDS.b64 width compare **4.82 (~60% of 8)** @ T256 (§6.4). SIMD tiled best remains **31.51** / hub **29.26** (~**12×** stock Simt at TILE8K). MI-on stage-sep + **one** fence reaches **≈72–73% serial** (1-in 72.6% of 16; A+B 72.2% of 10.67), distinct from classic VF % of 16/8.
+**Bottom line:** stock Simt TILE8K peaks at **T512 = 2.40 el/cyc (~30% of ~8)** and turns down by T2048 — gap is a **scheduling bubble + long-latency LDS** (§5.6), not TILE size (LD port itself is fine — PURE ~115–128 B/cyc; SoftLib whole-VF gap is post-LDS FADD/STS yield + warp outstanding for LDS latency ≈27). SoftLib proves the claim in §6.3 (1-in VADDS+const schedule-proof — **not** a fair SIMD H2H arm): phase-sep IADD-then-LDS + barrier (not Body4 SWP) reaches A-only **10.79 (~67.5% of 16)**. Fair A+B arm: same motif on LDS.b32 reaches **7.42 (~93% of 8)** @ T512 (§6.5; exceeds Lok’s ~5–6); LDS.b64 width compare **4.82 (~60% of 8)** @ T256 (§6.4). SIMD tiled best remains **31.51** / hub **29.26** (~**12×** stock Simt at TILE8K). Fair SoftLib A+B LDS.b32 vs SIMD gap is **~3.9×** (7.42 vs TILE8K hub 29.26) — matches the **256R+256R vs 128R** BW story. MI-on stage-sep + **one** fence reaches **≈72–73% serial** (1-in 72.6% of 16; A+B 72.2% of 10.67), distinct from classic VF % of 16/8.
 
 ### 6.7 Final head-to-head vs SIMD — schedule / mapping @ E=16K TILE=8K only
 
@@ -333,7 +333,7 @@ Tile-ladder H2H stays in §5.6. This table is the **fair schedule/mapping** comp
 | **2b. SoftLib hand — A+B LDS.b32** best T512 `loadall_barrier` (§6.5) | **7.42** | A+B **~8** | **92.8%** | **~3.9×** slower |
 | **3. SIMD VL=64** handwritten DSL TILE8K hub (§4) | **29.26** | theory **~44** | **~66%** | **1×** (reference) |
 
-**Read:** SoftLib phase-sep A+B closes most of the Simt schedule gap vs stock — LDS.b32 hand **7.42** (~**93%** of 8; exceeds Lok’s ~5–6) and LDS.b64 **4.82** (~**60%** of 8) vs stock **2.40**. SIMD at the same TILE=8K hub remains far ahead (**29.26**, ~**66%** of ~44). Fair H2H is A+B↔A+B only.
+**Read:** SoftLib phase-sep A+B closes most of the Simt schedule gap vs stock — LDS.b32 hand **7.42** (**92.8%** of roof **~8** @ T512; exceeds Lok’s ~5–6) and LDS.b64 **4.82** (~**60%** of 8) vs stock **2.40**. SoftLib vs SIMD remaining gap is **~3.9×** (7.42 vs TILE8K hub **29.26**) — matches **256R+256R vs 128R** BW. SIMD still far ahead (~**66%** of ~44). Fair H2H is A+B↔A+B only.
 
 
 ## 7. Shared vs fragment — direct GM→shared only (no S-MEM staging tower)
