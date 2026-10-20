@@ -1,3 +1,5 @@
+> **Status (2026-10-20):** This NOTES file is **appendix-only**. PR #7 ANALYSIS **§5 primary** is now **E8192 untiled float2** (hub T512=**3.715**, peak T1024=**3.846**), not the aligned TILE8K@T512=**2.40** hub below. H2H stock row in ANALYSIS §7 uses the float2 numbers; do **not** treat §4.1/§4.2 tables here as current stock SoT.
+
 # SV1 aligned matrix — results (pto-b10)
 
 **When:** 2026-10-17 15:09–15:13 Asia/Hong_Kong  
@@ -52,11 +54,11 @@ Compare point: **Simt TILE=8192 @ T512 = 2.4006 el/cyc** vs **SIMD E=16384 = 31.
 - Old report enches/sv1/data/IADD_IPC_REPORT_tile16k.txt was untiled / cann_91b3 — stale for align.
 - To plot later: harvest VF + SIMT_* from those CSVs (same as scripts/harvest_aligned.py) and feed sv1_cost_sweep/scripts/plot_and_fit.py or a one-off matplotlib IPC bar.
 
-## Recommended ANALYSIS table numbers (aligned, new pins)
-- **§4.2 thread-dim (E=16K TILE=8K):** T128 **1.99** · T256 **2.33** · T512 **2.40** el/cyc  
-- **§4.1 tile-size (E=16K T=512):** TILE2K **2.44** · 4K **2.45** · 8K **2.40** · 16K **2.44** el/cyc  
-- **§3 Simt vs SIMD:** Simt TILE8K@T512 **2.40** vs SIMD whole-E16K **31.51** el/cyc (different axis — footnote)  
-- Call out pin change vs prior ANALYSIS (old TILE8K@T128 2.99 under cann_91b3 / older tip) — numbers are **not** comparable without re-baselining the whole doc.
+## Recommended use (appendix only — 2026-10-20)
+- These aligned E16K TILE numbers are **appendix** for ANALYSIS — **not** §5 primary.
+- ANALYSIS §5 primary: E8192 untiled float2 T512=**3.715** / T1024 peak=**3.846** (see `SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md`).
+- ANALYSIS §7 H2H stock rows use float2 **3.715 / 3.846** (~7.9× / ~7.6× vs SIMD 29.26), not TILE8K@T512 **2.40**.
+- Keep this file as the harvest log for the 2026-10-17 e700041f aligned matrix only.
 
 ## Mix note (codegen)
 New tip: LDS:FADD:STS ≈ 256:512:128 (vs old 512:512:256 .64). Consistent with float4 / wider vector default on e700041f — higher LDS width but lower el/cyc in this tight-add schedule.
