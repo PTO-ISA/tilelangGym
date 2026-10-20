@@ -101,8 +101,6 @@ Aligned e700041f E16K TILE ladder (~2.40 @ TILE8K T512, float4-class LDS:FADD:ST
 
 ![CBT vs fused rolling IPC](plots/sv1_cbt_vs_fused_rolling20_ipc.png)
 
-**Why a prior E8192 "tile ladder" looked flat (do not use as §5.1):** E=8192 TILE∈{2048,4096,8192} all reported VF=2205 / el=3.715 / identical `LDS:FADD:STS:IADD=256:256:128:384` and **no** BRANCH. That was **not** a wrong E=TILE launch — TIR had correct `range(4/2/1)×Parallel(TILE)` and distinct source md5s. The compiler **fully unrolled** the small serial trip counts, erasing tile-loop overhead in opsim. E8192 TILE=E remains valid as the **§5.2 TILE8192** T-dim hub only. Details: `data/NOTES_sv1_float2_tile_t512.md`.
-
 ### 5.2 Thread-dim performance (E=8192 TILE8192 float2)
 
 **TILE8192** = E=8192, TILE=E (Parallel(whole E) / single serial trip). This is the thread-dim SoT — **not** a multi-TILE ladder.
@@ -310,10 +308,6 @@ Instr mix identical (`SIMT_LDS/STS/FADD/IADD` = 256/128/256/384). TILE8192 float
 ### Weekly gate
 
 `scripts/regression/oneshot_sv1_e8192_t128_t512.sh` — **E=8192**, **T=128** + **T=512**, `ST_VF_MODE=simt-asc`, stock schedule only. (Does not yet cover **T1024** peak — extend when gating peak SoT.)
-
-### Appendix — E8192 TILE@T512 float2 looked flat (not §5.1)
-
-E=8192 TILE∈{2048,4096,8192}@T512 all VF=**2205** / el=**3.715** / identical instr mix. Launch was correct (distinct TIR serial extents); compiler unrolled serial tiles. **Do not** present E8192 as the multi-TILE ladder — use §5.1 E=16K. E8192 TILE=E stays §5.2 **TILE8192**.
 
 ### Appendix — aligned e700041f E16K TILE (not primary)
 
