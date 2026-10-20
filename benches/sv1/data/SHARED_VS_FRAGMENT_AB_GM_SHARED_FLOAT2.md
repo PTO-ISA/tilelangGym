@@ -17,7 +17,7 @@ We **no longer have** shared→fragment `T.copy`. New shared pattern:
 
 Fragment arm kept as **RF temps baseline** (`alloc_fragment` t1/t2/t3) for comparison.
 
-## Results (E=8192 untiled float2)
+## Results (E=8192 TILE8192 float2)
 
 | Case | temps | VF_cyc | el/cyc | wall µs | LDS | STS | FADD | IADD | opsim |
 |------|-------|-------:|-------:|--------:|----:|----:|-----:|-----:|-------|
@@ -37,7 +37,7 @@ Fragment arm kept as **RF temps baseline** (`alloc_fragment` t1/t2/t3) for compa
 |------|----------------------------:|
 | T128 / T256 / T512 / T1024 / T2048 | **0%** (tied) |
 
-**Peak:** untiled stock float2 **T1024 = 3.846** el/cyc (~**48%** of LD.64 A+B roof ~8). T2048 = 3.787 (above T512 3.715).  
+**Peak:** TILE8192 stock float2 **T1024 = 3.846** el/cyc (~**48%** of LD.64 A+B roof ~8). T2048 = 3.787 (above T512 3.715).  
 **Verdict:** Under GM→shared / add-in-shared, **shared matches fragment**. Prefer either; no shared penalty.
 
 ## Instr mix (opcodes `SIMT_*`)
