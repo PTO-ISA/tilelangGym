@@ -1,8 +1,5 @@
-tag	E	TILE	T	compile	opsim	maxabs	wall_us	VF_cyc	el_per_cyc	LDS	STS	FADD	IADD	float2	float4	layout_note
-sv1tt_e8192_tile2048_t512	8192	2048	512	OK	PASS ok=True maxabs=0.0	0.0	1.2300	2205	3.7152	256	128	256	384	3	0	float2=3;float4=0;tx_stride2
-sv1tt_e8192_tile4096_t512	8192	4096	512	OK	PASS ok=True maxabs=0.0	0.0	1.2300	2205	3.7152	256	128	256	384	3	0	float2=3;float4=0;tx_stride2
-sv1tt_e8192_tile8192_t512	8192	8192	512	OK	PASS ok=True maxabs=0.0	0.0	1.2300	2205	3.7152	256	128	256	384	3	0	float2=3;float4=0;tx_stride2
-sv1tt_e16384_tile2048_t512	16384	2048	512	OK	PASS ok=True maxabs=0.0	0.0	2.4200	4356	3.7612	512	256	512	912	3	0	float2=3;float4=0;tx_stride2
-sv1tt_e16384_tile4096_t512	16384	4096	512	OK	PASS ok=True maxabs=0.0	0.0	2.4100	4345	3.7708	512	256	512	848	3	0	float2=3;float4=0;tx_stride2
-sv1tt_e16384_tile8192_t512	16384	8192	512	OK	PASS ok=True maxabs=0.0	0.0	2.4200	4349	3.7673	512	256	512	816	3	0	float2=3;float4=0;tx_stride2
-sv1tt_e16384_tile16384_t512	16384	16384	512	OK	PASS ok=True maxabs=0.0	0.0	2.4600	4433	3.6959	512	256	512	768	3	0	float2=3;float4=0;tx_stride2
+tag	E	TILE	T	compile	opsim	maxabs	wall_us	VF_cyc	el_per_cyc	LDS	STS	FADD	IADD	BRANCH	ISETP	n_serial_tiles	float2	float4	layout_note	MRF_unique_n	MRF_KB	MRF_pct	MRF_formula
+sv1tt_e16384_tile2048_t512	16384	2048	512	OK	PASS ok=True maxabs=0.0	0.0	2.4200	4356	3.7612	512	256	512	912	128	128	8	3	0	float2=3;float4=0;tx_stride2;el=E/VF	13	26.0	20.3	13×512×4B=26.00KB (20.3%)
+sv1tt_e16384_tile4096_t512	16384	4096	512	OK	PASS ok=True maxabs=0.0	0.0	2.4100	4345	3.7708	512	256	512	848	64	64	4	3	0	float2=3;float4=0;tx_stride2;el=E/VF	13	26.0	20.3	13×512×4B=26.00KB (20.3%)
+sv1tt_e16384_tile8192_t512	16384	8192	512	OK	PASS ok=True maxabs=0.0	0.0	2.4200	4349	3.7673	512	256	512	816	32	32	2	3	0	float2=3;float4=0;tx_stride2;el=E/VF	13	26.0	20.3	13×512×4B=26.00KB (20.3%)
+sv1tt_e16384_tile16384_t512	16384	16384	512	OK	PASS ok=True maxabs=0.0	0.0	2.4600	4433	3.6959	512	256	512	768	0	0	1	3	0	float2=3;float4=0;tx_stride2;el=E/VF	11	22.0	17.2	11×512×4B=22.00KB (17.2%)
