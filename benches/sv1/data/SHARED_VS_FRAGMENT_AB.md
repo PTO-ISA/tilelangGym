@@ -1,6 +1,6 @@
 # SV1 SimtVF — `alloc_shared` temps vs `alloc_fragment` temps A/B
 
-> **Tower / staging only — do not cite as SDS.** This file is the old `alloc_shared` t1/t2/t3 staging arm (−37%/−50% vs frag). Correct SDS (direct GM→shared, frag≡gmshared tie; peak T1024=3.846) is `SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md` / ANALYSIS §8.
+> **Tower / staging only — do not cite as SDS.** This file is the old `alloc_shared` t1/t2/t3 staging arm (−37%/−50% vs frag). Correct SDS (direct GM→shared, frag≡gmshared tie; peak T1024=3.846) is `SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md` / ANALYSIS §6.
 
 
 **Date:** 2026-10-16 HKT · **Host:** pto-b10 (`edgexpert-59a6`) · **SOC:** Ascend950PR_9599 opsim  

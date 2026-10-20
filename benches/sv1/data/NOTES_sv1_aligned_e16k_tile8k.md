@@ -1,4 +1,4 @@
-> **Status (2026-10-20):** This NOTES file is **appendix-only**. PR #7 ANALYSIS **§5 primary** is now **E8192 TILE=E (hist. " untiled) float2** (hub T512=**3.715**, peak T1024=**3.846**), not the aligned TILE8K@T512=**2.40** hub below. H2H stock row in ANALYSIS §7 uses the float2 numbers; do **not** treat §4.1/§4.2 tables here as current stock SoT.
+> **Status (2026-10-20):** This NOTES file is **appendix-only**. PR #7 ANALYSIS **§5 primary** is now **E8192 TILE=E (hist. " untiled) float2** (hub T512=**3.715**, peak T1024=**3.846**), not the aligned TILE8K@T512=**2.40** hub below. H2H stock row in ANALYSIS §8 uses the float2 numbers; do **not** treat §4.1/§4.2 tables here as current stock SoT.
 
 # SV1 aligned matrix — results (pto-b10)
 
@@ -57,7 +57,7 @@ Compare point: **Simt TILE=8192 @ T512 = 2.4006 el/cyc** vs **SIMD E=16384 = 31.
 ## Recommended use (appendix only — 2026-10-20)
 - These aligned E16K TILE numbers are **appendix** for ANALYSIS — **not** §5 primary.
 - ANALYSIS §5 primary: E8192 TILE=E (hist. " untiled) float2 T512=**3.715** / T1024 peak=**3.846** (see `SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md`).
-- ANALYSIS §7 H2H stock rows use float2 **3.715 / 3.846** (~7.9× / ~7.6× vs SIMD 29.26), not TILE8K@T512 **2.40**.
+- ANALYSIS §8 H2H stock rows use float2 **3.715 / 3.846** (~7.9× / ~7.6× vs SIMD 29.26), not TILE8K@T512 **2.40**.
 - Keep this file as the harvest log for the 2026-10-17 e700041f aligned matrix only.
 
 ## Mix note (codegen)
