@@ -172,6 +172,15 @@ The ~**+2** el/cyc is **MI’s I↔L**, not C source-order mix.
 
 Best whole-VF: **T256 = 10.79**. Wider T helps hide FADD/STS up to T256, then turns down.
 
+**§6.2 conclusion.** To approach the SoftLib ceiling we must **split the schedule into LDS and STS stages** (compute fused either way), using **LDS.32 + STS.32**. Rooftops are the **serial model**:
+
+| Case | Serial roof | Derivation |
+|------|------------:|------------|
+| **1-in / 1-out** | **16** el/cyc | 128 B/c R + 128 B/c W |
+| **Dual-input A+B** | **10.667** el/cyc | `1/(1/16+1/32)` |
+
+MI-off stage-sep alone stays ~**8.x**; split LD/ST + MI-on reaches ~**10.x** (~**72.6%** of serial **16**).
+
 ### 6.3 Dual-input — same %rooftop story + full fence×source table
 
 Bring A+B back: performance rooftop **% similar** to 1-in. MI-on stage-sep + **one** fence reaches **≈72–73%** of the serialized rooftop (1-in **72.6%** of 16; A+B **72.2%** of 10.67). Full report: SoftLib opsim harvest `T256_FENCE_X_SOURCE_SUMMARY.md`.
@@ -189,15 +198,15 @@ Bring A+B back: performance rooftop **% similar** to 1-in. MI-on stage-sep + **o
 
 † nofence **%whole** = `(E/VF)/roof`. Fenced **%ser** = serialized walls. Latency issue→retire fence-invariant on 1-in; A+B fence1≡store-only. VF collapse is schedule/overlap, not mem latency.
 
-**Classic VF framing (A+B LDS.b32, roof ~8):**
+**Classic VF framing vs serial rooftop (not fixed-8):** SoftLib **LDS.b32** A+B %rooftop uses serial **10.667**. Do **not** fix SoftLib b32 % to **8** — that **~8** is the **LD.64 A+B** classic lead from §5.
 
-| Case | el/cyc | % of roof 8 |
-|------|-------:|------------:|
-| SoftLib A+B LDS.b32 T512 `loadall_barrier` | **7.42** | **92.8%** |
-| SoftLib A+B LDS.b32 T256 fence1 | **7.32** | **91.5%** |
-| SoftLib A+B LDS.b64 T256 `loadall_barrier` (width contrast) | **4.82** | **~60%** |
+| Case | el/cyc | Serial roof | % of serial |
+|------|-------:|------------:|------------:|
+| SoftLib A+B LDS.b32 T512 `loadall_barrier` | **7.42** | **10.667** | **~69.5%** |
+| SoftLib A+B LDS.b32 T256 fence1 | **7.32** | **10.667** | **~68.6%** |
+| SoftLib A+B LDS.b64 T256 `loadall_barrier` (width contrast) | **4.82** | LD.64 A+B **~8** | **~60%** of LD.64 roof |
 
-SoT A+B b32: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS32_AB_TWO_SOURCE.md`. A+B b64: `LDS64_AB_TWO_SOURCE.md`.
+Fence-table **%ser** for A+B remains **72.2%** of **10.67**. SoT A+B b32: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS32_AB_TWO_SOURCE.md`. A+B b64: `LDS64_AB_TWO_SOURCE.md`.
 
 ---
 
@@ -206,43 +215,39 @@ SoT A+B b32: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS32_AB_TWO_SOURCE.m
 **Answer first.**
 
 - **SIMD** simple VL=64 schedule @ TILE8K: **29.26** el/cyc (~**66%** of theory rooftop ~44; mid-body ~34 / ~**78%**). A simple load→add→store does **28+**.
-- **Simt rooftop** depends on **LDS.32 vs LDS.64**. Need **≥256 threads** for LDS/STS outstanding, and **split LD/ST stages** (instruction schedule) to approach the SoftLib ceiling.
+- **Simt rooftop** depends on **LDS.32 vs LDS.64**. Need **≥256 threads** for LDS/STS outstanding, and **split LD/ST stages** (LDS.32 + STS.32) for instruction schedule to approach the SoftLib ceiling. Serial roofs: 1-in/1-out **16** (128 B/c R + 128 B/c W); A+B **10.667**.
 - **Default lowering** (stock LDS.64-class A+B) ≈ **2.40** el/cyc @ TILE8K T512 → **~30%** of LD.64 A+B roof ~8 → **~12×** vs SIMD 29.26.
-- **Handcraft best so far** (SoftLib A+B LDS.b32 T512 `loadall_barrier`): **7.42** → **~92.8%** of classic roof 8 / **~72%** in the serial model (of 10.67) → remaining gap **~3.9×** vs SIMD 29.26, which **matches the input UB BW difference** (256R+256R vs 128R).
+- **Handcraft best so far** (SoftLib A+B LDS.b32 T512 `loadall_barrier`): **7.42** → **~69.5%** of serial **10.667** (fence **%ser ~72%** of 10.67) → remaining gap **~3.9×** vs SIMD 29.26, which **matches the input UB BW difference** (256R+256R vs 128R).
+
+**MRF = 128 KB.** SoftLib `loadall` keeps the live tile in RF (f32 E=8192: one array **32 KB**; A+B **64 KB**; A+B+C **96 KB** = **75%** of MRF). Stock Simt + SIMD TILE8K hub use the same **A+B+C = 96 KB** tile footprint (UB / RF path differs; see §2).
 
 **Fair H2H @ schedule/mapping (A+B arms vs SIMD TILE8K hub):**
 
-| Mapping / schedule | el/cyc | Roof | Rooftop % | vs SIMD 29.26 |
-|--------------------|-------:|------|----------:|--------------:|
-| Stock Simt LDS.64 — TILE8K@T512 (§5.2) | **2.40** | LD.64 A+B **~8** | **~30%** | **~12×** |
-| SoftLib A+B LDS.b64 — T256 `loadall_barrier` | **4.82** | A+B **~8** | **60%** | **~6.1×** |
-| SoftLib A+B LDS.b32 — T512 `loadall_barrier` | **7.42** | A+B **~8** | **92.8%** | **~3.9×** |
-| SIMD VL=64 — TILE8K hub (§4) | **29.26** | theory **~44** | **~66%** | **1×** |
+| Mapping / schedule | el/cyc | Roof | Rooftop % | vs SIMD 29.26 | MRF live (KB / %) |
+|--------------------|-------:|------|----------:|--------------:|------------------:|
+| Stock Simt LDS.64 — TILE8K@T512 (§5.2) | **2.40** | LD.64 A+B **~8** | **~30%** | **~12×** | A+B+C **96** / **75%** |
+| SoftLib A+B LDS.b64 — T256 `loadall_barrier` | **4.82** | LD.64 A+B **~8** | **~60%** | **~6.1×** | A+B+C **96** / **75%** |
+| SoftLib A+B LDS.b32 — T512 `loadall_barrier` | **7.42** | serial **10.667** | **~69.5%** | **~3.9×** | A+B+C **96** / **75%** |
+| SIMD VL=64 — TILE8K hub (§4) | **29.26** | theory **~44** | **~66%** | **1×** | A+B+C **96** / **75%** |
 
-SoftLib phase-sep A+B closes most of the Simt schedule gap vs stock; remaining SoftLib↔SIMD gap tracks UB BW (256R+256R vs 128R), not “need a bigger TILE.”
+SoftLib phase-sep A+B closes most of the Simt schedule gap vs stock; remaining SoftLib↔SIMD gap tracks UB BW (256R+256R vs 128R), not “need a bigger TILE.” All fair A+B arms sit at **~75% MRF** for the 8K/E=8192 A+B+C tile — SoftLib’s win is schedule/width, not extra register budget.
 
-## 8. Shared vs fragment — direct GM→shared only (no S-MEM staging tower)
+## 8. Shared vs fragment — layout A/B @ E8192
 
-**S-MEM tower removed.** The old shared arm used `t1/t2/t3 = alloc_shared` staging (shared→shared copies) and looked **−37%/−50%** vs fragment — that pattern is **gone**. No shared→fragment `T.copy` either.
+**Scope callout:** §8 is layout A/B @ **E8192**; it is **not** the §5 aligned hub SoT (**2.40** @ E16K TILE8K). Do **not** mix older **3.715** / “tie” numbers into the default schedule story.
 
-**Kept path (SDS / direct GM→shared):**
+Measured frag vs shared-tower temps (`data/SHARED_VS_FRAGMENT_AB.md`, 2026-10-16 HKT):
 
-1. `T.copy(A/B → a_ub/b_ub)` — GM→shared
-2. Add **in shared:** `c_ub[i] = a_ub[i] + b_ub[i]` (no t1/t2/t3)
-3. `T.copy(c_ub → C)`
+| Case | frag VF / el/cyc | shared VF / el/cyc | Δ el/cyc |
+|------|-----------------:|-------------------:|---------:|
+| E8192 T128 | 4680 / **1.750** | 7450 / **1.100** | **−37%** |
+| E8192 T512 | 3405 / **2.406** | 6840 / **1.198** | **−50%** |
 
-Fragment arm stays as RF-temps baseline (`alloc_fragment` t1/t2/t3). Knob: `ST_SV1_TEMPS=frag|shared` → tags `frag` / `gmshared`. Stock **float2**, opsim 2026-10-16 HKT, cann_92b2, `ST_VF_MODE=simt-asc`.
+Fragment arm: RF temps (`alloc_fragment`). Shared arm: UB ptr temps (`alloc_shared`) — extra STS vs frag (shared-tower pattern). Frag T512 **2.406** matches the §5 ballpark for frag-class Simt.
 
-| Case | frag VF / el/cyc | gmshared VF / el/cyc | Δ el/cyc | STS |
-|------|-----------------:|---------------------:|---------:|----:|
-| E8192 T128 | 3160 / **2.592** | 3160 / **2.592** | **0%** (tie) | 128 both |
-| E8192 T512 | 2205 / **3.715** | 2205 / **3.715** | **0%** (tie) | 128 both |
+Prior “gmshared float2 SDS tie” / **3.715** row cited `data/SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md` — **missing on branch**; that row is dropped.
 
-Instr mix identical (`SIMT_LDS/STS/FADD/IADD`). See `data/SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md`.
-
-**Verdict:** under direct GM→shared / add-in-shared, **shared matches fragment** — no shared penalty. Prefer either for this short-live stream case.
-
----
+**Verdict:** shared temps are **materially slower** than fragment on every PASS pair (≈ **37–50%** lower el/cyc at T128/T512). Prefer fragment for this short-live stream case unless a direct GM→shared remeasure lands.
 
 ## 9. Meta / pins
 
