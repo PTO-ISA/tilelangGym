@@ -1,6 +1,6 @@
 # SV1 analysis — short-live stream eltwise (Simt + SIMD)
 
-**Date:** 2026-10-17 HKT · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (`config.toml` pins) · **TileLang tip:** `e700041f` (float4 / max_vector_bits 64→128)
+**Date:** 2026-10-17 HKT · SoftLib fence×source addendum **2026-10-20** · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (`config.toml` pins) · **TileLang tip:** `e700041f` (float4 / max_vector_bits 64→128)
 
 This is the **only** SV1 analysis doc. Older NOTES / VERDICT / rooftop-32 writeups were removed.
 
@@ -172,6 +172,25 @@ Stock Simt on this UB ld-bound case leaves a **scheduling bubble with long-laten
 
 **Δ ≈ +2.1 el/cyc from MI.** Hand IL-mix / recipe-shaped MI-off reimpls stayed ≤ **~6.06** (idx[] IL) or ~**5.6** (F/S bleed) — **did not beat MI-off 8.70**. Scheduling gain is **MI’s**, not C source-order mix.
 
+### SoftLib T256 fence × source matrix (Lok 2026-10-20)
+
+**Claim:** stage-sep SoftLib + **one** compiler fence (`asm volatile("" ::: "memory")` — LDS-bar *or* STS-bar) + **MI-on** reaches **≈72–73%** of the **serialized** rooftop (1-in **16**; A+B harmonic **10.67** = 1/(1/16+1/32)). Second fence unused (`fence1 ≡ store-only ≡ barrier` on VF).
+
+**Roofs:** %s1/%s2 vs LDS **32** / STS **32** el/cyc. **%ser** = `E/(s1_wall+s2_wall)` ÷ roof (**16** / **10.67**). **nofence:** s1/s2/%ser = **N/A** — raw `[first_I,last_S]` body matches fenced (relative stream bit-identical) but **VF ≫ body**, so copying fenced stages would fake the whole; use **(E/VF)/roof** only.
+
+| source | fence | VF | whole (E/VF) | %whole | s1 el/cyc | %s1 | s2 el/cyc | %s2 | ser el/cyc | %ser | LDS mean/var | STS mean/var |
+|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|---|
+| 1-in | nofence | 1192 | 6.8725 | **43.0%**† | N/A | N/A | N/A | N/A | N/A | N/A | 28.516/12.878 | 21.496/20.737 |
+| 1-in | LDS-bar | 759 | 10.7931 | — | 27.4899 | 85.9% | 20.1278 | 62.9% | 11.6199 | **72.6%** | 28.516/12.878 | 21.496/20.737 |
+| 1-in | STS-bar | 759 | 10.7931 | — | 27.4899 | 85.9% | 20.1278 | 62.9% | 11.6199 | **72.6%** | 28.516/12.878 | 21.496/20.737 |
+| A+B | nofence | 1853 | 4.4209 | **41.4%**† | N/A | N/A | N/A | N/A | N/A | N/A | 31.443/32.470 | 22.504/36.165 |
+| A+B | LDS-bar | 1119 | 7.3208 | — | 22.9468 | 71.7% | 11.6034 | 36.3% | 7.7065 | **72.2%** | 31.926/26.969 | 21.543/24.249 |
+| A+B | STS-bar | 1119 | 7.3208 | — | 22.9468 | 71.7% | 11.6034 | 36.3% | 7.7065 | **72.2%** | 31.926/26.969 | 21.543/24.249 |
+
+† nofence **%whole** = `(E/VF)/roof`. Fenced **%ser** = serialized walls. Latency issue→retire: 1-in fence-invariant (LDS 28.516/12.878, STS 21.496/20.737); A+B fence1≡store-only; differs more by source than fence. VF collapse is schedule/overlap, not mem latency.
+
+Full report: SoftLib opsim harvest `T256_FENCE_X_SOURCE_SUMMARY.md` (REGRESSION-2).
+
 ### 6.1 Claim + simplify
 
 **Claim:** the stock Simt gap is schedule / LDS-latency, not “need a bigger TILE.”
@@ -299,7 +318,7 @@ SoT: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS32_AB_TWO_SOURCE.md` (pto-
 | **2. SoftLib / hand reschedule best (A+B fair arm)** | A+B LDS.b32 **7.42** @ T512 `loadall_barrier` (T256 7.32 · §6.5); LDS.b64 width compare **4.82** @ T256 (§6.4) | A+B **~8** | b32 **~93%** of 8 · b64 **~60%** of 8 |
 | **3. SIMD best** (handwritten DSL VL=64 @ E=16K) | **31.51** (TILE16384; TILE8K hub **29.26**) | theory rooftop **~44** | **~72%** of 44 (TILE8K **~66%**) |
 
-**Bottom line:** stock Simt TILE8K peaks at **T512 = 2.40 el/cyc (~30% of ~8)** and turns down by T2048 — gap is a **scheduling bubble + long-latency LDS** (§5.6), not TILE size (LD port itself is fine — PURE ~115–128 B/cyc; SoftLib whole-VF gap is post-LDS FADD/STS yield + warp outstanding for LDS latency ≈27). SoftLib proves the claim in §6.3 (1-in VADDS+const schedule-proof — **not** a fair SIMD H2H arm): phase-sep IADD-then-LDS + barrier (not Body4 SWP) reaches A-only **10.79 (~67.5% of 16)**. Fair A+B arm: same motif on LDS.b32 reaches **7.42 (~93% of 8)** @ T512 (§6.5; exceeds Lok’s ~5–6); LDS.b64 width compare **4.82 (~60% of 8)** @ T256 (§6.4). SIMD tiled best remains **31.51** / hub **29.26** (~**12×** stock Simt at TILE8K).
+**Bottom line:** stock Simt TILE8K peaks at **T512 = 2.40 el/cyc (~30% of ~8)** and turns down by T2048 — gap is a **scheduling bubble + long-latency LDS** (§5.6), not TILE size (LD port itself is fine — PURE ~115–128 B/cyc; SoftLib whole-VF gap is post-LDS FADD/STS yield + warp outstanding for LDS latency ≈27). SoftLib proves the claim in §6.3 (1-in VADDS+const schedule-proof — **not** a fair SIMD H2H arm): phase-sep IADD-then-LDS + barrier (not Body4 SWP) reaches A-only **10.79 (~67.5% of 16)**. Fair A+B arm: same motif on LDS.b32 reaches **7.42 (~93% of 8)** @ T512 (§6.5; exceeds Lok’s ~5–6); LDS.b64 width compare **4.82 (~60% of 8)** @ T256 (§6.4). SIMD tiled best remains **31.51** / hub **29.26** (~**12×** stock Simt at TILE8K). MI-on stage-sep + **one** fence reaches **≈72–73% serial** (1-in 72.6% of 16; A+B 72.2% of 10.67), distinct from classic VF % of 16/8.
 
 ### 6.7 Final head-to-head vs SIMD — schedule / mapping @ E=16K TILE=8K only
 
