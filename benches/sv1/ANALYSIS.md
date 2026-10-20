@@ -1,6 +1,6 @@
 # SV1 analysis — short-live stream eltwise (Simt + SIMD)
 
-**Date:** 2026-10-17 HKT · SoftLib fence×source addendum **2026-10-20** · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (`config.toml` pins) · **TileLang tip:** `e700041f` (float4 / max_vector_bits 64→128)
+**Date:** 2026-10-17 HKT · SoftLib fence×source addendum **2026-10-20** · SoftLib rooftop rewrite **2026-10-20** · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (`config.toml` pins) · **TileLang tip:** `e700041f` (float4 / max_vector_bits 64→128)
 
 This is the **only** SV1 analysis doc. Older NOTES / VERDICT / rooftop-32 writeups were removed.
 
@@ -114,69 +114,69 @@ Data: `data/SUMMARY_sv1_aligned_e16k_tile8k.tsv` (+ `.json`, `NOTES_sv1_aligned_
 **Forward (not run):** later try **T128/T256 fully unroll** and let **ccec** schedule, then compare vs hand/manual — do not treat as SoT until measured.
 
 
-### 5.3 Footnote — alternate roof only (do not mix into §5.1–5.2)
+## 6. SoftLib handwritten Simt rooftop analysis
 
-Prior pack docs also used **1R+1W @ 128 B each → 16 el/cyc**. Against that roof: aligned TILE8K@T512 ≈ **15%**. Lead framing for Simt stock stays **~8**; keep **16** only here.
+**Date:** SoftLib rooftop rewrite **2026-10-20**. Stock Simt TILE8K@T512 stays **2.40** el/cyc (~30% of LD.64 A+B roof ~8) from §5.2. SoftLib below is the handwritten Simt rooftop story: width (LDS.32 vs LDS.64), schedule (1-in first), then dual-input %rooftop + full fence×source table.
 
-### 5.4 Side note: LD.32
+### 6.1 LDS.32 vs LDS.64
 
-- Theory: LD.32 can do **128 B/cyc**, but **too many instructions / hard to schedule**.
-- For LD.32 A+B (dual load on one R port), **theory best ~8 el/cyc**.
-- SoftLib / best-thread cases land around **~4–5 el/cyc** VF average under realistic schedules:
-  - SoftLib **A-only** LDS.b32 contig T128: VF **4.54** el/cyc @ E=8192 (label **A-only** — not A+B).
-  - Aligned stock Simt (A+B): **~2.40–2.45** el/cyc under new pins.
-  - SoftLib A-only T512 / T1024 VF **8.5 / 9.9** el/cyc are **A-only** — do **not** mix with A+B theory without labeling.
-- SoftLib A-only LDS.b32 contig T128: LDS-window **101 B/cyc (79% of 128)**, LDS-window elems **25.3**; whole-VF elems **4.54** — see `/workspace/st_out_cce_vadds_const/reports/`.
-- SoftLib A+B LDS.b32 contig T128: **~52 B/cyc** (~41% of 128) from LDS width BW report.
+PURE / MI-off / self-scheduled port isolation (IADD→LDS separated; disasm LDS region with zero IADD/LEA). SoT: `/workspace/st_out_cce_lds_bw_confirm/reports/LD32_LD64_BW_CONFIRM.md`.
 
-### 5.5 SoftLib LDS.b32 / LDS.b64 BW — PURE port isolation (2026-10-17)
+| Width | Tag | Peak B/cyc | Sustained first→last B/cyc | vs 128 |
+|-------|-----|----------:|---------------------------:|-------:|
+| **LDS.b32** | `bw_b32_sep_ptr_e8192_t128_mi_off` | **128** | **~115** (114.98) | **~90%** sustained |
+| **LDS.b64** | `bw_b64_sep_ptr_e8192_t128_mi_off` | (burst) | **~64.5** (64.50) | **~half** |
 
-**SoT:** `/workspace/st_out_cce_lds_bw_confirm/reports/LD32_LD64_BW_CONFIRM.md` (pto-b10, Ascend950PR_9599, E=8192 T=128).
+**Implication:** Simt el/cyc rooftop **depends on width**. For stream eltwise A+B:
 
-Prior SoftLib T128 ~**101 B/cyc** (section 5.5 / §6 baseline) was **compiler IADD↔LDS interleave** (`I1L1…`) — **not** LDS-port isolation. Confirmed PURE numbers below require:
+| Framing | Roof el/cyc | Notes |
+|---------|------------:|-------|
+| Classic lead (LD.64 A+B) | **~8** | Stock / §5.1–5.2 % columns |
+| SoftLib LDS.b32 **1-in** serial | **16** | LDS 32 + STS 32 el/cyc ports |
+| SoftLib LDS.b32 **A+B** serialized harmonic | **10.67** | `1/(1/16+1/32)` — dual-load LDS 16 + STS 32 |
 
-1. **Self-scheduled (自己排好):** hand/manual schedule with explicit **IADD-then-LDS** separation (`sep_ptr` — all address IADD/LEA first, hard phase barrier, then LDS burst alone). Disasm must show LDS region with **zero** IADD/LEA (`separation_ok=True`, motif `L64` / `L32`).
-2. **MI schedule disabled** (Lok: 「MR schedule disabled」 → SoftLib/SV1 flag): `-mllvm -enable-misched=false -mllvm -enable-post-misched=false`. Default MI keeps MIXED interleave even with `sep_ptr`.
+Default stock TileLang uses wider / LDS.64-class lowering. SoftLib hand targets **LDS.b32** for the high ceiling.
 
-| Width | Tag | Disasm | Peak B/cyc | Sustained first→last B/cyc | vs 128 roof |
-|-------|-----|--------|----------:|---------------------------:|------------:|
-| **LDS.b32 (LD32)** | `bw_b32_sep_ptr_e8192_t128_mi_off` | **PURE** `L64` | **128.00** | **~115** (114.98) | **100%** peak · **~90%** sustained |
-| **LDS.b64 (LD64)** | `bw_b64_sep_ptr_e8192_t128_mi_off` | **PURE** `L32` | (burst†) | **~64.5** (64.50) | **~50%** sustained |
+### 6.2 Schedule — single-source (1-in VADDS+const) first
 
-† LD64 short-window rolling peak can exceed 128 (1× LDS.b64/cyc × 256 B); **claim metric is sustained first→last = 64.50**.
+One input keeps the case simple: IADD → LDS → FADD(+const) → STS. SoftLib A-only LDS.b32+const, E=8192. Reports under `/workspace/st_out_cce_vadds_const*/reports/` and T256 fence harvest `T256_FENCE_X_SOURCE_SUMMARY.md`.
 
-**One-liner:** under PURE / MI-off / self-scheduled IADD→LDS: **LD32 peak 128 B/cyc, sustained ~115; LD64 ~64.5 B/cyc (~half)**. Isolation costs whole-VF (LD32 PURE whole-VF **7.19** el/cyc vs T1024 **9.89**) — do not mix PURE port-BW with MIXED whole-VF chase (§6).
+**1. MI-off stage-sep ≈ 8.x baseline.** All LDS then all FADD then all STS (`loadall_barrier` / `iadd_first`; simple same-latency stages + warp hide; MI off):
 
-### 5.6 Head-to-head vs SIMD (E=16K, matched TILE ≤8K)
+| role | MI | VF | el/cyc | tag / note |
+|------|----|---:|-------:|---|
+| **Controllable baseline** | OFF | **942** | **8.70** | stage-sep under hand control |
+| SoftLib ceiling | ON | **759** | **10.79** | same source; MI compresses (−183 VF / +2.10 el) |
 
-| TILE | SIMD el/cyc | Simt T512 el/cyc (§5.1) | ratio |
-|-----:|------------:|------------------------:|------:|
-| 2048 | 19.88 | 2.44 | ~8× |
-| 4096 | 25.44 | 2.45 | ~10× |
-| **8192** | **29.26** | **2.40** | **~12×** |
+**2. Split LD and ST stages to reach ~10.x.** Compute can fuse either way. MI-on stage-sep + **one** compiler `asm volatile("" ::: "memory")` fence (LDS-bar *or* STS-bar) → **10.79** @ T256. Second fence unused (`fence1 ≡ store-only ≡ barrier` on VF). **Nofence** collapses to **6.87** — schedule/overlap, not mem latency (LDS/STS issue→retire latency fence-invariant: LDS 28.516/12.878, STS 21.496/20.737).
 
-**Takeaway:** at the TILE=8K hub, SIMD is ~**12×** Simt T512 (**29.26** vs **2.40**). Simt tile ladder is already **flat** (§5.1) — growing TILE does **not** close the gap. The gap is still a **scheduling bubble with long-latency LDS** on the stock Simt path (UB ld-bound; latency hiding helps with T but does not remove the bubble), not a “need bigger TILE” story. For the **schedule/mapping** compare (stock vs SoftLib hand vs SIMD) at TILE=8K only, see **§6.7**.
+**3. Performance rooftop (split / fenced case).** Serialized walls: **%ser ≈ 72.6%** of roof **16** (ser 11.6199). Stage util for 1-in MI-on: LDS-win ~**74%** / post ~**76%**. Hand MI-off mix attempts do **not** beat 8.70:
 
+| probe | el/cyc | vs MI-off 8.70 |
+|-------|-------:|----------------|
+| best F↔S mix | **8.83** (+0.13) | marginal |
+| idx[] IL / bad IL | **~6.06** | loses |
+| F/S bleed reimpl | **~5.6** | loses |
 
----
+The ~**+2** el/cyc is **MI’s I↔L**, not C source-order mix.
 
-## 6. SoftLib hand schedule — why Simt is hard (1-in VADDS+const)
+**4. Threads and SWP.** Need **≥256 threads** for LDS/STS outstanding — T128 (4 warps) cannot hide LDS latency ≈27. SWP Body4 @ T128 falsified ~**3.4** el/cyc (interleaves FADD/STS into LDS window → LDS-win collapses).
 
-Stock Simt on this UB ld-bound case leaves a **scheduling bubble with long-latency LDS** (§5.6 H2H takeaway: TILE8K hub SIMD **29.26** vs Simt T512 **2.40**, ~**12×**). SoftLib hand schedules below are the **proof of that claim** and a **hand ceiling** — not a sudden side note. We simplify the kernel so the schedule difficulty is visible in isolation, then show what a working hand motif can recover (and what fails).
+**Compact T ladder — 1-in barrier best (MI-on `loadall_barrier` / `iadd_first`):**
 
-### SoftLib T256 schedule headline (Lok 2026-10-19)
+| T | warps | VF | el/cyc | % of roof 16 |
+|--:|------:|---:|-------:|-------------:|
+| 128 | 4 | 882 | **9.29** | 58% |
+| **256** | **8** | **759** | **10.79** | **67.5%** |
+| 512 | 16 | 796 | **10.29** | 64% |
 
-| Controllable baseline | SoftLib ceiling |
-|----------------------|-----------------|
-| **MI-off** stage-sep `loadall_barrier` / `iadd_first` → **≈ 8.x** el/cyc (measured **8.70**, VF=942) | **MI-on** same source → **≈ 10.8** (measured **10.79**, VF=759) |
+Best whole-VF: **T256 = 10.79**. Wider T helps hide FADD/STS up to T256, then turns down.
 
-**Δ ≈ +2.1 el/cyc from MI.** Hand IL-mix / recipe-shaped MI-off reimpls stayed ≤ **~6.06** (idx[] IL) or ~**5.6** (F/S bleed) — **did not beat MI-off 8.70**. Scheduling gain is **MI’s**, not C source-order mix.
+### 6.3 Dual-input — same %rooftop story + full fence×source table
 
-### SoftLib T256 fence × source matrix (Lok 2026-10-20)
+Bring A+B back: performance rooftop **% similar** to 1-in. MI-on stage-sep + **one** fence reaches **≈72–73%** of the serialized rooftop (1-in **72.6%** of 16; A+B **72.2%** of 10.67). Full report: SoftLib opsim harvest `T256_FENCE_X_SOURCE_SUMMARY.md`.
 
-**Claim:** stage-sep SoftLib + **one** compiler fence (`asm volatile("" ::: "memory")` — LDS-bar *or* STS-bar) + **MI-on** reaches **≈72–73%** of the **serialized** rooftop (1-in **16**; A+B harmonic **10.67** = 1/(1/16+1/32)). Second fence unused (`fence1 ≡ store-only ≡ barrier` on VF).
-
-**Roofs:** %s1/%s2 vs LDS **32** / STS **32** el/cyc. **%ser** = `E/(s1_wall+s2_wall)` ÷ roof (**16** / **10.67**). **nofence:** s1/s2/%ser = **N/A** — raw `[first_I,last_S]` body matches fenced (relative stream bit-identical) but **VF ≫ body**, so copying fenced stages would fake the whole; use **(E/VF)/roof** only.
+**Roofs:** %s1/%s2 vs LDS **32** / STS **32** el/cyc. **%ser** = `E/(s1_wall+s2_wall)` ÷ roof (**16** / **10.67**). **nofence:** s1/s2/%ser = **N/A** — raw `[first_I,last_S]` body matches fenced but **VF ≫ body**; use **(E/VF)/roof** only for %whole.
 
 | source | fence | VF | whole (E/VF) | %whole | s1 el/cyc | %s1 | s2 el/cyc | %s2 | ser el/cyc | %ser | LDS mean/var | STS mean/var |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|---|
@@ -187,156 +187,41 @@ Stock Simt on this UB ld-bound case leaves a **scheduling bubble with long-laten
 | A+B | LDS-bar | 1119 | 7.3208 | — | 22.9468 | 71.7% | 11.6034 | 36.3% | 7.7065 | **72.2%** | 31.926/26.969 | 21.543/24.249 |
 | A+B | STS-bar | 1119 | 7.3208 | — | 22.9468 | 71.7% | 11.6034 | 36.3% | 7.7065 | **72.2%** | 31.926/26.969 | 21.543/24.249 |
 
-† nofence **%whole** = `(E/VF)/roof`. Fenced **%ser** = serialized walls. Latency issue→retire: 1-in fence-invariant (LDS 28.516/12.878, STS 21.496/20.737); A+B fence1≡store-only; differs more by source than fence. VF collapse is schedule/overlap, not mem latency.
+† nofence **%whole** = `(E/VF)/roof`. Fenced **%ser** = serialized walls. Latency issue→retire fence-invariant on 1-in; A+B fence1≡store-only. VF collapse is schedule/overlap, not mem latency.
 
-Full report: SoftLib opsim harvest `T256_FENCE_X_SOURCE_SUMMARY.md` (REGRESSION-2).
+**Classic VF framing (A+B LDS.b32, roof ~8):**
 
-### 6.1 Claim + simplify
+| Case | el/cyc | % of roof 8 |
+|------|-------:|------------:|
+| SoftLib A+B LDS.b32 T512 `loadall_barrier` | **7.42** | **92.8%** |
+| SoftLib A+B LDS.b32 T256 fence1 | **7.32** | **91.5%** |
+| SoftLib A+B LDS.b64 T256 `loadall_barrier` (width contrast) | **4.82** | **~60%** |
 
-**Claim:** the stock Simt gap is schedule / LDS-latency, not “need a bigger TILE.”
+SoT A+B b32: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS32_AB_TWO_SOURCE.md`. A+B b64: `LDS64_AB_TWO_SOURCE.md`.
 
-**Simplify for the probe:** **VADDS with a const** = **one input**, **four instructions** per element stream:
+---
 
-| Stage | Op |
-|-------|-----|
-| addr | `IADD` |
-| load | `LDS` |
-| compute | `FADD` + const |
-| store | `STS` |
+## 7. Head-to-head highlight
 
-A-only rooftop framing **~16** el/cyc. Dual-input A+B (same motif, §6.4) uses roof **~8** (LD.64 A+B). Reports live under `/workspace/st_out_cce_vadds_const*/reports/` and `/workspace/st_out_cce_lds_bw_confirm/reports/` (pto-b10 mirrors under `/tmp/st_out_cce_*_20261017`).
+**Answer first.**
 
-### 6.2 Stage schedule — working motif vs SWP
+- **SIMD** simple VL=64 schedule @ TILE8K: **29.26** el/cyc (~**66%** of theory rooftop ~44; mid-body ~34 / ~**78%**). A simple load→add→store does **28+**.
+- **Simt rooftop** depends on **LDS.32 vs LDS.64**. Need **≥256 threads** for LDS/STS outstanding, and **split LD/ST stages** (instruction schedule) to approach the SoftLib ceiling.
+- **Default lowering** (stock LDS.64-class A+B) ≈ **2.40** el/cyc @ TILE8K T512 → **~30%** of LD.64 A+B roof ~8 → **~12×** vs SIMD 29.26.
+- **Handcraft best so far** (SoftLib A+B LDS.b32 T512 `loadall_barrier`): **7.42** → **~92.8%** of classic roof 8 / **~72%** in the serial model (of 10.67) → remaining gap **~3.9×** vs SIMD 29.26, which **matches the input UB BW difference** (256R+256R vs 128R).
 
-**Working hand motif (measured):** **phase-separated IADD-then-LDS** plus **`loadall_barrier` / `iadd_first`**. Addr+load go first as a packed phase; FADD/STS tail is hidden across warps (T256/T512/T1024), not stuffed into LDS gaps. Full phase pack (all IADD → all LDS → …) is the same idea.
+**Fair H2H @ schedule/mapping (A+B arms vs SIMD TILE8K hub):**
 
-**Controllable schedule baseline = MI-off stage-sep.** With `-mllvm -enable-misched=false -mllvm -enable-post-misched=false`, the same `loadall_barrier` / `iadd_first` source is the **hand-controlled** baseline: easy same-latency-per-stage (all IADD → all LDS → FADD → STS), but **cannot** rely on MI mixed-issue to overlap compute / ld / st across stages. **Simple IADD→LDS.32** deps are easier to schedule well under this regime; a **full mix** (IADD|LDS|FADD|STS in one window) is difficult — SWP falsified below, and MI-off hand IL-mix loses to stage-sep (§6.3).
+| Mapping / schedule | el/cyc | Roof | Rooftop % | vs SIMD 29.26 |
+|--------------------|-------:|------|----------:|--------------:|
+| Stock Simt LDS.64 — TILE8K@T512 (§5.2) | **2.40** | LD.64 A+B **~8** | **~30%** | **~12×** |
+| SoftLib A+B LDS.b64 — T256 `loadall_barrier` | **4.82** | A+B **~8** | **60%** | **~6.1×** |
+| SoftLib A+B LDS.b32 — T512 `loadall_barrier` | **7.42** | A+B **~8** | **92.8%** | **~3.9×** |
+| SIMD VL=64 — TILE8K hub (§4) | **29.26** | theory **~44** | **~66%** | **1×** |
 
-**SWP / Body4 packing was tried and lost.** A 4-walk software pipeline that packs IADD / FADD / STS into LD gaps is **not** the winning schedule on this machine for the A-only probe: SWP @ T128 landed ~**3.4** el/cyc (LDS median gap ≈**27** → needs ~**14** outstanding) — **falsified** vs the phase-sep + barrier motif. See SoftLib `SW_PIPELINE_AONLY_4x128.md` (under `/workspace/st_out_cce_vadds_const_sched/reports/`).
+SoftLib phase-sep A+B closes most of the Simt schedule gap vs stock; remaining SoftLib↔SIMD gap tracks UB BW (256R+256R vs 128R), not “need a bigger TILE.”
 
-Lok’s earlier “SWP or full-unroll matched stage latency → ~9.x/16” intuition for the **ceiling** was right on the ballpark for the **winning** motif; the implementation that actually hits ~9–10 el/cyc is **phase-sep + barrier / warp hide**, not Body4 SWP.
-
-**LD port is fine — SoftLib A-only whole-VF gap is not “IADD blocking LDS.32.”** PURE LDS isolation already shows the port can sustain ~**115–128** B/cyc (§5.5). The SoftLib A-only whole-VF shortfall vs that LDS window is **post-LDS FADD/STS yield + warp outstanding needed for LDS latency ≈27**, not address-gen starving the LD port. Pure IADD+LDS keep-in-RF would track the LDS window; VADDS+const does not; gap-fill SWP makes it worse (§6.2 SWP falsified ~3.4).
-
-### 6.3 Measured 1-in A-only (SoftLib LDS.b32+const) — `-O2` vs manual vs hand-craft
-
-SoftLib CCE **A-only LDS.b32+const**, E=8192. This **is** the SoftLib single-input LDS.b32 ceiling probe (Lok: “same VADDS+const with LDS.32 — is whole-VF actually best?” → **yes**, under the phase-sep motif below). Reports: `/tmp/st_out_cce_vadds_const_sched_20261016/reports/` (`T128_COMPILER_SCHEDULE.md`, `FAT_EXPLORE_OPSIM.md`, `VERDICT.md`), `/tmp/st_out_cce_vadds_const_t256_20261017/reports/T256_8WARP_RESCHED.md`, `/tmp/st_out_cce_vadds_const_t512_20261017/reports/T512_16WARP_RESCHED.md`, T1024 baseline in `/tmp/st_out_cce_vadds_tbig_20261016/reports/VADDS_CONST_T512_1024_OPSIM.md`.
-
-**Unroll note:** SoftLib source is already a **hand-unrolled load-all** body (`a[i]=A0[i*T+tid]; c[i]=a[i]+k; C0[…]=c[i]` — see `T128_COMPILER_SCHEDULE.md`). So the `-O2` arm below is **compiler schedule on a fully unrolled** kernel (not “hope `-O2` auto-unrolls a loop”). Default MI then **interleaves** address `IADD` with `LDS.b32` (`I*L*` motif), not a pure phase pack.
-
-#### Arm A — `-O2` compiler schedule (baseline `loadall` / MI on)
-
-| T | warps | VF | whole-VF el/cyc | LDS-win B/cyc | % of roof 16 | tag / report |
-|--:|------:|---:|----------------:|--------------:|-------------:|---|
-| 128 | 4 | 1806 | **4.54** | **101.14** (79% of 128) | **28%** | `vadds_const_b32_contig_e8192_t128` · `VADDS_CONST_B32_OPSIM.md` |
-| 256 | 8 | 1192 | **6.87** | **94.71** | **43%** | `vadds_const_b32_contig_e8192_t256` · `T256_8WARP_RESCHED.md` (`baseline_loadall`) |
-| 512 | 16 | 964 | **8.5** | **55.07** | **53%** | `vadds_const_b32_contig_e8192_t512` · `T512_16WARP_RESCHED.md` (`baseline_loadall`) |
-
-T1024 same SoftLib `-O2` style: VF **828** → **9.89** el/cyc (**62%** of 16) — useful warp-count reference; LDS-win B/cyc **falls** as warps↑ (T128 101 → T512 55).
-
-#### Arm B — Manual phase-sep (`loadall_barrier` / `iadd_first`)
-
-Baseline “**each stage same instruction**” schedule: phase-pack IADD→LDS (then FADD/STS), with barrier / iadd-first to keep the LDS window clean. Under **default MI-on** this is the SoftLib A-only **ceiling**; under **MI-off** it is the **controllable** schedule baseline (§6.2).
-
-| T | warps | VF | whole-VF el/cyc | LDS-win B/cyc | % of roof 16 | tag |
-|--:|------:|---:|----------------:|--------------:|-------------:|---|
-| 128 | 4 | **882** | **9.29** | **101.45** | **58%** | `loadall_barrier` / `iadd_first` |
-| **256** | **8** | **759** | **10.79** | **94.71** | **67.5%** | `sched_b32_loadall_barrier_e8192_t256` |
-| 512 | 16 | 796 | **10.29** | 55.07 | **64%** | `sched_b32_loadall_barrier_e8192_t512` |
-
-- **Best whole-VF (MI-on):** T256 **10.79** (**67.5%** of 16) — beats T1024 `-O2` **9.89**.
-- Manual vs `-O2` same T: T128 **9.29 vs 4.54** (~2×); T256 **10.79 vs 6.87**; T512 **10.29 vs 8.5**.
-- Wider T hides the FADD/STS tail up to T256, then turns down (T512 10.29 · T1024 `-O2` 9.89).
-
-**MI-off vs MI-on @ T256 (same barrier / iadd_first source):**
-
-| role | MI | VF | el/cyc | note |
-|------|----|---:|-------:|------|
-| **Controllable baseline** | **OFF** | **942** | **8.70** | stage-sep under hand control — easy same-latency/stage; no MI mixed-issue overlap (`T256_MIOFF_BASELINE.md`) |
-| SoftLib ceiling (compiler helps) | ON | **759** | **10.79** | MI compresses schedule (−183 VF / +2.10 el/cyc); already mixes IADD↔LDS.32 in the LDS window (`T256_MI_ON_VS_OFF.md`) |
-| MI-off hand IL-mix (iadd_il / swp_k* / chunk4) | OFF | 1351 | **~6.06** | **loses** to MI-off stage-sep 8.70 — full mix is hard (`T256_ILMIX_OPSIM.md`) |
-
-Both MI-on and MI-off already show I↔L mix inside the LDS window (in-win I **326** vs **257**); MI does **not** invent mix — it shortens LDS-win (−65) and post_L→STS (−119). Further hand-schedule work should compare against **MI-off 8.70**, not MI-on 10.79. Hand MI-off reimpl from the MI-on phase recipe (`T256_MION_REIMPL.md`) also **failed** to beat 8.70 (~**5.6** el/cyc) — same conclusion: gain is MI's, not source-order mix.
-
-#### Arm C — Hand-craft can be *worse* than `-O2` / phase-sep
-
-A carefully written “classic” schedule is **not** automatically better. Fat-explore @ T128 (`FAT_EXPLORE_OPSIM.md`) and §6.2:
-
-| Hand-craft probe | whole-VF el/cyc | vs `-O2` T128 4.54 | vs manual T128 9.29 | Why it loses |
-|------------------|----------------:|-------------------:|--------------------:|---|
-| SWP depth 4 (`D_swp_d4`) | **3.35** | worse | much worse | Interleaves FADD/STS into LDS window → LDS-win collapses to **18.4** B/cyc |
-| SWP depth 8 (`E_swp_d8`) | **3.43** | worse | much worse | Same collapse (**24.9** B/cyc LDS-win) |
-| Serial per-elem LDS→FADD→STS (`H_serial_chain`) | **2.32** | worse | much worse | No burst; LDS-win **10.7** B/cyc |
-
-**Why T128 is especially hard to hand-tune:** LDS median latency ≈**27** (§6.2) → needs ~**14** outstanding to hide; with only **4 warps**, T128 **cannot** carry enough outstanding to cover that latency even with a clever order — SWP tries to fill the gap and instead destroys the LDS burst (falsified ~**3.4**).
-
-**Why T256/T512 stay hard:** more warps help latency hide, but the winning motif still needs **controlled phase boundaries / yield** (barrier or iadd-first) so FADD/STS do not leak into the LDS window. Blind SWP-in-gap or “same-cycle all four” does not get there (all-four IADD+LDS+FADD+STS same cycle: **0** cycles at T128/512/1024 — schedule/port limited, not latency-alone forbidden).
-
-**Footnote — MI-off without stage-sep is worse; MI-off *with* stage-sep is the controllable baseline:** contig/loadall MI-off T128 **3.44** / T256 **~6.06** / T512 **7.15**; `-O0` T128 **2.42**. Those are **not** the schedule-control baseline — that is MI-off `loadall_barrier` / `iadd_first` @ T256 **8.70** (VF **942**, above). Default `-O2` MI still helps compress toward **10.79**; turning MI off on a barrier source does not erase the stage-sep win, but MI-off hand full-mix (~**6.06**) loses to it.
-
-### 6.4 Dual-input A+B hand schedule (LDS.b64)
-
-Same **phase-sep + `loadall_barrier` / `iadd_first`** motif, now **two sources** (A+B), **LDS.b64** (float2). Roof **~8** el/cyc (Lok A+B / LD.64 framing).
-
-SoT: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS64_AB_TWO_SOURCE.md` (pto-b10 `/tmp/st_out_cce_lds64_ab_20261017`).
-
-| T | best kind | whole-VF el/cyc | % of roof 8 |
-|--:|-----------|----------------:|------------:|
-| 128 | `loadall_barrier` / `iadd_first` | **3.62** | **45%** |
-| **256** | `loadall_barrier` / `iadd_first` | **4.82** | **60%** |
-| 512 | `baseline_loadall` | **4.67** | **58%** |
-
-- **Best:** T256 `ab_b64_loadall_barrier_e8192_t256` / `ab_b64_iadd_first_e8192_t256` → **4.82** el/cyc (**60%** of 8).
-- LDS-win ~**49–55** B/cyc across the ladder.
-- Beats prior ILP16 A+B **4.08** el/cyc.
-- Lok expected ~**5–6** vs ~**8** — measured **4.82** is that ballpark (slightly under the midpoint).
-
-A+B needs **roughly 2×** the load traffic of 1-in, so absolute el/cyc sits under the A-only ceiling; utilization vs its own roof (**60%** of 8) is in the same story as A-only (**67.5%** of 16) once the hand motif is applied.
-
-### 6.5 Dual-input A+B hand schedule (LDS.b32)
-
-Same **phase-sep + `loadall_barrier` / `iadd_first`** motif as §6.3–6.4, now **two sources** (A+B) with **LDS.b32** (more IADD + LDS.32 than b64). Roof still **8** el/cyc (same A+B framing as LDS.b64: 2×LDS.b32/elem @ 1 LDS/cyc).
-
-SoT: `/workspace/st_out_cce_lds_bw_confirm/reports/LDS32_AB_TWO_SOURCE.md` (pto-b10 `/tmp/st_out_cce_lds32_ab_20261019`).
-
-| T | kind | whole-VF el/cyc | % of roof 8 | LDS-win B/cyc |
-|--:|------|----------------:|------------:|--------------:|
-| 128 | `loadall_barrier` / `iadd_first` | **3.30** | **41%** | 49 |
-| 256 | `loadall_barrier` / `iadd_first` | **7.32** | **91.5%** | 105 |
-| **512** | `loadall_barrier` / `iadd_first` | **7.42** | **92.8%** | 75 |
-| 512 | `baseline_loadall` | 5.88 | 73.5% | 85 |
-
-- **Best:** T512 `ab_b32_loadall_barrier_e8192_t512` / `ab_b32_iadd_first_e8192_t512` → **7.42**/8 (**92.8%**). T256 barrier also **7.32**/8.
-- Lok asked ~**5–6** el/cyc vs roof 8? **Yes — exceeds** (best **7.42** ≫ 5–6; T512 `baseline_loadall` alone already **5.88**).
-- vs A+B LDS.b64 best **4.82** @ T256 (§6.4): b32 hand **7.42** ≈ **1.54×** (same roof 8).
-
-### 6.6 Verdict (this SV1 case)
-
-| Path | Absolute el/cyc | Roof | Utilization |
-|------|----------------:|------|------------:|
-| **1. Current SIMT lowering** (stock TileLang, aligned best hub) | **2.40** (TILE8192 @ T512; thread peak — T1024 2.39 / T2048 1.45) | LD.64 A+B **~8** | **~30%** |
-| **2. SoftLib / hand reschedule best (A+B fair arm)** | A+B LDS.b32 **7.42** @ T512 `loadall_barrier` (T256 7.32 · §6.5); LDS.b64 width compare **4.82** @ T256 (§6.4) | A+B **~8** | b32 **~93%** of 8 · b64 **~60%** of 8 |
-| **3. SIMD best** (handwritten DSL VL=64 @ E=16K) | **31.51** (TILE16384; TILE8K hub **29.26**) | theory rooftop **~44** | **~72%** of 44 (TILE8K **~66%**) |
-
-**Bottom line:** stock Simt TILE8K peaks at **T512 = 2.40 el/cyc (~30% of ~8)** and turns down by T2048 — gap is a **scheduling bubble + long-latency LDS** (§5.6), not TILE size (LD port itself is fine — PURE ~115–128 B/cyc; SoftLib whole-VF gap is post-LDS FADD/STS yield + warp outstanding for LDS latency ≈27). SoftLib proves the claim in §6.3 (1-in VADDS+const schedule-proof — **not** a fair SIMD H2H arm): phase-sep IADD-then-LDS + barrier (not Body4 SWP) reaches A-only **10.79 (~67.5% of 16)**. Fair A+B arm: same motif on LDS.b32 reaches **7.42 (~93% of 8)** @ T512 (§6.5; exceeds Lok’s ~5–6); LDS.b64 width compare **4.82 (~60% of 8)** @ T256 (§6.4). SIMD tiled best remains **31.51** / hub **29.26** (~**12×** stock Simt at TILE8K). Fair SoftLib A+B LDS.b32 vs SIMD gap is **~3.9×** (7.42 vs TILE8K hub 29.26) — matches the **256R+256R vs 128R** BW story. MI-on stage-sep + **one** fence reaches **≈72–73% serial** (1-in 72.6% of 16; A+B 72.2% of 10.67), distinct from classic VF % of 16/8.
-
-### 6.7 Final head-to-head vs SIMD — schedule / mapping @ E=16K TILE=8K only
-
-Tile-ladder H2H stays in §5.6. This table is the **fair schedule/mapping** compare at the **TILE=8K hub** only (no multi-TILE rows): **A+B dual-input** arms vs SIMD. SoftLib A+B probes are E=8192 from §6.4–6.5; stock Simt + SIMD are the aligned E=16K TILE=8K hub numbers from §5.1 / §4.
-
-**Out of fair H2H:** SoftLib **A-only** LDS.b32+const (**10.79**/16 @ T256, §6.3) is the **schedule-proof / SoftLib ceiling** only — not a fair compare to A+B SIMD. Kept in §6.3; omitted from the table below.
-
-| Mapping / schedule | el/cyc | Roof | Rooftop % | vs SIMD TILE8K (29.26) |
-|--------------------|-------:|------|----------:|-----------------------:|
-| **1. Default Simt LDS.64** — stock TileLang aligned hub TILE8K@T512 (§5.1) | **2.40** | LD.64 A+B **~8** | **~30%** | **~12.2×** slower |
-| **2a. SoftLib hand — A+B LDS.b64** best T256 `loadall_barrier` (§6.4) | **4.82** | A+B **~8** | **60%** | **~6.1×** slower |
-| **2b. SoftLib hand — A+B LDS.b32** best T512 `loadall_barrier` (§6.5) | **7.42** | A+B **~8** | **92.8%** | **~3.9×** slower |
-| **3. SIMD VL=64** handwritten DSL TILE8K hub (§4) | **29.26** | theory **~44** | **~66%** | **1×** (reference) |
-
-**Read:** SoftLib phase-sep A+B closes most of the Simt schedule gap vs stock — LDS.b32 hand **7.42** (**92.8%** of roof **~8** @ T512; exceeds Lok’s ~5–6) and LDS.b64 **4.82** (~**60%** of 8) vs stock **2.40**. SoftLib vs SIMD remaining gap is **~3.9×** (7.42 vs TILE8K hub **29.26**) — matches **256R+256R vs 128R** BW. SIMD still far ahead (~**66%** of ~44). Fair H2H is A+B↔A+B only.
-
-
-## 7. Shared vs fragment — direct GM→shared only (no S-MEM staging tower)
+## 8. Shared vs fragment — direct GM→shared only (no S-MEM staging tower)
 
 **S-MEM tower removed.** The old shared arm used `t1/t2/t3 = alloc_shared` staging (shared→shared copies) and looked **−37%/−50%** vs fragment — that pattern is **gone**. No shared→fragment `T.copy` either.
 
@@ -359,7 +244,7 @@ Instr mix identical (`SIMT_LDS/STS/FADD/IADD`). See `data/SHARED_VS_FRAGMENT_AB_
 
 ---
 
-## 8. Meta / pins
+## 9. Meta / pins
 
 | Pin | Value |
 |-----|-------|
