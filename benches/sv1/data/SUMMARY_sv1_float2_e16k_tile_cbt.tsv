@@ -1,0 +1,5 @@
+tag	E	TILE	T	trips	compile	mode	opsim	maxabs	wall_us	VF_cyc	VF_SIMT_call_count	el_per_cyc	LDS	STS	FADD	IADD	BRANCH	ISETP	float2	float4	layout_note
+sv1tt_e16384_tile2048_t512	16384	2048	512	8	OK	tile_ub	PASS ok=True maxabs=0.0	0.0	2.3400	4203	8	3.8982	512	256	512	768	0	0	3	0	cbt;mode=tile_ub;float2=3;float4=0;tx_stride2
+sv1tt_e16384_tile4096_t512	16384	4096	512	4	OK	tile_ub	PASS ok=True maxabs=0.0	0.0	2.3700	4273	4	3.8343	512	256	512	768	0	0	3	0	cbt;mode=tile_ub;float2=3;float4=0;tx_stride2
+sv1tt_e16384_tile8192_t512	16384	8192	512	2	OK	tile_ub	PASS ok=True maxabs=0.0	0.0	2.3700	4253	2	3.8523	512	256	512	768	0	0	3	0	cbt;mode=tile_ub;float2=3;float4=0;tx_stride2
+sv1tt_e16384_tile16384_t512	16384	16384	512	1	OK	tile_ub	PASS ok=True maxabs=0.0	0.0	2.4600	4433	1	3.6959	512	256	512	768	0	0	3	0	cbt;mode=tile_ub;float2=3;float4=0;tx_stride2

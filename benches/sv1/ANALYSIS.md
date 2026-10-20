@@ -1,6 +1,6 @@
 # SV1 analysis — short-live stream eltwise (Simt + SIMD)
 
-**Date:** 2026-10-20 HKT · SoftLib fence×source / rooftop rewrite **2026-10-20** · float2 §5 fold **2026-10-20** · TILE8192 + TILE@T512 + real-asm MRF **2026-10-20** · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (`config.toml` pins) · **Primary stock Simt:** E=8192 **TILE8192** float2 (`max_vector_bits=64`, LDS.64-class; TILE=E) · §5.1 multi-TILE **E=16K** @ T512 (peak TILE4K **3.771**) · §5.2 TILE8192 T-dim peak T1024 **3.846** · **Aligned e700041f float4 E16K:** appendix-only
+**Date:** 2026-10-20 HKT · SoftLib fence×source / rooftop rewrite **2026-10-20** · float2 §5 fold **2026-10-20** · TILE8192 + TILE@T512 + real-asm MRF **2026-10-20** · CBT antifuse + SoftLib TILE ladder **2026-10-20** · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (`config.toml` pins) · **Primary stock Simt:** E=8192 **TILE8192** float2 (`max_vector_bits=64`, LDS.64-class; TILE=E) · §5.1 multi-TILE **E=16K** @ T512 (peak TILE4K **3.771**) · §5.2 TILE8192 T-dim peak T1024 **3.846** · **Aligned e700041f float4 E16K:** appendix-only
 
 This is the **only** SV1 analysis doc. Older NOTES / VERDICT / rooftop-32 writeups were removed.
 
@@ -75,7 +75,7 @@ From that same plot footer (authoritative mid-body IPC @ **E=16K TILE=8K**):
 
 **Primary SoT — stock float2** (`max_vector_bits=64`, LDS.64-class, frag ≡ gmshared, cann_92b2, `ST_VF_MODE=simt-asc`, opsim **2026-10-20**):
 
-- **§5.1 tile ladder:** **E=16384**, T=512, TILE∈{2048,4096,8192,16384} — peak **TILE4096 = 3.771** el/cyc (~**47%** of LD.64 A+B ~8).
+- **§5.1 tile ladder (CBT SoT):** **E=16384**, T=512, TILE∈{2048,4096,8192,16384} — per-tile GM→UB antifuse; peak **TILE2048 = 3.898** el/cyc (~**49%** of LD.64 A+B ~8); TILE2K edge is a **schedule artifact** (see §5.1).
 - **§5.2 thread ladder:** **E=8192 TILE8192** (TILE=E; formerly "untiled"), T∈{64…2048} — hub T512 **3.715** / peak **T1024 = 3.846** (~**48%** of ~8).
 
 Data: `data/SUMMARY_sv1_float2_tile_t512.tsv` (§5.1 E16K) · `data/SHARED_VS_FRAGMENT_AB_GM_SHARED_FLOAT2.md` (§5.2/§8) · `data/harvest_float2_mrf.tsv` (MRF) · `data/NOTES_sv1_float2_tile_t512.md`.
@@ -84,20 +84,22 @@ Data: `data/SUMMARY_sv1_float2_tile_t512.tsv` (§5.1 E16K) · `data/SHARED_VS_FR
 
 Aligned e700041f E16K TILE ladder (~2.40 @ TILE8K T512, float4-class LDS:FADD:STS ≈ 256:512:128) is **appendix-only** — different pack; do not cite as current stock.
 
-### 5.1 Tile-size @ T512 (E=16384 float2)
+### 5.1 Tile-size @ T512 (E=16384 float2) — CBT (copy-between-tiles)
 
-**E must be 16K for the multi-TILE ladder** (Lok). Kernel `sv1t_tiled_add.py`: `for t in serial(E//TILE): Parallel(TILE)` inside one SimtVF, add-in-shared. **el/cyc = E/VF** (always 16384/VF), not TILE/VF. MRF = llvm-objdump unique Rn × T × 4B / 128 KB.
+**E must be 16K for the multi-TILE ladder** (Lok). **CBT SoT** (2026-10-20): each serial trip does GM→UB `T.copy` (TILE) → `vf_region` Parallel(TILE) add → UB→GM `T.copy`, so MTE copies sit **between** tile trips and antifuse into **N = E/TILE** distinct `VF_SIMT` calls. Kernel: CBT `sv1t_tiled_add.py` (`tile_ub`). **el/cyc = E / ΣVF_cyc**. Data: `data/SUMMARY_sv1_float2_e16k_tile_cbt.tsv` · `data/NOTES_sv1_float2_e16k_tile_cbt.md` · rolling IPC `plots/sv1_cbt_vs_fused_rolling20_ipc.png`.
 
-| TILE | serial | VF_cyc | el/cyc | % of LD.64 A+B (~8) | wall µs | LDS:FADD:STS | IADD | BRANCH | MRF live (KB / %) |
-|-----:|-------:|-------:|-------:|--------------------:|--------:|-------------:|-----:|-------:|------------------:|
-| 2048 | 8 | 4356 | **3.761** | **47%** | 2.42 | 512:512:256 | 912 | 128 | **26.0 / 20.3%** (13×512×4) |
-| **4096** | **4** | **4345** | **3.771** | **47%** | **2.41** | 512:512:256 | 848 | 64 | **26.0 / 20.3%** |
-| 8192 | 2 | 4349 | **3.767** | **47%** | 2.42 | 512:512:256 | 816 | 32 | **26.0 / 20.3%** |
-| 16384 | 1 | 4433 | **3.696** | **46%** | 2.46 | 512:512:256 | 768 | 0 | **22.0 / 17.2%** (11×512×4) |
+| TILE | VF_SIMT calls | VF_cyc | el/cyc | wall_us |
+|-----:|--------------:|-------:|-------:|--------:|
+| 2048 | 8 | 4203 | **3.898** | 2.34 |
+| 4096 | 4 | 4273 | 3.834 | 2.37 |
+| 8192 | 2 | 4253 | 3.852 | 2.37 |
+| 16384 | 1 | 4433 | 3.696 | 2.46 |
 
-![Tile vs el/cyc](plots/sv1_tile_vs_vf_el_instr.png)
+**Remark (schedule, not tile size):** TILE2K slightly better (~3.90 vs ~3.70) is a **default mixed-schedule artifact** — early high rolling IPC is mostly **LDS.64-only** fill before FADD/STS mix in; not a real tile-size win. CBT TILE2K has **8 Body4 bursts** with mean inter-VF silence **≈1096 cyc** (~2.4× a ~448-cyc tile body); `el/cyc = E/ΣVF_cyc` **ignores those gaps** by construction. Plot: `plots/sv1_cbt_vs_fused_rolling20_ipc.png` (+ overlay `plots/sv1_cbt2048_vs_fused2048_overlay_W20.png`). Details: `data/NOTES_sv1_float2_e16k_tile_cbt_mwipc.md`.
 
-**Point:** tile size **does** move VF / el/cyc at E=16K. BRANCH/ISETP scale with serial trip count (128→64→32→0); peak el/cyc at **TILE4096 = 3.771**; single-tile TILE16K is worst (**3.696**, VF 4433). LDS/FADD/STS stay fixed (same E); overhead shows in IADD + BRANCH.
+**Fused baseline (prior one-VF ladder):** one `VF_SIMT` wrapping all serial trips (`call_count=1`, VF≈4350, peak TILE4K **3.771**). CBT antifuse splits the same total LDS/FADD/STS work across N VFs (LDS:FADD:STS stay 512:512:256); el/cyc only moves ~3.90→3.70 — kickstart/wait+MTE shows on the rolling plot, not in ΣVF_cyc. Fused table kept in `data/SUMMARY_sv1_float2_tile_t512.tsv` / prior NOTES — not the §5.1 SoT.
+
+![CBT vs fused rolling IPC](plots/sv1_cbt_vs_fused_rolling20_ipc.png)
 
 **Why a prior E8192 "tile ladder" looked flat (do not use as §5.1):** E=8192 TILE∈{2048,4096,8192} all reported VF=2205 / el=3.715 / identical `LDS:FADD:STS:IADD=256:256:128:384` and **no** BRANCH. That was **not** a wrong E=TILE launch — TIR had correct `range(4/2/1)×Parallel(TILE)` and distinct source md5s. The compiler **fully unrolled** the small serial trip counts, erasing tile-loop overhead in opsim. E8192 TILE=E remains valid as the **§5.2 TILE8192** T-dim hub only. Details: `data/NOTES_sv1_float2_tile_t512.md`.
 
@@ -218,13 +220,30 @@ Fence-table **%ser** for A+B remains **72.2%** of **10.67**. SoT A+B b32: `/work
 
 ---
 
+### 6.4 SoftLib MI-on + one-barrier tile ladder (2K/4K/8K)
+
+**Date:** SoftLib TILE ladder **2026-10-20**. **A+B** LDS.b32, **T=256**, **E=16384**, MI-on (default -O2), **fence1** (one post-load `asm volatile("" ::: "memory")`; ≡ store-only / barrier on whole-VF — prior T256 A+B **7.32** @ E8192). Per-tile (unrolled SoftLib `SetFlag`/`WaitFlag` with CBT-equivalent MTE3↔V priming): GM→UB A/B → SimtVF loadall → fence1 → FADD/STS → UB→GM C.
+
+**Skip TILE16K:** A+B+C tile footprint = **192 KB > UB/MRF 128 KB**.
+
+OUT: `/tmp/st_out_cce_softlib_tile_mion_fence1_20261020` · report `data/SOFTLIB_TILE_MION_FENCE1.md` · `data/SUMMARY_softlib_tile_mion_fence1.tsv`.
+
+| TILE | trips | VF_SIMT calls | VF_cyc | el/cyc | %ser 10.667 | UB A+B+C (KB / %128) | PASS |
+|-----:|------:|--------------:|-------:|-------:|------------:|---------------------:|:----:|
+| 2048 | 8 | 8 | 3268 | **5.014** | 47.0% | 24.0 / 18.8% | PASS |
+| 4096 | 4 | 4 | 2555 | **6.413** | 60.1% | 48.0 / 37.5% | PASS |
+| **8192** | **2** | **2** | **2155** | **7.603** | **71.3%** | **96.0 / 75.0%** | **PASS** |
+
+**vs stock CBT ~3.9:** SoftLib MI-on fence1 @ TILE8K lands **7.603** el/cyc (~**71%** of serial **10.667**) — ~**1.95×** stock CBT TILE2K **3.898** on the same E=16K. Larger TILE amortizes per-tile VF fill (first VF still warm: TILE2K 1119+7×307; TILE8K 1120+1035) and approaches the untiled E8192 SoftLib T256 fence1 **7.32** / T512 **7.42** band.
+
+
 ## 7. Head-to-head highlight
 
 **Answer first.**
 
 - **SIMD** simple VL=64 schedule @ TILE8K: **29.26** el/cyc (~**66%** of theory rooftop ~44; mid-body ~34 / ~**78%**). A simple load→add→store does **28+**.
 - **Simt rooftop** depends on **LDS.32 vs LDS.64**. Need **≥256 threads** for LDS/STS outstanding, and **split LD/ST stages** (LDS.32 + STS.32) for instruction schedule to approach the SoftLib ceiling. Serial roofs: 1-in/1-out **16** (128 B/c R + 128 B/c W); A+B **10.667**.
-- **Default lowering** (stock float2 LDS.64-class A+B): §5.2 **TILE8192** hub **T512 = 3.715** (~**46%** of ~8; MRF **22 KB / 17.2%**) → **~7.9×** vs SIMD 29.26; peak **T1024 = 3.846** (~**48%**) → **~7.6×**. §5.1 **E16K** tile peak **TILE4K = 3.771** (MRF **26 KB / 20.3%**) → **~7.8×** vs SIMD 29.26 (same E=16K as SIMD TILE8K hub).
+- **Default lowering** (stock float2 LDS.64-class A+B): §5.2 **TILE8192** hub **T512 = 3.715** (~**46%** of ~8; MRF **22 KB / 17.2%**) → **~7.9×** vs SIMD 29.26; peak **T1024 = 3.846** (~**48%**) → **~7.6×**. §5.1 **CBT E16K** peak **TILE2K = 3.898** (schedule artifact; fused was TILE4K **3.771**) → **~7.5×** vs SIMD 29.26.
 - **Handcraft best so far** (SoftLib A+B LDS.b32 T512 `loadall_barrier`): **7.42** → **~69.5%** of serial **10.667** (fence **%ser ~72%** of 10.67) → remaining gap **~3.9×** vs SIMD 29.26, which **matches the input UB BW difference** (256R+256R vs 128R).
 
 **MRF = 128 KB.** Live = **unique Rn × T × 4 B** from `llvm-objdump -d` opsim `aicore_binary.o` (`simt_vf` body) — **not** the A+B+C tile footprint estimate (96 KB / 75%). Stock TILE8192 float2: **11 unique Rn** → T512 **22.0 KB / 17.2%**, T1024 **44.0 KB / 34.4%**. SoftLib A+B LDS.b32 T512: **52 → 104.0 KB / 81.2%**. SIMD TILE8K: **N/A** (vector/UB path). Data: `data/harvest_float2_mrf.tsv` (+ prior SoftLib `/tmp/pr7_mrf_harvest_20261020/`).
@@ -275,7 +294,7 @@ Instr mix identical (`SIMT_LDS/STS/FADD/IADD` = 256/128/256/384). TILE8192 float
 |-----|-------|
 | SOC / opsim | Ascend950PR_9599 |
 | CANN | cann_92b2 (`config.toml`: `cann_92b2/9.2.0-beta.2`) |
-| Primary stock Simt | **float2** frag ≡ gmshared; §5.1 **E16K TILE@T512** peak **3.771**; §5.2 **TILE8192** peak T1024 **3.846**, opsim **2026-10-20** |
+| Primary stock Simt | **float2** frag ≡ gmshared; §5.1 **CBT E16K TILE@T512** peak **3.898** (schedule artifact); §5.2 **TILE8192** peak T1024 **3.846**; SoftLib §6.4 TILE8K **7.603**, opsim **2026-10-20** |
 | TileLang tip (aligned appendix matrix) | **e700041f** (`tilelang-pto-isa-st`) — appendix-only for Simt |
 | PTOAS | nightly (`config.toml`: `0.67@1b36b6f…`) |
 | Date | **2026-10-20 HKT** |
