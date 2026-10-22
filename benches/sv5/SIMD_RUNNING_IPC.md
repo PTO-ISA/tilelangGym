@@ -28,7 +28,7 @@ EXU roof ~42.7 → mid **41.6 ≈ 97%**.
 | **SoftLib absmax VAND** | **31.39** | **2.50** | **41.6** |
 | SoftLib absmax VMUL+VMAX (legacy) | 19.65 | ~1.95 | 25.6 |
 
-Also: VMI DSL VL=128 G=8 **20.79** · FA dual64 **8.98** — see [`ANALYSIS.md`](ANALYSIS.md#vmi-dsl-vl128-g8-vs-softlib-handwritten--why--10-elcyc) for the ~10.6 el/cyc SoftLib gap.
+Also (superseded VMUL abs): VMI DSL VL=128 G=8 **20.79** · FA dual64 **8.98**. **Update:** VL128 VAND now **33.44** (beats SoftLib **31.39**); FA VAND **11.89** — see [`ANALYSIS.md`](ANALYSIS.md#vmi-dsl-vl128-g8-vand--closes-the-softlib-gap).
 
 ## Artifacts
 - Plot (inline above): `plots/sv5_simd_dual64_absmax_vand_rolling20_ipc.png`
