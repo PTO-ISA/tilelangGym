@@ -1,0 +1,24 @@
+{
+  "tag": "absmax_vand",
+  "W": 20,
+  "t_mid": 2743,
+  "firstVLD": 2654,
+  "lastVLD": 2832,
+  "lastVST": 2871,
+  "mid_ipc": 2.5,
+  "mid_el_in": 41.6,
+  "mid_vand_per_cyc": 0.6,
+  "mid_vcg_per_cyc": 0.65,
+  "mean_ipc_body": 2.4086592178770947,
+  "mean_el_L": 43.316201117318435,
+  "peak_el_L": 83.2,
+  "peak_at": 2673,
+  "raw": {
+    "RV_VLD": 128,
+    "RV_VAND": 128,
+    "RV_VCGMAX": 128,
+    "RV_VST": 128
+  },
+  "VF": 261.0,
+  "el_per_cyc": 31.386973180076627
+}
