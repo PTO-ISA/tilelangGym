@@ -86,18 +86,22 @@ SIMD best, SIMT Ascend default, SIMT SoftLib hand-craft; summary table and **per
 
 
 ## Harness (measured spine)
-Machine-readable conclusion arms, SUMMARY, plots wiring, and gap list live under `scripts/st_report/` + `benches/<st>/report/`.
+Machine-readable conclusion arms, SUMMARY, plots / running-IPC, and gap list live under `scripts/st_report/` + `benches/<st>/report/`.
 Writing contract remains this document + `docs/ST_REPORT_SKILL.md`; the harness never invents numbers and keeps trail out of ANALYSIS.
 
 ```bash
-python -m scripts.st_report init    --st <id> --aims "..." [--design "..."]
-python -m scripts.st_report harvest --st <id>
-python -m scripts.st_report plot    --st <id>
-python -m scripts.st_report gaps    --st <id>
-python -m scripts.st_report fill    --st <id> --dry-run
-python -m scripts.st_report check   --st <id>
+python -m scripts.st_report init       --st <id> --aims "..." [--design "..."]
+python -m scripts.st_report harvest    --st <id>
+python -m scripts.st_report plot       --st <id> [--window 20]
+python -m scripts.st_report plot-ipc   --st <id> [--window 20]   # alias of plot
+python -m scripts.st_report gaps       --st <id>
+python -m scripts.st_report fill       --st <id> --dry-run
+python -m scripts.st_report check      --st <id>
+python -m scripts.st_report selftest-ipc   # synthetic fixture only
 ```
 
 - `init` writes `benches/<st>/report/arms.yaml` from Aims/design (ANALYSIS stub only if missing; `--refresh-aims` updates Aims section only).
-- `harvest` / `plot` / `gaps` / `fill` / `check` own SUMMARY.tsv, plots, gap report, stub fill, and trail leak detection.
+- `harvest` owns SUMMARY.tsv (schema stable; mid-IPC filled only from measured sources, never invented).
+- `plot` / `plot-ipc` generate running-IPC PNGs from per-arm `artifacts` logs (`popped_dump`, `trace`+`instr_csv`, or `rolling_csv`) with window **W** (default 20, `(t−W,t]`); or wire `running_ipc_png` / known tip maps. Missing inputs → skip + `gaps.md` (no fake PNGs).
+- `gaps` / `fill` / `check` own gap report, stub fill, and trail leak detection.
 - See `benches/<st>/report/arms.yaml` for that ST's 3–4 arm spine (no dig numbers in this doc).

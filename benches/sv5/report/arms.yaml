@@ -8,6 +8,10 @@ design: >-
 
 # Exactly 3–4 conclusion arms. Trail must stay under `trail:`.
 # Measured el/cyc live in SUMMARY.tsv (harvest); do not invent here.
+# artifacts: optional per-arm log/PNG paths for `python -m scripts.st_report plot`
+#   popped_dump | trace + instr_csv | rolling_csv → generate running-IPC (W=20)
+#   running_ipc_png → wire existing PNG (no re-parse)
+# Paths: absolute, repo-relative, or relative to benches/<st>/.
 spine:
   - id: simd_dsl_best
     label: SIMD PTO-DSL best
@@ -15,18 +19,31 @@ spine:
     role: simd_best
     el_cyc: null
     notes: fill via harvest / measured SUMMARY; no invented el/cyc
+    artifacts: {}
+    # When VL128 chrome/popped logs land, set e.g.:
+    # artifacts:
+    #   trace: report/artifacts/simd_dsl_best/trace.json
+    #   instr_csv: report/artifacts/simd_dsl_best/instr_exe.csv
+    #   E: 8192
   - id: simt_asc_default
     label: SIMT Ascend default lowering
     path: simt_asc
     role: simt_asc
     el_cyc: null
     notes: T-dim + LDS/STS width + el/cyc from measured run
+    artifacts: {}
   - id: softlib_simt
     label: SIMT SoftLib / handcraft
     path: softlib_simt
     role: simt_hand
     el_cyc: null
     notes: prefer LDS.32/STS.32 when SoT; stage-split when measured
+    artifacts:
+      # Existing measured PNG (no raw VF dump on tip) — plot wires, does not invent
+      running_ipc_png: plots/sv5_contig_b64_rolling20_ipc.png
+      # When popped/chrome logs are checked in under report/artifacts/, prefer:
+      # popped_dump: report/artifacts/softlib_simt/instr_popped_log.dump
+      # E: 8192
 
 # Quarantine: never appear in ANALYSIS conclusion tables / §7 ratios
 trail:

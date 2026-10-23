@@ -1,4 +1,4 @@
-"""Wire or skip report/plots for spine arms. No fake PNGs."""
+"""Wire or generate report/plots for spine arms. No fake PNGs."""
 
 from __future__ import annotations
 
@@ -6,14 +6,13 @@ import os
 from pathlib import Path
 from typing import Any
 
-from scripts.st_report.registry import load_arms, plots_dir, st_dir
+from scripts.st_report.registry import load_arms, plots_dir, repo_root, st_dir
+from scripts.st_report.rolling_ipc import DEFAULT_W, build_from_artifacts, resolve_path
 
-
-# Known tip mappings: report plot name ← existing benches/<st>/plots/ file
+# Legacy tip mappings when arms.yaml has no artifacts.running_ipc_png yet
 WIRE_MAP = {
     "sv5": {
         "softlib_simt": "sv5_contig_b64_rolling20_ipc.png",
-        # simd_dsl_best: no VL128 rolling PNG on tip — leave missing
     }
 }
 
@@ -30,45 +29,113 @@ def _symlink_or_copy(src: Path, dst: Path) -> str:
         return "copy"
 
 
-def plot(st: str) -> dict[str, Any]:
+def _arm_artifacts(arm: dict[str, Any]) -> dict[str, Any]:
+    art = arm.get("artifacts")
+    return art if isinstance(art, dict) else {}
+
+
+def plot(st: str, *, window: float = DEFAULT_W) -> dict[str, Any]:
+    """Generate or wire running-IPC PNGs for spine arms.
+
+    Priority per arm:
+      1. artifacts with logs (popped_dump | trace[+instr_csv] | rolling_csv) → generate
+      2. artifacts.running_ipc_png or legacy WIRE_MAP → symlink/copy
+      3. else skip (gap)
+    Never invents PNGs.
+    """
     arms = load_arms(st)
     out_dir = plots_dir(st)
     out_dir.mkdir(parents=True, exist_ok=True)
     bench_plots = st_dir(st) / "plots"
+    st_root = st_dir(st)
+    root = repo_root()
     wired: list[str] = []
+    generated: list[str] = []
     skipped: list[str] = []
     mapping = WIRE_MAP.get(st, {})
+    W = float(window)
 
     for arm in arms["spine"]:
         aid = arm["id"]
+        label = arm.get("label") or aid
         role = arm.get("role") or arm.get("path")
-        if role == "simt_asc" or aid == "simt_asc_default":
-            skipped.append(f"{aid}: N/A until Asc harvest")
-            continue
+        art = _arm_artifacts(arm)
         target = out_dir / f"{aid}_running_ipc.png"
-        src_name = mapping.get(aid)
-        if not src_name:
-            skipped.append(f"{aid}: no source PNG mapped (gap)")
+
+        # Asc default often has no VF log yet — still allow generate if artifacts set
+        if (role == "simt_asc" or aid == "simt_asc_default") and not art:
+            skipped.append(f"{aid}: N/A until Asc harvest / artifacts")
             continue
-        src = bench_plots / src_name
-        if not src.is_file():
-            skipped.append(f"{aid}: missing {src}")
+
+        has_log = any(
+            art.get(k)
+            for k in ("popped_dump", "trace", "rolling_csv", "instr_csv")
+        )
+        # Generate from logs when present
+        if has_log and (
+            art.get("popped_dump") or art.get("trace") or art.get("rolling_csv")
+        ):
+            try:
+                result = build_from_artifacts(
+                    art,
+                    st_root=st_root,
+                    repo_root=root,
+                    W=W,
+                    out_png=target,
+                    title=f"{st} / {label} — running IPC (W={int(W) if W == int(W) else W})",
+                    E=float(art["E"]) if art.get("E") is not None else None,
+                )
+                generated.append(
+                    f"{aid}: generate ← {result.get('source')} → {target.name} "
+                    f"(mid-med={result['meta'].get('mid_med_ipc', float('nan')):.3f})"
+                )
+                continue
+            except FileNotFoundError as e:
+                skipped.append(f"{aid}: logs missing ({e})")
+                # fall through to wire if PNG path also set
+            except Exception as e:  # noqa: BLE001 — report and gap, never fake
+                skipped.append(f"{aid}: generate failed: {e}")
+                continue
+
+        # Wire existing PNG
+        png_ref = art.get("running_ipc_png") or mapping.get(aid)
+        if png_ref:
+            src = resolve_path(png_ref, st_root=st_root, repo_root=root)
+            # also try benches/<st>/plots/<name>
+            if not src.is_file() and not Path(str(png_ref)).is_absolute():
+                alt = bench_plots / Path(str(png_ref)).name
+                if alt.is_file():
+                    src = alt
+            if not src.is_file():
+                skipped.append(f"{aid}: missing wire PNG {png_ref}")
+                continue
+            how = _symlink_or_copy(src, target)
+            wired.append(f"{aid}: {how} ← {src.name}")
             continue
-        how = _symlink_or_copy(src, target)
-        wired.append(f"{aid}: {how} ← {src_name}")
+
+        skipped.append(f"{aid}: no artifacts logs/PNG (gap)")
 
     readme = out_dir / "README.md"
     lines = [
         f"# {st} report plots (conclusion arms)",
         "",
-        "Generated by `python -m scripts.st_report plot --st {st}`.".format(st=st),
+        f"Generated by `python -m scripts.st_report plot --st {st}` (W={int(W) if W == int(W) else W}).",
+        "Window convention: left-open right-closed `(t−W, t]`.",
         "No fake PNGs — missing arms stay empty and appear in gaps.md.",
         "",
-        "## Wired",
+        "## Generated from logs",
     ]
+    lines.extend([f"- {x}" for x in generated] or ["- (none)"])
+    lines += ["", "## Wired (existing PNG)"]
     lines.extend([f"- {x}" for x in wired] or ["- (none)"])
     lines += ["", "## Skipped"]
     lines.extend([f"- {x}" for x in skipped] or ["- (none)"])
     lines.append("")
     readme.write_text("\n".join(lines), encoding="utf-8")
-    return {"wired": wired, "skipped": skipped, "out_dir": str(out_dir)}
+    return {
+        "wired": wired,
+        "generated": generated,
+        "skipped": skipped,
+        "out_dir": str(out_dir),
+        "window": W,
+    }
