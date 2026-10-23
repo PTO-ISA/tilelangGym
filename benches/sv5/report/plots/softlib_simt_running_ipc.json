@@ -5,6 +5,7 @@
   "png": "/tmp/tilelangGym-sv5-vand/benches/sv5/report/plots/softlib_simt_running_ipc.png",
   "E": 8192.0,
   "el_cyc": 9.351598173515981,
+  "plot_style": "opcode_lanes_ipc",
   "parsed": {
     "kind": "simt",
     "vf_index": 0,
@@ -26,6 +27,24 @@
     "mid_med_ipc": 1.8,
     "mid_mean_ipc": 1.7191993464052289,
     "n_windows": 856.0,
-    "n_issues": 1412.0
+    "n_issues": 1412.0,
+    "lane_opcodes": [
+      "S2R",
+      "LDS",
+      "FADD",
+      "SEL",
+      "FSETP",
+      "FSETP_I"
+    ],
+    "lane_counts": {
+      "S2R": 8,
+      "LDS": 128,
+      "FADD": 232,
+      "SEL": 448,
+      "FSETP": 220,
+      "FSETP_I": 232
+    },
+    "n_issues_all_named": 1412.0,
+    "plot_style": "opcode_lanes_ipc"
   }
 }

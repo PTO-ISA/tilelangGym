@@ -64,7 +64,7 @@ SIMD best, SIMT Ascend default, SIMT SoftLib hand-craft; summary table and **per
 - el/cyc = elements / VF cycles (state which VF).
 - Mid-avg = interior window (document window width, e.g. W=20); overall = whole-kernel.
 - Rooftop % always vs the binding resource named in that section (EXU, UB, serial stage roof, etc.).
-- Plots: embed running-IPC (and stage) PNGs inline in ANALYSIS when they exist under the ST folder **for conclusion arms**.
+- Plots: embed running-IPC / opcode-issue PNGs (and stage plots) inline in ANALYSIS when they exist under the ST folder **for conclusion arms**.
 
 ## Repo placement
 - Primary: `benches/<st>/ANALYSIS.md` (e.g. `benches/sv5/ANALYSIS.md`)
@@ -102,6 +102,11 @@ python -m scripts.st_report selftest-ipc   # synthetic fixture only
 
 - `init` writes `benches/<st>/report/arms.yaml` from Aims/design (ANALYSIS stub only if missing; `--refresh-aims` updates Aims section only).
 - `harvest` owns SUMMARY.tsv (schema stable; mid-IPC filled only from measured sources, never invented).
-- `plot` / `plot-ipc` generate running-IPC PNGs from per-arm `artifacts` logs (`popped_dump`, `trace`+`instr_csv`, or `rolling_csv`) with window **W** (default 20, `(t−W,t]`); or wire `running_ipc_png` / known tip maps. Missing inputs → skip + `gaps.md` (no fake PNGs).
+- `plot` / `plot-ipc` generate **opcode-issue + running-IPC** PNGs (PR #9 style) from per-arm `artifacts` logs (`popped_dump`, `trace`+`instr_csv`, or `rolling_csv`) with window **W** (default 20, `(t−W,t]`):
+  - **Top panel:** one lane per instruction kind (short mnemonic); a mark at every issue inside the VF window.
+  - **Bottom panel:** rolling IPC on the same tick axis; mid-med IPC annotated when available.
+  - **Address math** (IADD / LEA / …) is counted in IPC but left off the lanes; the VF opcode is excluded from both.
+  - Precomputed `rolling_csv` falls back to an IPC-only chart (no opcode events).
+  - Or wire `running_ipc_png` / known tip maps. Missing inputs → skip + `gaps.md` (no fake PNGs).
 - `gaps` / `fill` / `check` own gap report, stub fill, and trail leak detection.
 - See `benches/<st>/report/arms.yaml` for that ST's 3–4 arm spine (no dig numbers in this doc).

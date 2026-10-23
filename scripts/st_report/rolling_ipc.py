@@ -1,12 +1,19 @@
-"""Running / rolling IPC from VF timeline logs.
+"""Running / rolling IPC from VF timeline logs + PR9-style per-opcode issue lanes.
 
 Supported inputs (first match wins per arm):
   - chrome `trace.json` + `*_instr_exe.csv` (SV1-style RV_/SIMT_ issues)
   - `core0.veccore0.instr_popped_log.dump` (cycle-accurate Body4 / RV_ issues)
-  - precomputed rolling CSV (`cycle` + `ipc` or `issue_rate`)
+  - precomputed rolling CSV (`cycle` + `ipc` or `issue_rate`) — IPC-only (no lanes)
   - already-rendered PNG (wire only; no re-parse)
 
 Window default W=20, left-open right-closed (t−W, t].
+
+Plot semantics (adopted from SV2 / PR #9):
+  - Top panel: one lane per instruction *kind* (short mnemonic); a mark at every issue.
+  - Bottom panel: rolling IPC over the same VF-local tick axis.
+  - Address-math opcodes (IADD / LEA / …) are counted in IPC but left off the lanes.
+  - The VF opcode itself is excluded from both.
+
 Never invents PNGs or numbers when inputs are missing.
 """
 
@@ -16,6 +23,7 @@ import bisect
 import csv
 import json
 import re
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -25,9 +33,100 @@ STEP = 1.0
 # SIMT Body4 (SoftLib / Ascend SimtVF)
 BODY4_PREFIXES = ("SIMT_LDS", "SIMT_STS", "SIMT_FADD", "SIMT_IADD", "SIMT_IADD_I")
 # SIMD RV issues commonly used for IPC shape
-SIMD_ISSUE_NAMES = ("RV_VLDI", "RV_VSTI", "RV_VADD", "RV_VMUL", "RV_VAND", "RV_VCGMAX", "RV_VLD", "RV_VST")
+SIMD_ISSUE_NAMES = (
+    "RV_VLDI",
+    "RV_VSTI",
+    "RV_VADD",
+    "RV_VMUL",
+    "RV_VAND",
+    "RV_VCGMAX",
+    "RV_VLD",
+    "RV_VST",
+    "RV_VMAX",
+)
 
 TS_RE = re.compile(r"\[info\] \[(\d+)\]")
+# opcode token inside popped dump / chrome name
+OP_TOKEN_RE = re.compile(r"\b((?:SIMT_|RV_)[A-Z0-9_]+)\b")
+
+# Shown as short names on lanes; stripped prefixes match PR #9.
+STRIP_PREFIXES = ("SIMT_", "RV_")
+STRIP_SUFFIXES = ("_THREAD_BLOCK",)
+
+# Address / index math: counted in IPC, omitted from lane rows (PR #9).
+LANE_HIDE = frozenset(
+    {
+        "IADD",
+        "IADD_I",
+        "LEA",
+        "IMAD",
+        "IMAD_I",
+        "SHFI",
+        "SHL",
+        "SHR",
+        "AND",  # scalar AND, not VAND
+        "OR",
+        "NEG",
+        "NOP",
+        "MOV_XD_IMM",
+        "MOVK",
+        "MOV_XD_SPR",
+        "MOV_SPR_XN",
+        "ADD",
+        "ADD_IMM",
+        "SUB_IMM",
+        "MADD",
+        "SBITSET",
+        "MOVEMASK",
+        "WAIT_FLAG",
+        "SET_FLAG",
+        "PUSH_PB",
+        "DC_PRELOAD_XN_IMM",
+        "INSERT_XD_XN",
+        "MOV_SRC_TO_DST_ALIGNv2",
+        "LD_XD_XN_IMM",
+        "ST_XD_XN_IMM",
+        "LDP_XI_XJ_XN",
+        "DCCI",
+        "END_LABEL",
+        "SMOV",
+        "PSET",
+        "SEND",
+        "VLOOPv2",
+        "VDUPS",
+    }
+)
+
+# Preferred lane order when present (PR #9 family); others follow by first-issue time.
+LANE_ORDER = [
+    "S2R",
+    "LDS",
+    "VLDI",
+    "VLD",
+    "F2F",
+    "VMUL",
+    "VAND",
+    "VADD",
+    "FADD",
+    "FMNMX",
+    "FMNMX_I",
+    "VMAX",
+    "VCGMAX",
+    "VCMAX",
+    "SEL",
+    "FSETP",
+    "FSETP_I",
+    "REDUX",
+    "BAR",
+    "FDIV",
+    "FDIV_I",
+    "VDIV",
+    "VDUP",
+    "STS",
+    "VSTI",
+    "VST",
+    "END",
+]
 
 
 def _import_pyplot():
@@ -50,7 +149,35 @@ def resolve_path(raw: str | Path, *, st_root: Path, repo_root: Path) -> Path:
     cand2 = (repo_root / p).resolve()
     if cand2.exists():
         return cand2
-    return cand  # prefer st-relative even if missing (caller checks)
+    return cand
+
+
+def short_op(name: str) -> str:
+    s = str(name or "").strip()
+    for pref in STRIP_PREFIXES:
+        if s.startswith(pref):
+            s = s[len(pref) :]
+            break
+    for suf in STRIP_SUFFIXES:
+        if s.endswith(suf):
+            s = s[: -len(suf)]
+    return s
+
+
+def is_vf_op(name: str) -> bool:
+    s = str(name or "").strip()
+    return s in ("VF", "VF_SIMD", "VF_SIMT") or s.startswith("VF_")
+
+
+def is_issue_op(name: str) -> bool:
+    """True for SIMT_/RV_ (and bare Body4 / SIMD mnemonics) worth counting."""
+    s = str(name or "").strip()
+    if not s or is_vf_op(s):
+        return False
+    if s.startswith("SIMT_") or s.startswith("RV_"):
+        return True
+    # already-short chrome names rarely appear; accept known shorts
+    return short_op(s) in set(LANE_ORDER) or any(s.startswith(p) for p in BODY4_PREFIXES)
 
 
 def load_vf_cycles_from_instr(instr_csv: Path) -> list[int]:
@@ -58,7 +185,7 @@ def load_vf_cycles_from_instr(instr_csv: Path) -> list[int]:
     with instr_csv.open(newline="", encoding="utf-8", errors="replace") as f:
         for r in csv.DictReader(f):
             name = (r.get("instr") or r.get("name") or "").strip()
-            if name in ("VF", "VF_SIMD", "VF_SIMT") or name.startswith("VF_"):
+            if is_vf_op(name):
                 try:
                     rows.append(int(float(r.get("cycles") or r.get("cycle") or 0)))
                 except ValueError:
@@ -72,13 +199,19 @@ def parse_chrome_trace(
     *,
     vf_index: str = "first",
 ) -> dict[str, Any]:
-    """Issue timestamps → local cycles inside one VF. Raises on incomplete input."""
+    """Issue timestamps + opcode names → local cycles inside one VF."""
     tr = json.loads(trace.read_text(encoding="utf-8"))
     evs = [e for e in tr.get("traceEvents", []) if e.get("ph") == "X"]
     vfs = sorted(
-        [e for e in evs if str(e.get("name", "")).startswith("VF")],
+        [e for e in evs if is_vf_op(str(e.get("name", "")))],
         key=lambda e: e["ts"],
     )
+    if not vfs:
+        # also accept name startswith VF for robustness
+        vfs = sorted(
+            [e for e in evs if str(e.get("name", "")).startswith("VF")],
+            key=lambda e: e["ts"],
+        )
     if not vfs:
         raise RuntimeError(f"no VF events in {trace}")
 
@@ -86,7 +219,6 @@ def parse_chrome_trace(
     if instr_csv is not None and instr_csv.is_file():
         vf_rows = load_vf_cycles_from_instr(instr_csv)
     if not vf_rows:
-        # last resort: use event dur only → relative IPC ok, absolute el/cyc needs E+VF
         vf_rows = [max(1, int(float(v.get("dur") or 1))) for v in vfs]
 
     if len(vf_rows) != len(vfs):
@@ -116,29 +248,26 @@ def parse_chrome_trace(
     us2cyc = vf_c / vf_dur
     t_end = vf_ts + vf_dur
 
-    simt = [
-        e
-        for e in evs
-        if any(str(e.get("name", "")).startswith(p) or str(e.get("name", "")) == p for p in BODY4_PREFIXES)
-        or str(e.get("name", "")).startswith("SIMT_")
-    ]
-    simd = [e for e in evs if str(e.get("name", "")) in SIMD_ISSUE_NAMES or str(e.get("name", "")).startswith("RV_")]
-    body = simt if len(simt) >= max(10, len(simd) // 2) else simd
-    if len(body) < 10:
-        body = simt or simd
-    if len(body) < 5:
-        raise RuntimeError(f"too few issue events in {trace} (simt={len(simt)} simd={len(simd)})")
+    named: list[tuple[float, str]] = []
+    for e in evs:
+        name = str(e.get("name", ""))
+        if not is_issue_op(name):
+            continue
+        ts = float(e["ts"])
+        if vf_ts <= ts <= t_end:
+            named.append(((ts - vf_ts) * us2cyc, short_op(name)))
 
-    kind = "simt" if body is simt or (simt and len(simt) >= len(simd)) else "simd"
-    issues = sorted(
-        (ts for e in body if vf_ts <= (ts := float(e["ts"])) <= t_end),
-    )
-    local = [(ts - vf_ts) * us2cyc for ts in issues]
-    if len(local) < 5:
-        raise RuntimeError(f"too few in-VF issues ({len(local)}) in {trace}")
+    if len(named) < 5:
+        raise RuntimeError(f"too few in-VF issues ({len(named)}) in {trace}")
+
+    simt_n = sum(1 for _, op in named if op.startswith("LDS") or op in ("STS", "FADD", "FMNMX", "SEL", "REDUX"))
+    simd_n = sum(1 for _, op in named if op.startswith("V") or op in ("VLDI", "VSTI", "VAND", "VCGMAX"))
+    kind = "simt" if simt_n >= simd_n else "simd"
+    local = [c for c, _ in named]
     return {
         "kind": kind,
         "issue_cycles": local,
+        "issue_events": named,  # (cycle, short_op)
         "vf_index": idx,
         "vf_cyc": int(vf_c),
         "vf_cyc_sum": int(sum(vf_rows)),
@@ -149,66 +278,73 @@ def parse_chrome_trace(
     }
 
 
-def _longest_body_region(cycles: list[int], *, gap: int = 80) -> list[int]:
-    """Split issues on silence > gap cycles; keep the densest (longest) body."""
-    if not cycles:
+def _longest_body_region_events(
+    events: list[tuple[int, str]], *, gap: int = 80
+) -> list[tuple[int, str]]:
+    if not events:
         return []
-    cs = sorted(cycles)
-    regions: list[list[int]] = [[cs[0]]]
-    for c in cs[1:]:
-        if c - regions[-1][-1] > gap:
-            regions.append([c])
+    evs = sorted(events, key=lambda x: x[0])
+    regions: list[list[tuple[int, str]]] = [[evs[0]]]
+    for e in evs[1:]:
+        if e[0] - regions[-1][-1][0] > gap:
+            regions.append([e])
         else:
-            regions[-1].append(c)
+            regions[-1].append(e)
     return max(regions, key=len)
 
 
 def parse_popped_dump(dump: Path, *, kind: str = "auto", gap: int = 80) -> dict[str, Any]:
-    """Cycle-accurate issue list from instr_popped_log.dump.
-
-    Uses the longest Body4/RV_ region (silence gap default 80 cyc) so inter-VF
-    MTE gaps do not zero out mid-window IPC.
-    """
+    """Cycle-accurate named issues from instr_popped_log.dump."""
     text = dump.read_text(encoding="utf-8", errors="replace")
-    simt_cyc: list[int] = []
-    simd_cyc: list[int] = []
+    simt_ev: list[tuple[int, str]] = []
+    simd_ev: list[tuple[int, str]] = []
     for line in text.splitlines():
         m = TS_RE.search(line)
         if not m:
             continue
         t = int(m.group(1))
-        if any(p in line for p in BODY4_PREFIXES):
-            simt_cyc.append(t)
-        elif "SIMT_" in line:
-            simt_cyc.append(t)
-        if any(n in line for n in SIMD_ISSUE_NAMES) or ("RV_" in line and "SIMT_" not in line):
-            simd_cyc.append(t)
+        om = OP_TOKEN_RE.search(line)
+        if not om:
+            continue
+        raw = om.group(1)
+        if is_vf_op(raw):
+            continue
+        op = short_op(raw)
+        if raw.startswith("SIMT_") or any(p in line for p in BODY4_PREFIXES):
+            simt_ev.append((t, op))
+        if raw.startswith("RV_") or any(n in line for n in SIMD_ISSUE_NAMES):
+            if "SIMT_" not in line:
+                simd_ev.append((t, op))
 
     if kind == "simt":
-        cycles, used = simt_cyc, "simt"
+        events, used = simt_ev, "simt"
     elif kind == "simd":
-        cycles, used = simd_cyc, "simd"
+        events, used = simd_ev, "simd"
     else:
-        if len(simt_cyc) >= len(simd_cyc):
-            cycles, used = simt_cyc, "simt"
+        if len(simt_ev) >= len(simd_ev):
+            events, used = simt_ev, "simt"
         else:
-            cycles, used = simd_cyc, "simd"
+            events, used = simd_ev, "simd"
 
-    if len(cycles) < 5:
-        raise RuntimeError(f"too few issues in popped dump {dump} (simt={len(simt_cyc)} simd={len(simd_cyc)})")
-    body = _longest_body_region(cycles, gap=gap)
+    if len(events) < 5:
+        raise RuntimeError(
+            f"too few issues in popped dump {dump} (simt={len(simt_ev)} simd={len(simd_ev)})"
+        )
+    body = _longest_body_region_events(events, gap=gap)
     if len(body) < 5:
-        body = sorted(cycles)
-    base = body[0]
-    local = [c - base for c in body]
+        body = sorted(events, key=lambda x: x[0])
+    base = body[0][0]
+    named = [(float(c - base), op) for c, op in body]
+    local = [c for c, _ in named]
     return {
         "kind": used,
         "issue_cycles": local,
+        "issue_events": named,
         "vf_index": 0,
         "vf_cyc": int(local[-1] - local[0] + 1) if local else 0,
         "vf_cyc_sum": int(local[-1] - local[0] + 1) if local else 0,
         "n_issues": len(local),
-        "n_issues_all": len(cycles),
+        "n_issues_all": len(events),
         "source": "popped_dump",
         "popped_dump": str(dump),
         "absolute_first": base,
@@ -217,7 +353,7 @@ def parse_popped_dump(dump: Path, *, kind: str = "auto", gap: int = 80) -> dict[
 
 
 def parse_rolling_csv(path: Path, *, ipc_col: str | None = None) -> dict[str, Any]:
-    """Precomputed series: columns cycle + ipc|issue_rate."""
+    """Precomputed series: columns cycle + ipc|issue_rate (no opcode lanes)."""
     with path.open(newline="", encoding="utf-8", errors="replace") as f:
         rows = list(csv.DictReader(f))
     if not rows:
@@ -245,6 +381,7 @@ def parse_rolling_csv(path: Path, *, ipc_col: str | None = None) -> dict[str, An
         "times": times,
         "ipcs": ipcs,
         "issue_cycles": [],
+        "issue_events": [],
         "vf_cyc": 0,
         "vf_cyc_sum": 0,
         "n_issues": 0,
@@ -272,10 +409,9 @@ def sliding_window_ipc(
     ipcs: list[float] = []
     t = body_start + W
     while t <= body_end + 1e-9:
-        # (t−W, t] → bisect_right for right, bisect_right for left exclusive
         lo = bisect.bisect_right(ic, t - W)
         hi = bisect.bisect_right(ic, t)
-        times.append(t - W / 2.0)  # window center for display
+        times.append(t - W / 2.0)
         ipcs.append((hi - lo) / W)
         t += step
 
@@ -297,6 +433,165 @@ def sliding_window_ipc(
     return times, ipcs, meta
 
 
+def lane_groups(events: list[tuple[float, str]], *, hide: frozenset[str] = LANE_HIDE) -> list[str]:
+    """Opcode kinds to show as lanes: preferred order, then first-issue order."""
+    by: dict[str, list[float]] = defaultdict(list)
+    for t, op in events:
+        if op in hide:
+            continue
+        by[op].append(t)
+    if not by:
+        # fall back: show top kinds even if all were "hidden"
+        counts = Counter(op for _, op in events)
+        return [op for op, _ in counts.most_common(12)]
+    ordered: list[str] = []
+    for name in LANE_ORDER:
+        if name in by:
+            ordered.append(name)
+    rest = sorted((op for op in by if op not in ordered), key=lambda o: min(by[o]))
+    return ordered + rest
+
+
+# Stable-ish colors keyed by short mnemonic (PR #9 palette family).
+_COLOR_MAP = {
+    "LDS": "#1f4e79",
+    "VLDI": "#1f4e79",
+    "VLD": "#1f4e79",
+    "STS": "#2e5c2a",
+    "VSTI": "#2e5c2a",
+    "VST": "#2e5c2a",
+    "FADD": "#147e82",
+    "VMUL": "#5a8fb8",
+    "VAND": "#5a8fb8",
+    "VADD": "#5a8fb8",
+    "FMNMX": "#147e82",
+    "FMNMX_I": "#c45911",
+    "VMAX": "#147e82",
+    "VCGMAX": "#c45911",
+    "VCMAX": "#c45911",
+    "SEL": "#147e82",
+    "FSETP": "#8a8f98",
+    "FSETP_I": "#8a8f98",
+    "F2F": "#8a8f98",
+    "REDUX": "#c45911",
+    "BAR": "#963737",
+    "FDIV": "#548235",
+    "FDIV_I": "#548235",
+    "VDIV": "#548235",
+    "VDUP": "#8a8f98",
+    "S2R": "#8a8f98",
+    "END": "#b0b6bd",
+}
+
+
+def _color_for(op: str, idx: int) -> str:
+    if op in _COLOR_MAP:
+        return _COLOR_MAP[op]
+    # cycle through tab10 for unknowns
+    return f"C{idx % 10}"
+
+
+def render_instr_issue_ipc(
+    *,
+    events: list[tuple[float, str]],
+    times: list[float],
+    ipcs: list[float],
+    out_png: Path,
+    title: str,
+    W: float,
+    mid_med: float | None = None,
+    footer: str = "",
+    vf_cyc: int | None = None,
+) -> Path:
+    """PR #9 composite: opcode issue lanes (top) + rolling IPC (bottom)."""
+    plt = _import_pyplot()
+    out_png = Path(out_png)
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+
+    groups = lane_groups(events)
+    by: dict[str, list[float]] = defaultdict(list)
+    for t, op in events:
+        by[op].append(t)
+
+    if times:
+        x_max = max(times[-1], max((t for t, _ in events), default=0.0))
+    else:
+        x_max = max((t for t, _ in events), default=1.0)
+    if vf_cyc and vf_cyc > x_max:
+        x_max = float(vf_cyc)
+
+    n_lanes = max(1, len(groups))
+    fig_h = max(5.5, 1.6 + 0.38 * n_lanes + 2.4)
+    fig, (ax_lanes, ax_ipc) = plt.subplots(
+        2,
+        1,
+        figsize=(11.5, fig_h),
+        sharex=True,
+        gridspec_kw={"height_ratios": [max(1.2, 0.35 * n_lanes), 1.6], "hspace": 0.08},
+    )
+
+    # --- lanes ---
+    for i, name in enumerate(groups):
+        y = n_lanes - 1 - i
+        ts = by.get(name) or []
+        color = _color_for(name, i)
+        if ts:
+            ax_lanes.vlines(ts, y + 0.15, y + 0.85, colors=color, lw=1.0, alpha=0.95)
+        ax_lanes.text(
+            x_max * 1.005 if x_max else 1,
+            y + 0.5,
+            f"×{len(ts)}",
+            ha="left",
+            va="center",
+            fontsize=8,
+            color="#666666",
+            clip_on=False,
+        )
+
+    ax_lanes.set_ylim(0, n_lanes)
+    ax_lanes.set_yticks([n_lanes - 1 - i + 0.5 for i in range(n_lanes)])
+    ax_lanes.set_yticklabels(groups, fontsize=9)
+    ax_lanes.tick_params(axis="y", length=0)
+    ax_lanes.set_xlim(0, x_max * 1.02 if x_max else 1)
+    ax_lanes.set_title(title, fontsize=12, loc="left", pad=8)
+    ax_lanes.text(
+        0.0,
+        1.02,
+        "One lane per opcode kind. Address math counted in IPC, left off lanes. Marks = issues.",
+        transform=ax_lanes.transAxes,
+        fontsize=8,
+        color="#666666",
+        va="bottom",
+    )
+    ax_lanes.grid(True, axis="x", alpha=0.25)
+    for spine in ("left", "right", "top"):
+        ax_lanes.spines[spine].set_visible(False)
+
+    # --- IPC ---
+    ax_ipc.fill_between(times, ipcs, color="#e8dcee", alpha=0.9)
+    ax_ipc.plot(
+        times,
+        ipcs,
+        color="#60347a",
+        lw=1.4,
+        label=f"running IPC (W={int(W) if W == int(W) else W})",
+    )
+    if mid_med is not None and mid_med == mid_med:
+        ax_ipc.axhline(mid_med, color="#c45911", ls="--", lw=1.0, label=f"mid-med={mid_med:.3f}")
+    ax_ipc.set_xlabel("tick inside the VF window")
+    ax_ipc.set_ylabel("IPC")
+    ax_ipc.grid(True, alpha=0.3)
+    ax_ipc.legend(fontsize=8, loc="upper right")
+    if footer:
+        fig.text(0.5, 0.01, footer, ha="center", fontsize=8, color="#444444")
+    # Prefer subplots_adjust over tight_layout: twin y-axes on the IPC panel
+    # make tight_layout warn and occasionally clip the shared legend.
+    fig.subplots_adjust(left=0.08, right=0.96, top=0.94, bottom=0.08, hspace=0.18)
+    fig.savefig(out_png, dpi=140)
+    plt.close(fig)
+    return out_png
+
+
 def render_running_ipc(
     *,
     times: list[float],
@@ -307,14 +602,16 @@ def render_running_ipc(
     mid_med: float | None = None,
     footer: str = "",
 ) -> Path:
+    """Legacy IPC-only line chart (used when no opcode events, e.g. rolling_csv)."""
     plt = _import_pyplot()
     out_png = Path(out_png)
     out_png.parent.mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(11, 5.0))
-    ax.plot(times, ipcs, color="C0", lw=1.0, label=f"running IPC (W={int(W) if W==int(W) else W})")
-    if mid_med is not None and mid_med == mid_med:  # not NaN
-        ax.axhline(mid_med, color="C1", ls="--", label=f"mid-med IPC={mid_med:.3f}")
-    ax.set_xlabel("cycle (from VF / first issue)")
+    ax.fill_between(times, ipcs, color="#e8dcee", alpha=0.9)
+    ax.plot(times, ipcs, color="#60347a", lw=1.2, label=f"running IPC (W={int(W) if W==int(W) else W})")
+    if mid_med is not None and mid_med == mid_med:
+        ax.axhline(mid_med, color="#c45911", ls="--", label=f"mid-med IPC={mid_med:.3f}")
+    ax.set_xlabel("tick inside the VF window")
     ax.set_ylabel("IPC")
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
@@ -373,12 +670,17 @@ def build_from_artifacts(
             "n_issues": 0.0,
             "precomputed": True,
         }
+        events: list[tuple[float, str]] = []
     elif popped is not None and popped.is_file():
         parsed = parse_popped_dump(popped, kind=kind)
         times, ipcs, meta = sliding_window_ipc(parsed["issue_cycles"], W=W)
+        events = list(parsed.get("issue_events") or [])
     elif trace is not None and trace.is_file():
-        parsed = parse_chrome_trace(trace, instr if instr and instr.is_file() else None, vf_index=vf_index)
+        parsed = parse_chrome_trace(
+            trace, instr if instr and instr.is_file() else None, vf_index=vf_index
+        )
         times, ipcs, meta = sliding_window_ipc(parsed["issue_cycles"], W=W)
+        events = list(parsed.get("issue_events") or [])
     else:
         missing = []
         if not (popped and popped.is_file()):
@@ -388,30 +690,58 @@ def build_from_artifacts(
         if not (rolling and rolling.is_file()):
             missing.append("rolling_csv")
         raise FileNotFoundError(
-            "no usable IPC logs (" + ", ".join(missing) + "); set artifacts.popped_dump|trace+instr_csv|rolling_csv"
+            "no usable IPC logs ("
+            + ", ".join(missing)
+            + "); set artifacts.popped_dump|trace+instr_csv|rolling_csv"
         )
 
     mid_med = meta.get("mid_med_ipc")
     vf_cyc = int(parsed.get("vf_cyc") or 0)
     el = (E / vf_cyc) if (E and vf_cyc) else None
-    footer_parts = [f"W={int(W) if W == int(W) else W}  window=(t−W,t]", f"source={parsed.get('source')}"]
+    footer_parts = [
+        f"W={int(W) if W == int(W) else W}  window=(t−W,t]",
+        f"source={parsed.get('source')}",
+        "plot=opcode-lanes+IPC",
+    ]
     if vf_cyc:
-        footer_parts.append(f"VF={vf_cyc}")
+        footer_parts.append(f"VF≈{vf_cyc}")
     if el is not None:
         footer_parts.append(f"el/cyc={el:.4f}")
     if mid_med == mid_med:
         footer_parts.append(f"mid-med IPC={mid_med:.3f}")
     footer = "  ".join(footer_parts)
 
-    render_running_ipc(
-        times=times,
-        ipcs=ipcs,
-        out_png=out_png,
-        title=title,
-        W=W,
-        mid_med=mid_med if mid_med == mid_med else None,
-        footer=footer,
-    )
+    if events:
+        render_instr_issue_ipc(
+            events=events,
+            times=times,
+            ipcs=ipcs,
+            out_png=out_png,
+            title=title,
+            W=W,
+            mid_med=mid_med if mid_med == mid_med else None,
+            footer=footer,
+            vf_cyc=vf_cyc or None,
+        )
+        groups = lane_groups(events)
+        meta = dict(meta)
+        meta["lane_opcodes"] = groups
+        meta["lane_counts"] = {g: sum(1 for _, op in events if op == g) for g in groups}
+        meta["n_issues_all_named"] = float(len(events))
+        meta["plot_style"] = "opcode_lanes_ipc"
+    else:
+        render_running_ipc(
+            times=times,
+            ipcs=ipcs,
+            out_png=out_png,
+            title=title,
+            W=W,
+            mid_med=mid_med if mid_med == mid_med else None,
+            footer=footer,
+        )
+        meta = dict(meta)
+        meta["plot_style"] = "ipc_only"
+
     out_json = out_png.with_suffix(".json")
     payload = {
         "W": W,
@@ -420,7 +750,8 @@ def build_from_artifacts(
         "png": str(out_png),
         "E": E,
         "el_cyc": el,
-        "parsed": {k: v for k, v in parsed.items() if k not in ("issue_cycles", "times", "ipcs")},
+        "plot_style": meta.get("plot_style"),
+        "parsed": {k: v for k, v in parsed.items() if k not in ("issue_cycles", "times", "ipcs", "issue_events")},
         "meta": meta,
     }
     out_json.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -430,14 +761,15 @@ def build_from_artifacts(
 def write_tiny_fixture(dir_path: Path) -> dict[str, Path]:
     """Synthetic chrome-trace + instr csv for self-test (not an ST measurement)."""
     dir_path.mkdir(parents=True, exist_ok=True)
-    # 200 issues at ~1.0 IPC steady, VF=200 cycles, dur=200 us → us2cyc=1
     vf_cyc = 200
     issues = []
     ts0 = 1000.0
+    # mix of opcodes so lanes appear (and some address math hidden from lanes)
+    names = ["SIMT_LDS", "SIMT_FADD", "SIMT_STS", "SIMT_IADD", "SIMT_FMNMX", "SIMT_REDUX"]
     for i in range(200):
         issues.append(
             {
-                "name": "SIMT_FADD" if i % 4 == 0 else ("SIMT_LDS" if i % 4 == 1 else ("SIMT_STS" if i % 4 == 2 else "SIMT_IADD")),
+                "name": names[i % len(names)],
                 "ph": "X",
                 "ts": ts0 + float(i),
                 "dur": 0.5,

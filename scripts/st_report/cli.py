@@ -153,8 +153,13 @@ def cmd_selftest() -> int:
             title="selftest running IPC",
             E=200.0,
         )
-        ok = out.is_file() and Path(result["json"]).is_file()
-        print(f"selftest: {'PASS' if ok else 'FAIL'} png={out} mid-med={result['meta'].get('mid_med_ipc')}")
+        style = result["meta"].get("plot_style")
+        ok = out.is_file() and Path(result["json"]).is_file() and style == "opcode_lanes_ipc"
+        print(
+            f"selftest: {'PASS' if ok else 'FAIL'} png={out} "
+            f"style={style} mid-med={result['meta'].get('mid_med_ipc')} "
+            f"lanes={result['meta'].get('lane_opcodes')}"
+        )
         return 0 if ok else 1
 
 
