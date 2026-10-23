@@ -79,3 +79,18 @@ SIMD best, SIMT Ascend default, SIMT SoftLib hand-craft; summary table and **per
 ## Out of scope
 - Changing kernel semantics or inventing new SoftLib numbers without a measured run
 - Merging the PR without an explicit author yes
+
+
+## Harness (measured spine)
+Machine-readable conclusion arms, SUMMARY, plots wiring, and gap list live under `scripts/st_report/` + `benches/<st>/report/`.
+Writing contract remains this document + the bot skill; the harness never invents numbers and keeps trail out of ANALYSIS.
+
+```bash
+python -m scripts.st_report harvest --st sv5
+python -m scripts.st_report plot    --st sv5
+python -m scripts.st_report gaps    --st sv5
+python -m scripts.st_report fill    --st sv5 --dry-run
+python -m scripts.st_report check   --st sv5
+```
+
+See `benches/sv5/report/arms.yaml` for the SV5 3-arm spine.

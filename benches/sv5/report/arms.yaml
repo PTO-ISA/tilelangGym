@@ -1,0 +1,39 @@
+# benches/sv5/report/arms.yaml
+st: sv5
+aims: >-
+  Small-block reduce: SIMD block-level VCG vs SIMT per-thread RF
+  performance sensitivity (confirm with Lok before rewrite).
+
+# Exactly 3–4 conclusion arms. Trail must stay under `trail:`.
+spine:
+  - id: simd_dsl_best
+    label: "SIMD PTO-DSL best (VL128 VAND)"
+    path: dsl
+    role: simd_best
+    el_cyc: 33.44
+    VF: 128
+    notes: "VL=128 G=8 clear-sign VAND; whole-kernel VF_cyc=245 → 33.44 el/cyc"
+
+  - id: simt_asc_default
+    label: "SIMT Ascend default lowering"
+    path: simt_asc
+    role: simt_asc
+    el_cyc: null
+    notes: "gate PASS; T-dim + LDS/STS width + el/cyc still open"
+
+  - id: softlib_simt
+    label: "SIMT SoftLib / handcraft (contig LDS.64)"
+    path: softlib_simt
+    role: simt_hand
+    el_cyc: 4.51
+    LDS_width: 64
+    notes: "best SoftLib SIMT schedule kept for H2H"
+
+# Quarantine: never appear in ANALYSIS conclusion tables / §7 ratios
+trail:
+  - id: softlib_simd_vand
+    reason: "meaningful SoT historically; not a conclusion arm for SV5"
+  - id: fa_dual64_vand
+    reason: "Fallback-A dual64 sensitivity trail"
+  - id: softlib_simd_membar
+    reason: "ST-separated membar experiment"
