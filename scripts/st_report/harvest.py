@@ -44,12 +44,17 @@ def _seed_row(arm: dict[str, Any]) -> dict[str, str]:
     elif arm.get("path") == "dsl":
         row["LDS_width"] = "n/a"
     # Never invent mid-IPC / roof % — leave empty unless arm explicitly sets them.
-    for key in ("mid_ipc_W", "mid_in_el_cyc", "mid_out_el_cyc", "roof_name", "roof_value", "pct_overall", "pct_mid"):
+    for key in (
+        "mid_ipc_W",
+        "mid_in_el_cyc",
+        "mid_out_el_cyc",
+        "roof_name",
+        "roof_value",
+        "pct_overall",
+        "pct_mid",
+    ):
         if key in arm and arm[key] is not None and key in row:
-            if key == "roof_name" and row["roof_name"] and key not in arm:
-                continue
-            if arm.get(key) is not None:
-                row[key] = _cell(arm[key])
+            row[key] = _cell(arm[key])
     if arm.get("roof_name") is not None:
         row["roof_name"] = _cell(arm["roof_name"])
     if arm.get("roof_value") is not None:
@@ -57,8 +62,30 @@ def _seed_row(arm: dict[str, Any]) -> dict[str, str]:
     return row
 
 
+def _merge_existing(seed: dict[str, str], prev: dict[str, str] | None) -> dict[str, str]:
+    """Keep measured SUMMARY cells when arms seed leaves them empty (init-safe)."""
+    if not prev:
+        return seed
+    out = dict(seed)
+    # Prefer a prior non-seed harvest source wholesale when seed has no el_cyc.
+    prev_src = str(prev.get("source") or "")
+    if prev_src and not prev_src.startswith("arms.yaml") and not (seed.get("el_cyc") or "").strip():
+        return {c: prev.get(c, "") or "" for c in SUMMARY_COLUMNS}
+    for c in SUMMARY_COLUMNS:
+        if c == "arm":
+            continue
+        if (not out.get(c) or not str(out.get(c)).strip()) and (prev.get(c) or "").strip():
+            out[c] = prev[c]
+    # If we restored el_cyc from prev, do not leave a stale TODO status.
+    if (out.get("el_cyc") or "").strip() and (out.get("status") or "").upper() == "TODO":
+        out["status"] = (prev.get("status") or "PASS") or "PASS"
+        if not (out.get("source") or "").strip():
+            out["source"] = prev.get("source") or "SUMMARY#preserved"
+    return out
+
+
 def harvest(st: str) -> dict[str, Any]:
-    """Write SUMMARY.tsv from spine seeds. Milestone 1: no artifact invent."""
+    """Write SUMMARY.tsv from spine seeds. Preserve existing measured cells."""
     arms = load_arms(st)
     report_dir(st).mkdir(parents=True, exist_ok=True)
     existing = {r["arm"]: r for r in read_summary(st)}
@@ -66,10 +93,6 @@ def harvest(st: str) -> dict[str, Any]:
     for arm in arms["spine"]:
         seed = _seed_row(arm)
         prev = existing.get(arm["id"])
-        if prev and prev.get("source") and not str(prev.get("source", "")).startswith("arms.yaml"):
-            # Keep non-seed harvest rows when a real source exists (milestone later).
-            rows.append({c: prev.get(c, "") or "" for c in SUMMARY_COLUMNS})
-        else:
-            rows.append(seed)
+        rows.append(_merge_existing(seed, prev))
     path = write_summary(st, rows)
     return {"path": str(path), "rows": rows, "n": len(rows)}

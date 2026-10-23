@@ -1,6 +1,8 @@
 # tilelangGym ST report format
 
-Write or rewrite one ST `ANALYSIS.md` (and supporting notes) so every ST follows the same SV1-style report spine. Keep numbers measured; never invent el/cyc, IPC, or rooftop %.
+Write or rewrite one ST `ANALYSIS.md` (and supporting notes) so every ST follows the same report spine. Keep numbers measured; never invent el/cyc, IPC, or rooftop %.
+
+**Contract only.** Inputs for a run are: ST id, Aims, and an optional design prompt. Measured values come from the harness (`scripts.st_report`), not from this document.
 
 ## When to use
 - New ST ANALYSIS (SV*, CF*, SP*) on Ascend SimtVF / SIMD / SoftLib
@@ -67,30 +69,35 @@ SIMD best, SIMT Ascend default, SIMT SoftLib hand-craft; summary table and **per
 ## Repo placement
 - Primary: `benches/<st>/ANALYSIS.md` (e.g. `benches/sv5/ANALYSIS.md`)
 - Supporting notes may live beside it (`SIMD_RUNNING_IPC.md`, rooftop notes) but ANALYSIS must stand alone with the spine above.
-- This file (`docs/ST_REPORT_FORMAT.md`) is the shared reviewer-facing copy of the format; keep it in sync with the bot skill recipe.
+- This file (`docs/ST_REPORT_FORMAT.md`) is the shared reviewer-facing copy of the format; keep it in sync with `docs/ST_REPORT_SKILL.md` (clean skill contract for open-code).
 
 ## Workflow
 1. Confirm Aims (+ optional section skips) with the author; **confirm conclusion arms** when unsure.
-2. Inventory existing numbers, plots, SoftLib sources for that ST; mark gaps (do not fabricate). Prefer inventory for conclusion arms.
+2. `init` from Aims/design → inventory harness gaps (do not fabricate). Prefer inventory for conclusion arms.
 3. Rewrite ANALYSIS to the spine; move/keep plots under the ST; update theory roofs to match chosen layout/instr.
-4. Land via the usual ST push path (pto-b10 peanut when CloudAgent SCM is blocked); tip SHA + PR URL back.
+4. Land via the usual ST push path; tip SHA + PR URL back.
 5. Ask before merge.
 
 ## Out of scope
 - Changing kernel semantics or inventing new SoftLib numbers without a measured run
 - Merging the PR without an explicit author yes
+- Stuffing trail cases into main ANALYSIS without author confirm
+- Putting host paths, dig el/cyc values, or agent prefs into this format doc
 
 
 ## Harness (measured spine)
 Machine-readable conclusion arms, SUMMARY, plots wiring, and gap list live under `scripts/st_report/` + `benches/<st>/report/`.
-Writing contract remains this document + the bot skill; the harness never invents numbers and keeps trail out of ANALYSIS.
+Writing contract remains this document + `docs/ST_REPORT_SKILL.md`; the harness never invents numbers and keeps trail out of ANALYSIS.
 
 ```bash
-python -m scripts.st_report harvest --st sv5
-python -m scripts.st_report plot    --st sv5
-python -m scripts.st_report gaps    --st sv5
-python -m scripts.st_report fill    --st sv5 --dry-run
-python -m scripts.st_report check   --st sv5
+python -m scripts.st_report init    --st <id> --aims "..." [--design "..."]
+python -m scripts.st_report harvest --st <id>
+python -m scripts.st_report plot    --st <id>
+python -m scripts.st_report gaps    --st <id>
+python -m scripts.st_report fill    --st <id> --dry-run
+python -m scripts.st_report check   --st <id>
 ```
 
-See `benches/sv5/report/arms.yaml` for the SV5 3-arm spine.
+- `init` writes `benches/<st>/report/arms.yaml` from Aims/design (ANALYSIS stub only if missing; `--refresh-aims` updates Aims section only).
+- `harvest` / `plot` / `gaps` / `fill` / `check` own SUMMARY.tsv, plots, gap report, stub fill, and trail leak detection.
+- See `benches/<st>/report/arms.yaml` for that ST's 3–4 arm spine (no dig numbers in this doc).

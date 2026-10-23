@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI: harvest | plot | gaps | fill | check --st <id>"""
+"""CLI: init | harvest | plot | gaps | fill | check --st <id>"""
 
 from __future__ import annotations
 
@@ -14,9 +14,19 @@ def _ensure_repo_on_path() -> None:
         sys.path.insert(0, str(root))
 
 
+def cmd_init(st: str, aims: str, design: str, refresh_aims: bool) -> int:
+    from scripts.st_report.init_st import init_st
+
+    result = init_st(st, aims=aims, design=design or "", refresh_aims=refresh_aims)
+    print(f"wrote {result['arms']}")
+    print(f"  spine: {result['spine']}")
+    print(f"  trail: {result['trail']}")
+    print(f"  analysis: {result['analysis']} ({result['analysis_action']})")
+    return 0
+
+
 def cmd_harvest(st: str) -> int:
     from scripts.st_report.harvest import harvest
-    from scripts.st_report.registry import gaps_path
 
     result = harvest(st)
     print(f"wrote {result['path']} ({result['n']} spine rows)")
@@ -130,6 +140,20 @@ def build_parser() -> argparse.ArgumentParser:
     def add_st(sp: argparse.ArgumentParser) -> None:
         sp.add_argument("--st", required=True, help="ST id under benches/ (e.g. sv5)")
 
+    sp_init = sub.add_parser("init", help="write arms.yaml (+ ANALYSIS stub if missing) from Aims/design")
+    add_st(sp_init)
+    sp_init.add_argument("--aims", required=True, help="author-confirmed Aims (required)")
+    sp_init.add_argument(
+        "--design",
+        default="",
+        help="optional design prompt (kernels, E/TILE/T or VL/G, arm hints)",
+    )
+    sp_init.add_argument(
+        "--refresh-aims",
+        action="store_true",
+        help="if ANALYSIS.md exists, refresh ## 1. Aims only (default: leave prose alone)",
+    )
+
     for name in ("harvest", "plot", "gaps", "check"):
         sp = sub.add_parser(name)
         add_st(sp)
@@ -155,6 +179,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     st = args.st
+    if args.cmd == "init":
+        return cmd_init(
+            st,
+            aims=args.aims,
+            design=getattr(args, "design", "") or "",
+            refresh_aims=bool(getattr(args, "refresh_aims", False)),
+        )
     if args.cmd == "harvest":
         return cmd_harvest(st)
     if args.cmd == "plot":
