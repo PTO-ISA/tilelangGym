@@ -1,0 +1,9 @@
+Provenance (real opsim; do not invent)
+host: pto-b10
+pack: /tmp/sv5_t128_lds_bw_20261022
+arm:  opsim_sv5_r64_c128_g16_t128_ub_stream (TileLang Ascend default ub_stream @ T=128)
+OPPROF: OPPROF_20261022102045_JHGJKZUHDUVMLQPC
+shape: E=8192 R=64 C=128 G=16 T=128 half UB stream
+measured: VF_cyc=2537 el/cyc=3.229 — SUMMARY.tsv Asc row still TODO until harvest promotes
+note: keep_in_rf sibling=1.872; spine Asc default = ub_stream
+date: 2026-10-22 Asia/Hong_Kong

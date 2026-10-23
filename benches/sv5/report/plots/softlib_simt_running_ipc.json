@@ -1,0 +1,50 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "sv5 / SIMT SoftLib / handcraft \u2014 running IPC (W=20)",
+  "png": "/tmp/tilelangGym-sv5-vand/benches/sv5/report/plots/softlib_simt_running_ipc.png",
+  "E": 8192.0,
+  "el_cyc": 9.351598173515981,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simt",
+    "vf_index": 0,
+    "vf_cyc": 876,
+    "vf_cyc_sum": 876,
+    "n_issues": 1412,
+    "n_issues_all": 1568,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/tilelangGym-sv5-vand/benches/sv5/report/artifacts/softlib_simt/instr_popped_log.dump",
+    "absolute_first": 2800,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 875.0,
+    "peak_ipc": 2.9,
+    "mean_ipc_body": 1.6376168224299066,
+    "mid_med_ipc": 1.8,
+    "mid_mean_ipc": 1.7191993464052289,
+    "n_windows": 856.0,
+    "n_issues": 1412.0,
+    "lane_opcodes": [
+      "S2R",
+      "LDS",
+      "FADD",
+      "SEL",
+      "FSETP",
+      "FSETP_I"
+    ],
+    "lane_counts": {
+      "S2R": 8,
+      "LDS": 128,
+      "FADD": 232,
+      "SEL": 448,
+      "FSETP": 220,
+      "FSETP_I": 232
+    },
+    "n_issues_all_named": 1412.0,
+    "plot_style": "opcode_lanes_ipc"
+  }
+}

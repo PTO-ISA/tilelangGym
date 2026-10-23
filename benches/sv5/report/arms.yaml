@@ -1,0 +1,58 @@
+# benches/sv5/report/arms.yaml
+st: sv5
+aims: >-
+  small-block reduce SIMD VCG vs SIMT RF sensitivity
+
+design: >-
+  E=TILE8192 fp32; SIMD PTO-DSL VL/G VAND; SIMT Asc default; SoftLib SIMT contig; SoftLib SIMD and FA dual64 stay trail
+
+# Exactly 3–4 conclusion arms. Trail must stay under `trail:`.
+# Measured el/cyc live in SUMMARY.tsv (harvest); do not invent here.
+# artifacts: optional per-arm log/PNG paths for `python -m scripts.st_report plot`
+#   popped_dump | trace + instr_csv | rolling_csv → generate running-IPC (W=20)
+#   running_ipc_png → wire existing PNG (no re-parse)
+# Paths: absolute, repo-relative, or relative to benches/<st>/.
+spine:
+  - id: simd_dsl_best
+    label: SIMD PTO-DSL best
+    path: dsl
+    role: simd_best
+    el_cyc: null
+    notes: VL128 G=8 VAND storeA; el/cyc from SUMMARY seed 33.44
+    artifacts:
+      trace: report/artifacts/simd_dsl_best/trace.json
+      instr_csv: report/artifacts/simd_dsl_best/instr_exe.csv
+      popped_dump: report/artifacts/simd_dsl_best/instr_popped_log.dump
+      E: 8192
+  - id: simt_asc_default
+    label: SIMT Ascend default lowering
+    path: simt_asc
+    role: simt_asc
+    el_cyc: null
+    notes: TileLang ub_stream T=128 VF logs checked in; SUMMARY el_cyc still TODO until harvest promotes
+    artifacts:
+      trace: report/artifacts/simt_asc_default/trace.json
+      instr_csv: report/artifacts/simt_asc_default/instr_exe.csv
+      popped_dump: report/artifacts/simt_asc_default/instr_popped_log.dump
+      E: 8192
+  - id: softlib_simt
+    label: SIMT SoftLib / handcraft
+    path: softlib_simt
+    role: simt_hand
+    el_cyc: null
+    notes: prefer generate from popped/chrome; PNG wire kept as fallback
+    artifacts:
+      popped_dump: report/artifacts/softlib_simt/instr_popped_log.dump
+      trace: report/artifacts/softlib_simt/trace.json
+      instr_csv: report/artifacts/softlib_simt/instr_exe.csv
+      E: 8192
+      running_ipc_png: plots/sv5_contig_b64_rolling20_ipc.png
+
+# Quarantine: never appear in ANALYSIS conclusion tables / §7 ratios
+trail:
+  - id: softlib_simd_vand
+    reason: meaningful SoT historically; not a conclusion arm for SV5
+  - id: fa_dual64_vand
+    reason: Fallback-A dual64 sensitivity trail
+  - id: softlib_simd_membar
+    reason: ST-separated membar experiment
