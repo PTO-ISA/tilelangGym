@@ -1,0 +1,18 @@
+Absmax, one scale. Threads = N (cross) vs threads = 128 (loop).
+VF is VF_SIMT complete − issue. BAR complete − issue = 1 tick each.
+REDUX complete − issue = 17 ticks. BAR count = 4 × warps.
+
+N     crossVF  loopVF  crossREDUX  loopREDUX  crossBAR  loopBAR
+128   633      632     5           5          16        16
+256   701      576     9           5          32        16
+512   835      663     17          5          64        16
+1024  988      535     64          5          128       16
+2048  1549     503     128         5          256       16
+
+Body, first issue to last complete:
+cross  337  402  540  844  1522
+loop   337  351  362  383  454
+
+Last-element probe, X[N-1] = 4, rest 0:
+cross-n2048 scale = eps (partials past warp 31 are not folded)
+loop-n2048  scale = 4

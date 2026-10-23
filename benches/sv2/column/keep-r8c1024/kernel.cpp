@@ -1,0 +1,61 @@
+#include <tl_templates/ascend/common.h>
+#include <tl_templates/ascend/debug.h>
+__simt_vf__ __launch_bounds__(1024) inline void main_kernel_simt_vf_0(__ubuf__ uint8_t* buf_dyn_shmem) {
+  float v = float(0x0p+0f/*0.000000e+00*/);
+  float v_1 = float(0x0p+0f/*0.000000e+00*/);
+  float v_2 = float(0x0p+0f/*0.000000e+00*/);
+  float v_3 = float(0x0p+0f/*0.000000e+00*/);
+  float v_4 = float(0x0p+0f/*0.000000e+00*/);
+  float v_5 = float(0x0p+0f/*0.000000e+00*/);
+  float v_6 = float(0x0p+0f/*0.000000e+00*/);
+  float v_7 = float(0x0p+0f/*0.000000e+00*/);
+  float m = float(0x0p+0f/*0.000000e+00*/);
+  float inv = float(0x0p+0f/*0.000000e+00*/);
+  m = float(0x0p+0f/*0.000000e+00*/);
+  v = ((__ubuf__ float*)buf_dyn_shmem)[((int32_t)threadIdx.x)];
+  float vv = v;
+  m = max(m, max(vv, (vv * float(-0x1p+0f/*-1.000000e+00*/))));
+  v_1 = ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 1024)];
+  float vv_1 = v_1;
+  m = max(m, max(vv_1, (vv_1 * float(-0x1p+0f/*-1.000000e+00*/))));
+  v_2 = ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 2048)];
+  float vv_2 = v_2;
+  m = max(m, max(vv_2, (vv_2 * float(-0x1p+0f/*-1.000000e+00*/))));
+  v_3 = ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 3072)];
+  float vv_3 = v_3;
+  m = max(m, max(vv_3, (vv_3 * float(-0x1p+0f/*-1.000000e+00*/))));
+  v_4 = ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 4096)];
+  float vv_4 = v_4;
+  m = max(m, max(vv_4, (vv_4 * float(-0x1p+0f/*-1.000000e+00*/))));
+  v_5 = ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 5120)];
+  float vv_5 = v_5;
+  m = max(m, max(vv_5, (vv_5 * float(-0x1p+0f/*-1.000000e+00*/))));
+  v_6 = ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 6144)];
+  float vv_6 = v_6;
+  m = max(m, max(vv_6, (vv_6 * float(-0x1p+0f/*-1.000000e+00*/))));
+  v_7 = ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 7168)];
+  float vv_7 = v_7;
+  m = max(m, max(vv_7, (vv_7 * float(-0x1p+0f/*-1.000000e+00*/))));
+  inv = (float(0x1p+0f/*1.000000e+00*/) / max(m, float(0x1.0c6f7a0b5ed8dp-20f/*1.000000e-06*/)));
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 8192)] = (v * inv);
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 9216)] = (v_1 * inv);
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 10240)] = (v_2 * inv);
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 11264)] = (v_3 * inv);
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 12288)] = (v_4 * inv);
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 13312)] = (v_5 * inv);
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 14336)] = (v_6 * inv);
+  ((__ubuf__ float*)buf_dyn_shmem)[(((int32_t)threadIdx.x) + 15360)] = (v_7 * inv);
+}
+
+extern "C" __global__ __vector__ void main_kernel(__gm__ float* Out, __gm__ float* X) {
+  asc_init();
+  __ubuf__ uint8_t *buf_dyn_shmem = (__ubuf__ uint8_t *)0;
+  asc_copy_gm2ub_align((__ubuf__ uint8_t*)((&(((__ubuf__ float*)buf_dyn_shmem)[0]))), (__gm__ uint8_t*)((&(X[0]))), 1, 32768, 0, 0, 0, static_cast<asc_load_l2_cache_mode>(0), 32768, 32768);
+  asc_sync_notify(PIPE_MTE2, PIPE_V, static_cast<event_t>(0));
+  asc_sync_wait(PIPE_MTE2, PIPE_V, static_cast<event_t>(0));
+  asc_vf_call<main_kernel_simt_vf_0>(cce::dim3(1024), buf_dyn_shmem);
+  asc_sync_notify(PIPE_V, PIPE_MTE3, static_cast<event_t>(0));
+  asc_sync_wait(PIPE_V, PIPE_MTE3, static_cast<event_t>(0));
+  asc_copy_ub2gm_align((__gm__ uint8_t*)((&(Out[0]))), (__ubuf__ uint8_t*)((&(((__ubuf__ float*)buf_dyn_shmem)[8192]))), 1, 32768, static_cast<asc_store_l2_cache_mode>(4), 32768, 32768);
+}
+
