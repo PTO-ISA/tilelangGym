@@ -10,8 +10,6 @@ Human fill only — do not invent numbers to clear these.
 - **simt_asc_default**: el_cyc missing / status=TODO
 - **simt_asc_default**: Ascend default el/cyc + T-dim + LDS/STS 32 vs 64
 - **softlib_simt**: mid_ipc_W empty (W=20 not harvested)
-- **simd_dsl_best**: missing report/plots/simd_dsl_best_running_ipc.png
-- **simt_asc_default**: missing running-IPC (no Asc artifacts yet)
 
 ## Quarantined trail (must not enter ANALYSIS conclusion)
 

@@ -1,0 +1,31 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "sv5 / SIMD PTO-DSL best \u2014 running IPC (W=20)",
+  "png": "/tmp/tilelangGym-sv5-vand/benches/sv5/report/plots/simd_dsl_best_running_ipc.png",
+  "E": 8192.0,
+  "el_cyc": 38.824644549763036,
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 211,
+    "vf_cyc_sum": 211,
+    "n_issues": 395,
+    "n_issues_all": 395,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/tilelangGym-sv5-vand/benches/sv5/report/artifacts/simd_dsl_best/instr_popped_log.dump",
+    "absolute_first": 5902,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 210.0,
+    "peak_ipc": 2.35,
+    "mean_ipc_body": 1.9761780104712041,
+    "mid_med_ipc": 2.15,
+    "mid_mean_ipc": 2.131292517006803,
+    "n_windows": 191.0,
+    "n_issues": 395.0
+  }
+}

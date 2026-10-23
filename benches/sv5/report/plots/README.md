@@ -5,11 +5,12 @@ Window convention: left-open right-closed `(t−W, t]`.
 No fake PNGs — missing arms stay empty and appear in gaps.md.
 
 ## Generated from logs
-- (none)
+- simd_dsl_best: generate ← popped_dump → simd_dsl_best_running_ipc.png (mid-med=2.150)
+- simt_asc_default: generate ← popped_dump → simt_asc_default_running_ipc.png (mid-med=0.500)
+- softlib_simt: generate ← popped_dump → softlib_simt_running_ipc.png (mid-med=1.800)
 
 ## Wired (existing PNG)
-- softlib_simt: symlink ← sv5_contig_b64_rolling20_ipc.png
+- (none)
 
 ## Skipped
-- simd_dsl_best: no artifacts logs/PNG (gap)
-- simt_asc_default: N/A until Asc harvest / artifacts
+- (none)

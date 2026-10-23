@@ -18,32 +18,35 @@ spine:
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: fill via harvest / measured SUMMARY; no invented el/cyc
-    artifacts: {}
-    # When VL128 chrome/popped logs land, set e.g.:
-    # artifacts:
-    #   trace: report/artifacts/simd_dsl_best/trace.json
-    #   instr_csv: report/artifacts/simd_dsl_best/instr_exe.csv
-    #   E: 8192
+    notes: VL128 G=8 VAND storeA; el/cyc from SUMMARY seed 33.44
+    artifacts:
+      trace: report/artifacts/simd_dsl_best/trace.json
+      instr_csv: report/artifacts/simd_dsl_best/instr_exe.csv
+      popped_dump: report/artifacts/simd_dsl_best/instr_popped_log.dump
+      E: 8192
   - id: simt_asc_default
     label: SIMT Ascend default lowering
     path: simt_asc
     role: simt_asc
     el_cyc: null
-    notes: T-dim + LDS/STS width + el/cyc from measured run
-    artifacts: {}
+    notes: TileLang ub_stream T=128 VF logs checked in; SUMMARY el_cyc still TODO until harvest promotes
+    artifacts:
+      trace: report/artifacts/simt_asc_default/trace.json
+      instr_csv: report/artifacts/simt_asc_default/instr_exe.csv
+      popped_dump: report/artifacts/simt_asc_default/instr_popped_log.dump
+      E: 8192
   - id: softlib_simt
     label: SIMT SoftLib / handcraft
     path: softlib_simt
     role: simt_hand
     el_cyc: null
-    notes: prefer LDS.32/STS.32 when SoT; stage-split when measured
+    notes: prefer generate from popped/chrome; PNG wire kept as fallback
     artifacts:
-      # Existing measured PNG (no raw VF dump on tip) — plot wires, does not invent
+      popped_dump: report/artifacts/softlib_simt/instr_popped_log.dump
+      trace: report/artifacts/softlib_simt/trace.json
+      instr_csv: report/artifacts/softlib_simt/instr_exe.csv
+      E: 8192
       running_ipc_png: plots/sv5_contig_b64_rolling20_ipc.png
-      # When popped/chrome logs are checked in under report/artifacts/, prefer:
-      # popped_dump: report/artifacts/softlib_simt/instr_popped_log.dump
-      # E: 8192
 
 # Quarantine: never appear in ANALYSIS conclusion tables / §7 ratios
 trail:

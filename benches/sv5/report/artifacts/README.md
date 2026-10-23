@@ -1,13 +1,15 @@
 # report/artifacts
 
-Drop per-arm VF / instr logs here (or point `arms.yaml` `artifacts:` at absolute peanut paths).
+Checked-in VF / instr logs for spine arms (real opsim only — no fakes).
 
-Expected names (optional):
-- `trace.json` — chrome-trace from opsim
-- `instr_exe.csv` — `core0.veccore0_instr_exe.csv` (VF cycle rows)
-- `instr_popped_log.dump` — cycle-accurate popped log
+| arm dir | kind | key files |
+|---|---|---|
+| `simd_dsl_best/` | DSL VL128 VAND storeA | `trace.json`, `instr_exe.csv`, `instr_popped_log.dump` |
+| `simt_asc_default/` | Asc TileLang ub_stream T=128 | same |
+| `softlib_simt/` | SoftLib contig LDS.b64 T=128 | same |
 
-Then:
+Each dir has `SOURCE.txt` with peanut path + OPPROF id.
+
 ```bash
-python -m scripts.st_report plot --st <id> --window 20
+python -m scripts.st_report plot-ipc --st sv5 --window 20
 ```

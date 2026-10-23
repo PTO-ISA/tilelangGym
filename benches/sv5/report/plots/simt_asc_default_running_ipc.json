@@ -1,0 +1,31 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "sv5 / SIMT Ascend default lowering \u2014 running IPC (W=20)",
+  "png": "/tmp/tilelangGym-sv5-vand/benches/sv5/report/plots/simt_asc_default_running_ipc.png",
+  "E": 8192.0,
+  "el_cyc": 3.578855395369157,
+  "parsed": {
+    "kind": "simt",
+    "vf_index": 0,
+    "vf_cyc": 2289,
+    "vf_cyc_sum": 2289,
+    "n_issues": 1148,
+    "n_issues_all": 1148,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/tilelangGym-sv5-vand/benches/sv5/report/artifacts/simt_asc_default/instr_popped_log.dump",
+    "absolute_first": 2229,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 2288.0,
+    "peak_ipc": 2.3,
+    "mean_ipc_body": 0.5037020713970912,
+    "mid_med_ipc": 0.5,
+    "mid_mean_ipc": 0.5306058713304185,
+    "n_windows": 2269.0,
+    "n_issues": 1148.0
+  }
+}

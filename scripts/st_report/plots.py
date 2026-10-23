@@ -76,6 +76,8 @@ def plot(st: str, *, window: float = DEFAULT_W) -> dict[str, Any]:
             art.get("popped_dump") or art.get("trace") or art.get("rolling_csv")
         ):
             try:
+                if target.exists() or target.is_symlink():
+                    target.unlink()
                 result = build_from_artifacts(
                     art,
                     st_root=st_root,
