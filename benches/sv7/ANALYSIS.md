@@ -1,15 +1,17 @@
 # SV7 analysis — large-block reduce (G=64 / G=128)
 
-**Date:** 2026-10-27 Asia/Hong_Kong · **t705u** SoftLib SIMT 1×G + VMI Gmap live close · Ascend950PR_9599 · cann_92b2  
+**Date:** 2026-10-27 Asia/Hong_Kong · **t705u** SoftLib SIMT 1×G + VMI Gmap live close · **t706u:** SoftLib CCE off main / footnote peer · Ascend950PR_9599 · cann_92b2  
 **Format:** ST spine · st-report + softlib-simt-schedule · st-semantics-gate · vmi-gmap-close  
 **Metric:** el/cyc = E/VF · E=8192 · **era=fp32-absmax** · Case-1 · no recip.
 
-**Conclusion arms (per gold G):**
+**Conclusion arms (per gold G — SoftLib CCE not a required arm):**
 
-| G | VMI SoT | SoftLib CCE | SoftLib SIMT 1×G | Asc |
-|--:|--------:|------------:|-----------------:|-----|
-| 64 | **30.68** VABS (VF 267) · VAND 30.57 | **30.68** | **5.54** wc-multi T512 | TODO |
-| 128 | **32.25** VMAX→VCMAX (VF 254) | **32.38** | **3.72** wc-multi T256 | TODO |
+| G | VMI SoT | SoftLib SIMT 1×G | Asc |
+|--:|--------:|-----------------:|-----|
+| 64 | **30.68** VABS (VF 267) · VAND 30.57 | **5.54** wc-multi T512 | TODO |
+| 128 | **32.25** VMAX→VCMAX (VF 254) | **3.72** wc-multi T256 | TODO |
+
+> Footnote SoftLib CCE peers (not required 4th arm): G64 **30.68** tied with VMI; G128 **32.38** (+0.4% vs VMI 32.25) — footnote peer only (t706u).
 
 ---
 
@@ -20,7 +22,7 @@
 | **A1** | Case-1 absmax · gold G∈{64,128} · E=8192 |
 | **A2** | VMI Gmap DONE (was OPEN dig) |
 | **A3** | SoftLib SIMT **axis=1×G** · wc-multi · §20/§21 COMPLETE vs residual |
-| **A4** | SoftLib CCE retained when peer/ahead |
+| **A4** | SoftLib CCE **off main table** when ≈ VMI (tie / ≤0.5% peer → footnote only; t706u) |
 | **A5** | SoftLib SIMT measured |
 
 ---
@@ -34,17 +36,16 @@
 | SoftLib SIMT G64 | wc-multi **per=2** · LDS.32 · T512 |
 | SoftLib SIMT G128 | wc-multi **per=4** · LDS.32 · T256 |
 | WC-only (per=1) | **no path** for G>32 — need in-warp fold (t704u) |
+| SoftLib CCE | footnote peer only (tied @G64; +0.4% @G128) |
 
-**Matrix:**
+**Matrix (spine — SoftLib CCE not required):**
 
 | G | schedule | el/cyc | VF | end |
 |--:|----------|-------:|---:|-----|
 | 64 | VMI VCMAX VABS | **30.68** | 267 | DONE |
-| 64 | SoftLib CCE whole-VL VCMAX | 30.68 | 267 | peer/tie |
 | 64 | SoftLib SIMT wc-multi T512 | **5.54** | 1478 | DONE |
 | 64 | SoftLib SIMT stock T128 | 2.39 | 3434 | loses |
 | 128 | VMI vmaxfold / vcmax_vl128 | **32.25** | 254 | DONE |
-| 128 | SoftLib CCE VMAX→VCMAX | **32.38** | 253 | SoftLib +0.4% |
 | 128 | SoftLib SIMT wc-multi T256 | **3.72** | 2201 | DONE |
 | 128 | SoftLib SIMT stock T64 | 1.67 | 4916 | loses |
 
@@ -76,7 +77,7 @@ VMAX pre-fold + VCMAX · mix VCMAX:64 VMAX:64 VAND:128 VLD:128 VST:64 · both ta
 
 SEMANTICS_GATE: **PASS**. Close note: [`../sv5/reports/VMI_GMAP_ABSMAX_CLOSE_t705u.md`](../sv5/reports/VMI_GMAP_ABSMAX_CLOSE_t705u.md).
 
-SoftLib CCE: **tied** @G64; **slightly ahead** @G128 → keep SoftLib row (not waived).
+SoftLib CCE: **tied** @G64; **+0.4%** @G128 → **footnote peer only** (not a required conclusion arm; t706u).
 
 ---
 
@@ -101,11 +102,13 @@ Harness checklist: [`../sv5/reports/SOFTLIB_SIMT_1xG_HARNESS_GATE_t705u.md`](../
 
 ## 7. Conclusion
 
-| G | VMI | SoftLib CCE | SoftLib SIMT 1×G |
-|--:|----:|------------:|-----------------:|
-| 64 | **30.68** | 30.68 | **5.54** |
-| 128 | **32.25** | **32.38** | **3.72** |
+| G | VMI | SoftLib SIMT 1×G |
+|--:|----:|-----------------:|
+| 64 | **30.68** | **5.54** |
+| 128 | **32.25** | **3.72** |
 
-**COMPARE:** VMI G64/G128 were OPEN dig → live **DONE** this turn. SoftLib SIMT main SoT = multi-warp wc-multi (not stock T128).
+> SoftLib CCE footnote: G64 **30.68** (tie); G128 **32.38** (+0.4% peer) — not a required arm (t706u).
+
+**COMPARE:** VMI G64/G128 were OPEN dig → live **DONE**. SoftLib SIMT main SoT = multi-warp wc-multi (not stock T128). SoftLib CCE ≈ VMI → off main headline.
 
 **PR:** https://github.com/PTO-ISA/tilelangGym/pull/8
