@@ -9,7 +9,7 @@
 | # | Path | Best | Era |
 |---|------|------|-----|
 | 1 | **SIMD PTO-DSL / VMI** | VL256/NG8 VAND dig **22.14** (R32×C256) | fp32-absmax |
-| 2 | **SIMT Ascend default** | gate / el/cyc TODO | gate |
+| 2 | **SIMT-ASC stock** | **1.57** wc LDS.32 T128 (VF 5225) · default SoftLib `__simt_vf__` lowering | fp32-absmax |
 | 3 | **SIMT SoftLib** | **axis=1×G** wc dual-drain T512 **8.22** | fp32-absmax |
 
 > Footnote (not a required arm): SoftLib CCE half-VL VCMAX **21.28** — VMI already best (−4% vs 22.14); off main table per t706u.
@@ -76,9 +76,11 @@ SEMANTICS_GATE: **PASS** (VCGMAX primary · era=fp32-absmax).
 
 ---
 
-## 5. SIMT Ascend default
+## 5. SIMT-ASC stock
 
-el/cyc **TODO**.
+**SIMT-ASC stock** = SoftLib `__simt_vf__` default lowering @ legacy T (= SoftLib SIMT stock).
+
+el/cyc **1.57** · wc LDS.32 **T128** · VF 5225 · tag `wc_abs_lds32_redux_g32_t128_e8192`.
 
 ---
 
@@ -102,8 +104,8 @@ Residual: misched=0 @ SoT T.
 | Arm | el/cyc |
 |-----|-------:|
 | VMI dig | **22.14** |
-| SoftLib SIMT 1×G | **8.22** |
-| Asc | TODO |
+| SoftLib SIMT 1×G best | **8.22** |
+| **SIMT-ASC stock** | **1.57** |
 
 > SoftLib CCE half-VL VCMAX **21.28** — footnote only (t706u).
 

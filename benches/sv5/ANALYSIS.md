@@ -10,7 +10,7 @@
 | # | Path | Best on this tip | Era |
 |---|------|------------------|-----|
 | 1 | **SIMD PTO-DSL / VMI** | VL=128 G=8 VAND **33.44** | 2026-10-22 · fp32-absmax |
-| 2 | **SIMT Ascend default** | gate **PASS**; el/cyc **TODO** | gate |
+| 2 | **SIMT-ASC stock** | **1.13** wc halfmask LDS.32 T128 (VF 7264) · default SoftLib `__simt_vf__` lowering | fp32-absmax |
 | 3 | **SIMT SoftLib hand-craft** | **axis=1×G** wc halfmask loadall+absall drain T512 **4.74** | 2026-10-27 · fp32-absmax |
 
 > Footnote (not a required arm): SoftLib CCE dual64 VAND absmax **31.39** — VMI already best (−6% vs 33.44); off main table per t706u.
@@ -47,7 +47,7 @@
 | # | schedule | path | el/cyc | VF | era |
 |---|----------|------|-------:|---:|-----|
 | 1 | VMI VL128/NG8 VAND | PTO-DSL | **33.44** | 245 | fp32-absmax |
-| 2 | simt-asc keep_reg / ub_reload | Asc default | *TODO* | — | gate |
+| 2 | **SIMT-ASC stock** (default SoftLib `__simt_vf__` @ legacy T) | SoftLib stock | **1.13** | 7264 | fp32-absmax |
 | 3 | SoftLib SIMT wc halfmask loadall+absall drain T512 | SoftLib `__simt_vf__` | **4.74** | 1727 | fp32-absmax |
 | 3s | SoftLib SIMT wc halfmask stock T128 | SoftLib | 1.13 | 7264 | fp32-absmax |
 
@@ -61,8 +61,10 @@ VL=128 · VCGMAX G=8 · abs = i32 VAND · store reduced Y · EXU/SLIDE-bound.
 ### 3.2 SoftLib CCE (footnote peer only)
 dual64 PHYS_VL64×2 · VAND+VCGMAX · **31.39** · same class as VMI 33.44 — **not shown in headline** (VMI best).
 
-### 3.3 SIMT Ascend default
-Gate `keep_reg` / `ub_reload` · el/cyc TODO (MB-SV5-ASC).
+### 3.3 SIMT-ASC stock
+**SIMT-ASC stock** = SoftLib `__simt_vf__` **default lowering** at legacy stock T (same as SoftLib SIMT stock column) — **not** a separate unmeasured Ascend-only arm.
+
+el/cyc **1.13** · wc halfmask LDS.32 **T128** · VF 7264 · tag `wc_abs_lds32_redux_g16_t128_e8192`.
 
 ### 3.4 SIMT SoftLib — **axis=1×G** (Harness §20/§21)
 - Motif: **warp-coop halfmask** (16-of-32) · contig LDS.32 · REDUX · **not** wr Nx1.
@@ -84,9 +86,11 @@ Rolling IPC / opcode-lane plots for SoftLib VAND path: [`SIMD_RUNNING_IPC.md`](S
 
 ---
 
-## 5. SIMT Ascend default
+## 5. SIMT-ASC stock
 
-Gate PASS · el/cyc **TODO**.
+**SIMT-ASC stock** = SoftLib `__simt_vf__` default lowering @ legacy T (= SoftLib SIMT stock).
+
+el/cyc **1.13** · wc halfmask LDS.32 T128 · VF 7264.
 
 ---
 
@@ -128,8 +132,8 @@ T128 halfmask VF 7264 → **1.13** el/cyc vs T512 **4.74** — higher T hides LD
 | Arm | Best el/cyc | Ratio vs VMI |
 |-----|------------:|-------------:|
 | VMI PTO-DSL | **33.44** | 1.00× |
-| SoftLib SIMT 1×G | **4.74** | 0.14× |
-| Asc Simt | TODO | — |
+| SoftLib SIMT 1×G best | **4.74** | 0.14× |
+| **SIMT-ASC stock** | **1.13** | 0.034× |
 
 > SoftLib CCE dual64 **31.39** (0.94× VMI) — footnote only; not a required conclusion arm (t706u).
 

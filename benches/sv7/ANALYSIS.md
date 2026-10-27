@@ -6,10 +6,12 @@
 
 **Conclusion arms (per gold G — SoftLib CCE not a required arm):**
 
-| G | VMI SoT | SoftLib SIMT 1×G | Asc |
-|--:|--------:|-----------------:|-----|
-| 64 | **30.68** VABS (VF 267) · VAND 30.57 | **5.54** wc-multi T512 | TODO |
-| 128 | **32.25** VMAX→VCMAX (VF 254) | **3.72** wc-multi T256 | TODO |
+| G | VMI SoT | SoftLib SIMT 1×G best | **SIMT-ASC stock** |
+|--:|--------:|----------------------:|--------------------|
+| 64 | **30.68** VABS (VF 267) · VAND 30.57 | **5.54** wc-multi T512 | **2.39** wc-multi per=2 T128 (VF 3434) |
+| 128 | **32.25** VMAX→VCMAX (VF 254) | **3.72** wc-multi T256 | **1.67** wc-multi per=4 T64 (VF 4916) |
+
+> **SIMT-ASC stock** = SoftLib `__simt_vf__` **default lowering** at legacy stock T (same numbers as SoftLib SIMT stock) — not a separate unmeasured Ascend-only arm.
 
 > Footnote SoftLib CCE peers (not required 4th arm): G64 **30.68** tied with VMI; G128 **32.38** (+0.4% vs VMI 32.25) — footnote peer only (t706u).
 
@@ -81,9 +83,14 @@ SoftLib CCE: **tied** @G64; **+0.4%** @G128 → **footnote peer only** (not a re
 
 ---
 
-## 5. SIMT Ascend default
+## 5. SIMT-ASC stock
 
-el/cyc **TODO**.
+**SIMT-ASC stock** = SoftLib `__simt_vf__` default lowering @ legacy T (= SoftLib SIMT stock).
+
+| G | el/cyc | stock T | note |
+|--:|-------:|--------:|------|
+| 64 | **2.39** | T128 | wc-multi per=2 · VF 3434 · `wc_abs_lds32_redux_g64_t128_e8192` |
+| 128 | **1.67** | T64 | wc-multi per=4 · VF 4916 · `wc_abs_lds32_redux_g128_t64_e8192` |
 
 ---
 
@@ -102,10 +109,10 @@ Harness checklist: [`../sv5/reports/SOFTLIB_SIMT_1xG_HARNESS_GATE_t705u.md`](../
 
 ## 7. Conclusion
 
-| G | VMI | SoftLib SIMT 1×G |
-|--:|----:|-----------------:|
-| 64 | **30.68** | **5.54** |
-| 128 | **32.25** | **3.72** |
+| G | VMI | SoftLib SIMT 1×G best | **SIMT-ASC stock** |
+|--:|----:|----------------------:|--------------------:|
+| 64 | **30.68** | **5.54** | **2.39** |
+| 128 | **32.25** | **3.72** | **1.67** |
 
 > SoftLib CCE footnote: G64 **30.68** (tie); G128 **32.38** (+0.4% peer) — not a required arm (t706u).
 
