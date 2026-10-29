@@ -1,115 +1,57 @@
-# SV8 G16 Case-3 e2e RESULT (t727u steer + sv8d harvest)
+# SV8 G32 Case-3 e2e RESULT (t737u steer — SIMD worst vs SIMT best)
 
 **Host:** pto-b10 / Ascend950PR_9599 camodel  
-**When:** 2026-10-29T11:35:00+08:00 live PASS; RESULT refresh Asia/Hong_Kong same day  
-**Pack:** `/mnt/fluxdata/happybot/sv8_g16_e2e_t726u/`  
-**Labels:** `reduce_axis=inner` SoftLib_axis=`1xG` `era=case3-quant-bcast` §22 → absmax expects VC/VCGMAX  
-**Shape:** R=64 C=128 G=16 T=32  E=R*C=8192  
-**Env (live PASS):** TILELANG=`tilelang-pto-isa-st` + **cann_92b2** (`cann-9.2.0-beta.2`); prior cann_91b3 blocked on `asc_pack_to_high` / `asc_load_l2_cache_mode`.  
-**sv8d:** PTO-DSL handwritten SIMD (`sv8d_case3_bcast.py`), opsim OPPROF_20261029104314_PTJNJUBYPNEYDPUI, exitcode=0.
+**When:** 2026-10-29T14:15:00+08:00 Asia/Hong_Kong (G32 live PASS)  
+**Pack:** `/mnt/fluxdata/happybot/sv8_g16_e2e_t726u/` · box `/workspace/sv8_g16_e2e_t726u/`  
+**Labels:** `reduce_axis=inner` SoftLib_axis=`1xG` `era=case3-quant-bcast` §22 → absmax expects VC/VCGMAX family  
+**Shape:** R=64 C=128 **G=32** T=32  E=R*C=8192 (E kept; G retargeted from G16 per t737u)  
+**Env:**
+- **simt-asc:** TILELANG=`tilelang-pto-isa-st` + **cann_92b2** (`cann-9.2.0-beta.2`)
+- **sv8d VL-resident:** PTO-DSL handwritten (`sv8d_vl_resident_case3.py`) + **cann_91b3** opsim; OPPROF under `out/dsl_vlres/opsim_sv8d_vlres_r64_c128_g32_t32_vl_resident/`
+
+**Dtype footnote (era=case3-quant-bcast):** SIMT-ASC = **fp16** X/Out + f32 scale; VL-resident SIMD = **f32** X/Out (same split as G16 sv8d vs simt). Ratios are same-shape Case-3 e2e, not cross-dtype microbench SoT.
 
 ---
 
 ## 1. Analysis (hypothesis first)
 
-### H1 — Prior SV1/SV5: G16 major drawback = UB BW when streaming A through UB
-**Partially inherited, but not the live e2e bottleneck on this small shape.**
+### H1 — UB-BW is the G-size drawback on this e2e
+**Not the live bottleneck on R64×C128.** Outer GM↔UB ≈32–64 KiB ≪ VF body on both arms (SIMT VF=56714; VL-res VF=1964 still ≫ dual-VLD floor ~64–128 cyc).
 
-Outer GM↔UB: one `MOV_SRC_TO_DST_ALIGNv2` MTE2 (X 16384 B) + one MTE3 (Out 16384 B).  
-Dual-VLD roof ≈ 512 B/cyc → theoretical floor ≈ 64 cyc for 32 KiB.  
-Measured VF_SIMT live = **28603 cyc** ≫ 64 → **not outer-UB-BW bound**.  
-Measured VF_SIMD (sv8d) live = **128790 cyc** ≫ 64 likewise.
+### H2 — Fused reduce+quant+eltwise with X VL/RF-resident → SIMD ~2× SIMT
+**Re-tested at G=32 with an explicit VL-resident SIMD motif.**
 
-### H2 — Fused reduce+quant-scale+eltwise keeps X in RF → SIMD may ~2× SIMT
-**FALSIFIED for both arms as measured.**
+| arm | X residency | VF_cyc | el/cyc | notes |
+|-----|-------------|-------:|-------:|-------|
+| simt-asc live G32 | X **reloads** from `x_ub` (fp16); `sf_inv` fragment RF | **56714** | **0.1444** | stock SimtVF |
+| **sv8d VL-resident G32** | **X KEPT in VL vreg** across abs→reduce→mul; **no `RV_VLDS`** | **1964** | **4.1711** | per-group `vcmax(group=1)` (NG=2 compact PTOAS-illegal) |
 
-**RF residency (simt-asc live, fresh ASC):**
-- `float sf_inv[16]` — **stays in RF** across reduce→recip→mul (local array).
-- **X does NOT stay in RF/fragment.** Both absmax and mul reload from `__ubuf__ half* buf_dyn_shmem` (shared `x_ub`):
+**Ratio (el/cyc):** SIMD÷SIMT = 4.1711 / 0.1444 ≈ **28.9×** (SIMD faster).  
+**~2× floor:** **exceeded** once X is VL-resident — opposite of G16 size-1+scratch sv8d (where SIMT÷SIMD≈4.50×).
 
-```c
-// reduce:
-float vv = ((float)((__ubuf__ half*)buf_dyn_shmem)[(i*512 + threadIdx.x*16 + t)]);
-// mul (same UB address space, +8192 = out_ub):
-out = (half)((float)((__ubuf__ half*)buf_dyn_shmem)[...]) * s);
-```
+**Caveat (SEMANTICS_GATE):** VL-resident schedule is **not** compact `vcmax(group=NG=2)` / VCGMAX-on-NG=2 (PTOAS rejects `vreg<2xf32>`). It is **2× `vcmax(group=1)`** with lane masks + size-1 recip + `vbrc` expand. Not the Gmap VL=256 NG=8 SoT either. Valid as **VL-resident Case-3 motif** measure, **INCONCLUSIVE** as inner compact-VCGMAX G32 SoT.
 
-Lowered TIR matches: `T.Cast(..., x_ub[i, j])` in both Parallel loops; only `sf_inv` is `local.fragment`.
+### H3 — membar/flag dominates small shape
+**VL-resident:** no intra-VF `RV_SMEM_BAR` in harvest (scratch expand removed). Outer SET/WAIT_FLAG only. Dominant VF body: `RV_VSEL` (1024), `RV_VDIV` (256), `RV_VCMAX` (256), `RV_VDUP` (256), `RV_VMUL` (128), `RV_VAND` (128).
 
-**Instr (live, call_count-weighted):** `SIMT_LDS=512`, `SIMT_STS=256`, `SIMT_FMUL=256`, `SIMT_F2F=768`, `SIMT_FMNMX=240`.  
-LD vs EX: RVECLD calls≈529 vs RVECEX≈2837 → **EX/schedule-dominated inside VF**, with a full X re-load from UB for the mul.
-
-**RF residency (sv8d PTO-DSL live):**
-- **size-1 reduce** path: absmax is pairwise `RV_VMAX` (calls=16896) — not a VL-wide keep of the X tile.
-- **Second VL X load for mul:** `RV_VLDS` calls=**8192** (=E) → full activation reload from UB for the scale mul; X tile is **not** held in V-reg across reduce→mul.
-- **Scale expand:** scratch `VST → mem_bar(VST_VLD) → VLD` per group (`RV_VSTI`/`RV_VLDI` 640 each; `RV_SMEM_BAR` 1160 with details `type:VST_VLD` + `type:VLD_VST`).
-- Scale recip uses `RV_VDIV` (512); expand uses `RV_VSEL` (1024).
-
-**Implication for H2:** fusion keeps **scale** live (SIMT: `sf_inv` local; SIMD: after expand into V-reg for mul), but **activations** still stream UB→RF/V-reg per use on both arms. The hypothesized “X stays in register → SIMD ~2× SIMT” is **not** what either lowering does today.
-
-### H3 — Small shape: membar/flag/cross-pipe sync may dominate
-**Outer sync is real but small vs VF body on SIMT; on SIMD, membar is material (~15% VF) but not the primary tax.**
-
-| event | simt live | sv8d live |
-|-------|----------:|----------:|
-| MTE2 copy X (cyc) | 1023 | (2 MOV_SRC_TO_DST_ALIGNv2, sum_cyc≈2914) |
-| VF (cyc / us) | 28603 / 15.89 | **128790 / 71.55** |
-| SET_FLAG+WAIT_FLAG count | 2+2 | 2+2 |
-| Intra-VF `RV_SMEM_BAR` | **0** | **1160** (sum_cyc=18743, **14.6%** of VF) |
-
-**sv8d opcode cycle shares vs VF=128790** (pipe-overlapped; shares do **not** sum to 100%):
-
-| opcode | calls | sum_cycles | share_VF |
-|--------|------:|-----------:|---------:|
-| RV_VMAX | 16896 | 101376 | 78.7% |
-| RV_VLDS | 8192 | 74807 | 58.1% |
-| RV_VMUL | 8320 | 66560 | 51.7% |
-| RV_SLDI | 6592 | 59454 | 46.2% |
-| RV_SSTI | 6695 | 46282 | 35.9% |
-| RV_SMEM_BAR | 1160 | 18743 | **14.6%** |
-| RV_VLDI | 640 | 13952 | 10.8% |
-| RV_VDIV | 512 | 8704 | 6.8% |
-| RV_VSEL | 1024 | 6144 | 4.8% |
-| RV_VSTI | 640 | 5760 | 4.5% |
-
-- **membar tax:** ~14.6% of SIMD VF — real small-shape cost from scratch scale expand, **not** enough alone to explain 4.5× vs SIMT.
-- **Dominant SIMD cost:** size-1 reduce (`VMAX` + scalar/scratch expand) + full X `VLDS` reload + scalar LD/ST traffic (`SLDI`/`SSTI`).
-- SIMT: no intra-VF MEMBAR; outer flags wait on VF duration (pipeline), not extra sync work. Spill ASC `asc_syncthreads` between expand/consumer not re-harvested this pass.
-
-### SIMD vs SIMT ratio / ~2×?
-| arm | status | VF_cyc | el/cyc | notes |
-|-----|--------|-------:|-------:|-------|
-| simt-asc live | **PASS** gold | 28603 | **0.2864** | |
-| simt-asc spill_dist | **PASS** gold | 29445 | 0.2782 | +842 cyc vs live |
-| simd/sv8v live|spill | **FAIL** compile | NA | NA | `AscendSimdVFLowerParallel`: 2D Parallel stride=0/0 |
-| **sv8d DSL live** | **PASS** gold maxabs=1.192e-07 | **128790** | **0.06361** | wall_us=72.39; size-1 reduce + scratch expand |
-
-**Ratio (el/cyc):** SIMT÷SIMD = 0.2864 / 0.06361 ≈ **4.50×** (SIMT faster).  
-**SIMD÷SIMT ≈ 0.222** — **~2× not hit; opposite direction.**
-
-Attribution: (1) X not RF-resident on either arm; (2) sv8d size-1 reduce + scratch `VST→mem_bar→VLD` expand is far costlier than SimtVF warp schedule on G16; (3) membar ~15% VF is secondary to VMAX/VLDS/VMUL volume.
-
-### UB BW estimate
-- Outer: 32 KiB / 512 B/cyc roof → ≥64 cyc (satisfied easily on both arms).  
-- Inner SIMD: VLDS 8192 calls, sum_cyc 74807 — LD volume is large **because of size-1 / reload motif**, not because outer UB roof binds.  
-- **Verdict:** small-shape e2e is **EX / schedule bound** (SIMT) or **size-1-reduce + UB-reload + membar expand bound** (sv8d), **not** dual-VLD outer-UB-bound.
+### G16 → G32 steer (t737u)
+G=32 chosen as **SIMD-worst vs SIMT-best** group size to explore the gap. Prior G16 tip retained under COMPARE (§5).
 
 ---
 
-## 2. Numbers table
+## 2. Numbers table (G32 tip)
 
 | path | arm | compile | gold | wall_us (msprof vec) | VF_us | VF_cyc | el/cyc (E=8192) | notes |
 |------|-----|---------|------|---------------------:|------:|-------:|---------------:|-------|
-| simt-asc | live | OK | PASS maxabs=0 | 17.16 | 15.89 | 28603 | 0.2864 | cann_92b2; LDS:512 STS:256 FMUL:256 |
-| simt-asc | spill_dist | OK | PASS maxabs=0 | 17.62 | 16.36 | 29445 | 0.2782 | LDS:768 STS:512 LDK/STK:107 |
-| simd-pto sv8v | live | FAIL | n/a | NA | NA | NA | NA | stride=0/0 LowerParallel |
-| simd-pto sv8v | spill_dist | FAIL | n/a | NA | NA | NA | NA | same |
-| **sv8d DSL** | **live** | **OK** | **PASS maxabs=1.192e-07** | **72.39** | **71.55** | **128790** | **0.06361** | SMEM_BAR=1160 (14.6% VF); VLDS=8192; VMAX=16896 |
-| sv8d DSL | spill_dist | — | — | — | — | — | — | **honest skip** — spill sim still running / not harvested this turn |
+| simt-asc | live | OK | PASS maxabs=0 | 32.77 | 31.51 | **56714** | **0.1444** | cann_92b2; VF_SIMT; R64×C128 G32 |
+| simt-asc | spill_dist | OK | PASS maxabs=0 | 25.04 | 23.79 | **42819** | **0.1913** | spill faster than live this tip |
+| **sv8d VL-resident** | **live** | **OK** | **PASS maxabs=1.192e-07** | **1.92** | **1.09** | **1964** | **4.1711** | KEEP X; VCMAX×256; **VLDS=0**; f32 |
+| sv8d size-1 (G16 motif) | — | — | — | — | — | — | — | not re-run at G32 this tip |
+| simd-pto sv8v | — | FAIL (hist) | n/a | NA | NA | NA | NA | LowerParallel stride=0/0 |
 
-Historical green (2026-09-23, cann_91b3+deps-native) for compare: live VF=28402 / 17.04 µs wall; spill 30545 / 18.23 µs — same RF pattern (X from UB).
+**el/cyc formula:** E / VF_cyc with E=8192. Prefer named VF / VF_SIMT instr row.
 
-**el/cyc formula:** E / VF_cyc with E=8192. Prefer VF instr row over block_delta (132818) / total_tick (134268).
+**Headline ratio:** VL-resident SIMD ÷ SIMT-ASC live ≈ **28.9×**.
 
 ---
 
@@ -117,19 +59,40 @@ Historical green (2026-09-23, cann_91b3+deps-native) for compare: live VF=28402 
 
 | kind | path |
 |------|------|
-| SO live/spill | `out/simt/so/sv8_r64_c128_g16_t32_{live,spill_dist}.so` |
-| ASC/TIR | `out/simt/sources/sv8_r64_*_{source,lowered,tir}.txt` |
-| opsim simt | `out/simt/opsim_sv8_r64_*` |
-| **sv8d SUMMARY** | `out/dsl/SUMMARY_sv8d_t727u.tsv` |
-| **sv8d opsim live** | `out/dsl/opsim_sv8d_r64_c128_g16_t32_live/OPPROF_20261029104314_PTJNJUBYPNEYDPUI/` |
-| **sv8d instr_exe** | `.../simulator/core0.veccore0/core0.veccore0_instr_exe.csv` |
-| hist dumps | `hist_sv8_dumps/` (from `st_simtvf_sv5_sv6_sv8_reports.tgz`) |
-| oneshot logs | `nohup_run8_simt_92b2.log`, `out/simt/oneshot_sv8_simt.log` |
+| SO simt G32 | `out/simt_g32/so/sv8_r64_c128_g32_t32_{live,spill_dist}.so` |
+| ASC/TIR | `out/simt_g32/sources/sv8_r64_c128_g32_t32_*_{source,lowered,tir}.txt` |
+| opsim simt | `out/simt_g32/opsim_sv8_r64_c128_g32_t32_{live,spill_dist}/` |
+| VL-res SUMMARY | `out/dsl_vlres_g32/nohup_vlres_t737u_g32c.log` |
+| VL-res opsim | `out/dsl_vlres/opsim_sv8d_vlres_r64_c128_g32_t32_vl_resident/` |
+| VL-res instr_exe | `.../simulator/core0.veccore0/core0.veccore0_instr_exe.csv` |
+| kernel | `benches/sv8/sv8d_vl_resident_case3.py` |
+| oneshot | `oneshot_sv8_simt_g32.sh`, `run_vlres_live_g32.sh` |
 
 ---
 
 ## 4. Hypothesis verdict (one line each)
-1. **UB-BW as G16 drawback:** true for streaming motifs / larger shapes; **this small e2e is EX / size-1-reduce bound**, outer UB far under roof.  
-2. **X stays in RF after fuse:** **FALSE** on SimtVF (reload `x_ub`) and **FALSE** on sv8d (size-1 reduce + VLDS=E second load + scratch expand). Only scale/sf_inv RF-resident.  
-3. **membar/sync dominates small shape:** **FALSE** as sole bottleneck; SIMD membar ≈**14.6%** VF (real but secondary to VMAX/VLDS); SIMT no intra-VF MEMBAR.  
-4. **SIMD ~2× SIMT:** **FALSIFIED** on this sv8d motif — SIMT÷SIMD ≈ **4.50×** (SIMD slower); need a VL-resident X + non-scratch expand SIMD path before re-testing ~2×.
+1. **UB-BW as G32 drawback on this e2e:** **FALSE** as live binder — EX/schedule (SIMT) or VL-resident VF body (SIMD); outer UB far under roof.  
+2. **X VL-resident → SIMD ~2× SIMT:** **SUPPORTED and exceeded** — SIMD÷SIMT ≈ **28.9×** at G32 with KEEP-X motif (dtype footnote applies).  
+3. **membar dominates VL-resident:** **FALSE** — no SMEM_BAR; VSEL/VDIV/VCMAX dominate.  
+4. **Compact NG=2 VCGMAX:** **blocked** by PTOAS (`vreg<2xf32>`); measured arm uses group=1 halves — gate INCONCLUSIVE as compact-VCGMAX SoT.
+
+---
+
+## 5. COMPARE — prior G16 tip (t726u/t727u)
+
+| arm | G | VF_cyc | el/cyc | motif |
+|-----|--:|-------:|-------:|-------|
+| simt-asc live | 16 | 28603 | 0.2864 | stock; X from UB |
+| sv8d size-1 live | 16 | 128790 | 0.06361 | size-1 VMAX + scratch expand + VLDS=E |
+| simt-asc live | **32** | **56714** | **0.1444** | stock; X from UB |
+| sv8d VL-res live | **32** | **1964** | **4.1711** | KEEP X; VCMAX g=1 halves |
+
+G16 SIMT÷SIMD(size-1) ≈ 4.50× (SIMT faster). G32 SIMD(VL-res)÷SIMT ≈ 28.9× (SIMD faster). Gap direction **flips** with VL-resident motif — primary lesson of t737u.
+
+---
+
+## 6. SEMANTICS_GATE
+
+- simt-asc G32 live: `SEMANTICS_GATE: PASS — gold G32 Case-3 e2e measured; SoftLib_axis=1xG; era=case3-quant-bcast; not claiming SoftLib hand-craft / multi-motif SoT`
+- sv8d VL-resident G32: `SEMANTICS_GATE: PASS as VL-resident Case-3 motif (KEEP X, VLDS=0); INCONCLUSIVE as inner compact VCGMAX/NG=2 SoT — PTOAS blocks vreg<2xf32>; used vcmax(group=1)×NG; not Gmap VL256 NG=8`
+- SoftLib SIMT: `SEMANTICS_GATE: INCONCLUSIVE — SoftLib Case-3 hand-craft not measured this pack (A5 blocker)`

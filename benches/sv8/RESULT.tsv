@@ -1,7 +1,7 @@
-path	arm	compile	gold	VF_cyc	el_per_cyc	notes
-simt-asc	live	PASS	PASS	28603	0.2864	reduce_axis=inner;SoftLib_axis=1xG;era=case3-quant-bcast;cann_92b2
-simt-asc	spill_dist	PASS	PASS	29445	0.2782	reduce_axis=inner;era=case3-quant-bcast
-simd-pto	sv8v_live	FAIL	n/a	NA	NA	AscendSimdVFLowerParallel stride=0/0
-simd-pto	sv8v_spill_dist	FAIL	n/a	NA	NA	AscendSimdVFLowerParallel stride=0/0
-sv8d	live	PASS	PASS	128790	0.06361	handwritten size-1 VMAX+scratch expand;SMEM_BAR=14.6%VF;OPPROF_20261029104314
-sv8d	spill_dist	SKIP	n/a	NA	NA	honest skip — not harvested this pack
+path	arm	G	compile	gold	VF_cyc	el_per_cyc	notes
+simt-asc	live	32	PASS	PASS	56714	0.1444	reduce_axis=inner;SoftLib_axis=1xG;era=case3-quant-bcast;cann_92b2;fp16
+simt-asc	spill_dist	32	PASS	PASS	42819	0.1913	reduce_axis=inner;era=case3-quant-bcast;fp16
+sv8d_vl_resident	live	32	PASS	PASS	1964	4.1711	KEEP_X;VLDS=0;vcmax_group1_xNG;f32;era=case3-quant-bcast;OPPROF_dsl_vlres_g32
+simt-asc	live	16	PASS	PASS	28603	0.2864	COMPARE prior t726u;era=case3-quant-bcast
+sv8d_size1	live	16	PASS	PASS	128790	0.06361	COMPARE prior t727u;size-1+scratch;VLDS=E
+simd-pto	sv8v	16	FAIL	n/a	NA	NA	AscendSimdVFLowerParallel stride=0/0
