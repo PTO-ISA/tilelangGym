@@ -1,0 +1,5 @@
+SIMD block, X and Out both in UB (8 B/elem). Simulator UB is 0x40000 (256KB) = 32768 fp32.
+Scale stays the vcmax broadcast. Row and column are both >= 32.
+
+pass  32x1024  64x512  128x256     exactly 256KB, maxabs 6.0e-8
+fail  32x1056  64x544  128x320     RV_VST ub_addr_overflow past 0x40000

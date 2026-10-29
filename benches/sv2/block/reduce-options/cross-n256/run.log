@@ -1,0 +1,111 @@
+
+███╗   ██╗██████╗ ██╗   ██╗    ███████╗██╗███╗   ███╗    
+████╗  ██║██╔══██╗██║   ██║    ██╔════╝██║████╗ ████║    
+██╔██╗ ██║██████╔╝██║   ██║    ███████╗██║██╔████╔██║    
+██║╚██╗██║██╔═══╝ ██║   ██║    ╚════██║██║██║╚██╔╝██║    
+██║ ╚████║██║     ╚██████╔╝    ███████║██║██║ ╚═╝ ██║    
+╚═╝  ╚═══╝╚═╝      ╚═════╝     ╚══════╝╚═╝╚═╝     ╚═╝    
+                                                        
+    Join the conversation and help shape the future.
+    └─ https://gitcode.com/org/cann/discussions/50
+
+Notice: The cannsim command will be discontinued soon. Please use npusim instead.
+
+
+===============================================================================
+    AscendC Kernel Simulation Tool  -  Start (2026-10-19 16:22:13 +0800)
+===============================================================================
+[1/3] Preflight                OK  USER_APP=launch.py SoC=Ascend950 cores=0
+[2/3] Paths resolved           OK
+[3/3] Simulation
+[2026-10-19 08:22:14] [INFO] Runtime dirs ready: log, log/ub_log, run_log under /mnt/fluxdata/onasismelchiorjeyakumar/workspace/tilelang
+[2026-10-19 08:22:14] [INFO] log_ca under /mnt/fluxdata/onasismelchiorjeyakumar/workspace/pto-analysis/Tilelang/ST/ST-Analysis/SV2/reduce-options/cross-n256/npusim/npusim_20261019162214_launch.py/record
+
+Reference benchmarks (lab baseline · 64c@2.8GHz · for reference only)
+[NOTE] CAMODEL runs on CPU — slower than real hardware
+[NOTE] CPU > 16 cores · Memory > 32GB
+
++--------------+-----------------------+----------------------------------+-----------------+
+|Operator type | Case name             | Parameters                       | Simulation time |
++--------------+-----------------------+----------------------------------+-----------------+
+|CV MIX        | FA                    | query, key, value shape: {256, 1 | 93.6s           |
+|              |                       | 128}                             |                 |
+|CV MIX        | FAG                   | query, key, value shape: {256, 1 | 130.0s          |
+|              |                       | 128}                             |                 |
+|CV MIX        | IFA                   | query shape:{1, 2, 1, 16}, key   | 63.0s           |
+|              |                       | value shape: {1, 2, 2, 16}       |                 |
+|CV MIX        | PFA                   | query shape:{1, 2, 1, 16}, key   | 58.4s           |
+|              |                       | value shape: {1, 2, 2, 16}       |                 |
+|CUBE          | Matmul(Non-Quantized) | M*N, N*K, M=16, N=32, K=16       | 30.7s           |
+|CUBE          | Matmul A8W8           | M*N, N*K, M=16, N=16, K=16       | 32.7s           |
+|CUBE          | Matmul A16W8          | M*N, N*K, M=16, N=32, K=16       | 40.9s           |
+|VECTOR        | Softmax(Regbase)      | batch_size:4, feature_dim:2      | 24.5s           |
++--------------+-----------------------+----------------------------------+-----------------+
+
+  What will run
+   cwd             /mnt/fluxdata/onasismelchiorjeyakumar/workspace/tilelang
+   cmd             bash -c 'python work/ST-Analysis/SV2/reduce-options/launch.py work/ST-Analysis/SV2/reduce-options/cross-n256/kernel.so 256'
+   soc             Ascend950
+   python-env      /usr/bin/python3
+   launch-kind     command
+   core-id         0
+   report          yes
+[2026-10-19 08:22:14] [INFO] (cores=0, ai_cores=32)
+
+[npusim 00:00.3] [phase] phase → driver init
+[npusim 00:00.3] [user] » soc version: Ascend950PR
+[npusim 00:00.3] [user] » [camodel_config] Using config from SO dir: /mnt/fluxdata/Ascend/cann_92b2/cann-9.2.0-beta.2/tools/simulator/Ascend950PR_9589/camodel/camodel_v100.json
+[npusim 00:00.3] [user] » [camodel_config] Alias: sysconf -> soc_mp.cfg
+[npusim 00:00.3] [user] » [camodel_config] Loaded config from: /mnt/fluxdata/Ascend/cann_92b2/cann-9.2.0-beta.2/tools/simulator/Ascend950PR_9589/camodel/camodel_v100.json (1 sections)
+[npusim 00:00.3] [user] » [camodel_config] Override esl_top_thread_cnt = 32 (in soc_mp.cfg)
+[npusim 00:02.8] [phase] phase → loading model files
+[npusim 00:02.8] [info] ddr: lpddr5 1900 Mbps, 1 Channels, 1 Ranks, Gbuf false, IECC false
+[npusim 00:03.8] [phase] phase → core init (die 0)
+[npusim 00:03.8] [phase] phase → stars scheduler config
+[npusim 00:05.2] [phase] phase → core build (die 0)
+[npusim 00:05.2] [phase] phase → smmu page build
+[npusim 00:05.2] [info] smmu page build done
+[npusim 00:07.4] [phase] phase → sim start
+[npusim 00:07.4] [info] die 0 created
+[npusim 00:12.3] [info] smmu page build done
+[npusim 00:14.5] [info] die 1 created
+[npusim 00:15.5] [info] die 2 created
+[npusim 00:16.5] [info] die 3 created
+[npusim 00:16.5] [phase] phase → SoC ready, awaiting tasks
+[npusim 00:17.5] [phase] phase → task dispatching
+[npusim 00:17.5] [info] hardware sim finished: 10.12s (die 0)
+[npusim 00:17.7] [info] hardware sim finished: 3.10s (die 1)
+[npusim 00:17.7] [info] hardware sim finished: 2.13s (die 2)
+[npusim 00:26.6] [phase] phase → task 0 done
+[npusim 00:26.6] [user] » Parallel Simulation: All threads are joined.
+[npusim 00:26.6] [phase] phase → model stopped
+[npusim 00:29.4] [user] » PASS maxabs=0.000e+00 scale=2.98562
+HTML report require plotly
+The executable PYTHON PATH: /usr/bin/python3
+Try install Plotly by: /usr/bin/python3 -m pip install --force-reinstall plotly
+
+[2026-10-19 08:22:44] [ERROR] No report backend succeeded.
+Searched: Python module BiProfRunner.
+Please install Python report dependencies.
+[2026-10-19 08:22:44] [INFO] USER_APP executed successfully in 30.10s
+[2026-10-19 08:22:44] [INFO] Archived 1 *instr.bin file(s) to /mnt/fluxdata/onasismelchiorjeyakumar/workspace/pto-analysis/Tilelang/ST/ST-Analysis/SV2/reduce-options/cross-n256/npusim/npusim_20261019162214_launch.py/record
+────────────────────────────────────────────────────────────────────────
+Simulation SUCCESS  ·  run time 30.1s  ·  hardware sim 10.12s / 3.10s / 2.13s
+
+Artifacts
+  archive   /mnt/fluxdata/onasismelchiorjeyakumar/workspace/pto-analysis/Tilelang/ST/ST-Analysis/SV2/reduce-options/cross-n256/npusim/npusim_20261019162214_launch.py
+  log       /mnt/fluxdata/onasismelchiorjeyakumar/workspace/pto-analysis/Tilelang/ST/ST-Analysis/SV2/reduce-options/cross-n256/npusim/npusim_20261019162214_launch.py/npusim.log
+
+Next
+  $ npusim report -e /mnt/fluxdata/onasismelchiorjeyakumar/workspace/pto-analysis/Tilelang/ST/ST-Analysis/SV2/reduce-options/cross-n256/npusim/npusim_20261019162214_launch.py
+────────────────────────────────────────────────────────────────────────
+
+╔════════════════════════════════════════════════════════════════════════╗
+║ (Report) NPU SIM auto generate report...                               ║
+╚════════════════════════════════════════════════════════════════════════╝
+[2026-10-19 08:22:44] [INFO] Detected single-card analysis mode.
+[2026-10-19 08:22:44] [INFO] Generating performance report...
+[2026-10-19 08:22:44] [INFO] Found instr.bin: /mnt/fluxdata/onasismelchiorjeyakumar/workspace/pto-analysis/Tilelang/ST/ST-Analysis/SV2/reduce-options/cross-n256/npusim/npusim_20261019162214_launch.py/record/instr.bin
+╔════════════════════════════════════════════════════════════════════════╗
+║ (Report) NPU SIM auto generate report failed!                          ║
+╚════════════════════════════════════════════════════════════════════════╝
