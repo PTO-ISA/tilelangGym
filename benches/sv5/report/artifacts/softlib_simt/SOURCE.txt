@@ -1,0 +1,9 @@
+Provenance (real opsim; do not invent)
+host: pto-b10
+pack: /tmp/sv5_fp32_compare_20261022
+arm:  opsim_redux_contig_b64_e8192_t128 (SoftLib contig LDS.b64 T=128)
+OPPROF: OPPROF_20261022113458_JAREAMLHVZIISRDE
+also: /tmp/sv5_ipc_dumps_20261022.tgz b64.dump
+shape: E=8192 T=128 fp32 contig
+SUMMARY seed el/cyc=4.51 (LDS64 SoftLib SIMT SoT)
+date: 2026-10-22 Asia/Hong_Kong

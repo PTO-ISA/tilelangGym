@@ -1,0 +1,7 @@
+tag	G	VL	NG	abs	VF_cyc	el_per_cyc	era
+g64_vcmax_vl64_vand	64	64	1	VAND	268.0	30.5672	era=fp32-absmax
+g64_vcmax_vl64_vabs	64	64	1	VABS	267.0	30.6816	era=fp32-absmax
+g128_vmaxfold_vcmax_vand	128	64	1	VAND+VMAXfold	254.0	32.2520	era=fp32-absmax
+g128_vcmax_vl128_vand	128	128	1	VAND	254.0	32.2520	era=fp32-absmax
+g32_vcg_vl256_ng8_vand	32	256	8	VAND	374.0	21.9037	era=fp32-absmax
+g32_vcg_vl256_ng8_vabs	32	256	8	VABS	372.0	22.0215	era=fp32-absmax

@@ -1,0 +1,4 @@
+arm	path	VF	el_cyc	mid_ipc_W	mid_in_el_cyc	mid_out_el_cyc	roof_name	roof_value	pct_overall	pct_mid	LDS_width	status	source
+simd_dsl_best	dsl	128	33.44								n/a	PASS	arms.yaml#seed
+simt_asc_default	simt_asc											TODO	
+softlib_simt	softlib_simt		4.51				LDS64				64	PASS	arms.yaml#seed
