@@ -126,7 +126,7 @@ wg ~0.98 both G — not SoT. **SEMANTICS_GATE PASS** · axes labeled.
 
 ---
 
-## 7. Running IPC (W=20 mid)
+## 7. Running IPC + figures (W=20 mid · enforce list)
 
 | Arm | Axis | G | mid IPC W20 | note |
 |-----|------|--:|------------:|------|
@@ -139,6 +139,26 @@ wg ~0.98 both G — not SoT. **SEMANTICS_GATE PASS** · axes labeled.
 | SoftLib SIMT outer best | outer | 64 | **0.85** | mean 0.59 |
 | SoftLib SIMT outer best | outer | 128 | MID_IDLE_GAP | mean_body **0.24** |
 | Full matrix | — | — | — | [`../../SV567_IPC_HARVEST_t725u.md`](../../SV567_IPC_HARVEST_t725u.md) |
+
+---
+
+### Figures (PR9-style — enforce list)
+
+![SV7 outer VMI G64 running IPC](plots/simd_outer_vmi_g64_running_ipc.png)
+
+![SV7 inner VMI G64 running IPC](plots/simd_inner_vmi_g64_running_ipc.png)
+
+![SV7 SoftLib SIMT 1×G G64 running IPC (motif=axis=1xG)](plots/softlib_simt_1xg_g64_running_ipc.png)
+
+![SV7 outer VMI G128 running IPC](plots/simd_outer_vmi_g128_running_ipc.png)
+
+![SV7 inner VMI G128 running IPC](plots/simd_inner_vmi_g128_running_ipc.png)
+
+![SV7 SoftLib SIMT 1×G G128 running IPC](plots/softlib_simt_1xg_g128_running_ipc.png)
+
+![SV7 inner VMI G64 instr mix](plots/simd_inner_vmi_g64_instr_mix.png)
+
+![SV7 el/cyc summary](plots/sv7_elcyc_summary.png)
 
 ---
 

@@ -157,7 +157,7 @@ Why stock loses: T128 VF 7264 → 1.13 vs T512 4.74 — higher T hides LD/REDUX 
 
 ---
 
-## 7. Running IPC (W=20 mid)
+## 7. Running IPC + figures (W=20 mid · enforce list)
 
 Style: left-open right-closed `(t−W, t]` · W=20 · from `core0.veccore0.instr_log.dump` when present.
 
@@ -170,6 +170,31 @@ Style: left-open right-closed `(t−W, t]` · W=20 · from `core0.veccore0.instr
 | SoftLib SIMT inner best peer (membar 4.63) | inner | **1.45** | tip SoT **4.74** exact t697 dump MISSING; peer IPC |
 | SoftLib SIMT outer stock/best | outer | **1.55** | mean 1.21 · nx1 fused/membar T512 |
 | Full matrix | — | — | [`../../SV567_IPC_HARVEST_t725u.md`](../../SV567_IPC_HARVEST_t725u.md) |
+
+---
+
+### Figures (PR9-style — enforce list)
+
+![SV5 SoftLib CCE dual64 VAND running IPC (footnote)](plots/simd_cce_vand_footnote_running_ipc.png)
+
+![SV5 SoftLib CCE dual64 VAND instr mix](plots/simd_cce_vand_footnote_instr_mix.png)
+
+![SV5 outer VMI G16 running IPC](plots/simd_outer_vmi_g16_running_ipc.png)
+
+![SV5 outer VMI G16 instr mix](plots/simd_outer_vmi_g16_instr_mix.png)
+
+![SV5 SoftLib SIMT 1×G G16 peer membar running IPC (motif=axis=1xG)](plots/softlib_simt_1xg_g16_peer_running_ipc.png)
+
+![SV5 SoftLib SIMT 1×G G16 peer instr mix](plots/softlib_simt_1xg_g16_peer_instr_mix.png)
+
+![SV5 SoftLib SIMT 1×G G16 stock running IPC](plots/softlib_simt_1xg_g16_stock_running_ipc.png)
+
+![SV5 SoftLib SIMT Nx1 G16 best running IPC (motif=axis=Nx1)](plots/softlib_simt_nx1_g16_running_ipc.png)
+
+![SV5 el/cyc summary](plots/sv5_elcyc_summary.png)
+
+**MISSING (enforce):** VMI inner VL128/NG8 G16 IPC — dump not in `vmi_absmax_gmap_t699u` out/.  
+**Next-cmd:** re-opsim `benches/sv5/sv5d_absmax_vl128_g8.py` on pto-b10 → `python3 /workspace/_harvest_mid_ipc_t725u_v2.py out.json g16_inner $OUTDIR` → `scripts/gen_enforce_plots_t739u.py`.
 
 ---
 

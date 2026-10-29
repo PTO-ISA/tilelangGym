@@ -123,7 +123,7 @@ Harness checklist: [`../sv5/reports/SOFTLIB_SIMT_1xG_HARNESS_GATE_t705u.md`](../
 
 ---
 
-## 7. Running IPC (W=20 mid)
+## 7. Running IPC + figures (W=20 mid · enforce list)
 
 | Arm | Axis | mid IPC W20 | note |
 |-----|------|------------:|------|
@@ -134,6 +134,24 @@ Harness checklist: [`../sv5/reports/SOFTLIB_SIMT_1xG_HARNESS_GATE_t705u.md`](../
 | SoftLib SIMT outer stock fused | outer | **1.10** | mean 0.64 |
 | SoftLib SIMT outer membar best | outer | **0.90** | mean 0.96 · window-sensitive |
 | Full matrix | — | — | [`../../SV567_IPC_HARVEST_t725u.md`](../../SV567_IPC_HARVEST_t725u.md) |
+
+---
+
+### Figures (PR9-style — enforce list)
+
+![SV6 outer VMI G32 running IPC](plots/simd_outer_vmi_g32_running_ipc.png)
+
+![SV6 inner VMI G32 running IPC](plots/simd_inner_vmi_g32_running_ipc.png)
+
+![SV6 SoftLib SIMT 1×G G32 dual_drain running IPC (motif=axis=1xG)](plots/softlib_simt_1xg_g32_running_ipc.png)
+
+![SV6 SoftLib SIMT 1×G G32 stock running IPC](plots/softlib_simt_1xg_g32_stock_running_ipc.png)
+
+![SV6 inner VMI G32 instr mix](plots/simd_inner_vmi_g32_instr_mix.png)
+
+![SV6 SoftLib SIMT G32 instr mix](plots/softlib_simt_1xg_g32_instr_mix.png)
+
+![SV6 el/cyc summary](plots/sv6_elcyc_summary.png)
 
 ---
 

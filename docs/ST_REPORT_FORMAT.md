@@ -56,7 +56,24 @@ How work maps to UB/MRF, thread/VL, load/store widths, and the intended pipeline
 - Update theory rooftop to the **same** layout mapping + instructions used
 - IPC timing plots with stage analysis
 
-### 7. Conclusion
+### 7. Running IPC + figures (mandatory enforce list)
+
+A report is **incomplete** if these are missing without an explicit **MISSING** row + next-cmd. Do **not** ship ANALYSIS/PR as “done” on tables alone.
+
+For **each main conclusion arm** that has an opsim dump (`instr_log.dump` / OPPROF):
+
+1. **Running IPC** — W=20 left-open right-closed `(t−W, t]` (or Body4 firstLDS→lastSTS if mid is IDLE_GAP); cite mid IPC and/or mean_body; never invent.
+2. **Harness plot** — run `python -m scripts.st_report plot --st <id> …` (or pack-local equivalent harvest→plot) and embed/link outputs under `benches/<st>/plots/` (or `ipc/`).
+3. **PR9/SV1-style figure set** (instr reference diagrams, not prose-only):
+   - [ ] **Instr mix / breakdown** figure (useful mem+ALU vs tax)
+   - [ ] **Running IPC timeline** (or rolling W window) for the SoT arm
+   - [ ] **Rooftop / el/cyc summary** when a named roof applies (else N/A + why)
+4. If dump absent: one checklist line **`MISSING`** + exact next-cmd to re-opsim / harvest — **not** silent omit.
+5. SoftLib SIMT rows: name **motif** on the figure caption (`axis=1xG` / `axis=Nx1` / `warp-redux` appendix).
+
+**Gate:** Before tip SHA / “ready for review”, verify every main arm has either (plot path + mid IPC) or (MISSING + next-cmd). Tables without this enforce list = incomplete delivery.
+
+### 8. Conclusion
 SIMD best, SIMT Ascend default, SIMT SoftLib hand-craft; summary table and **performance ratios** (SIMD ÷ SIMT arms). Stick to the confirmed conclusion arms; do not re-list dropped intermediate probes.
 
 ## Naming and metrics conventions
@@ -64,7 +81,7 @@ SIMD best, SIMT Ascend default, SIMT SoftLib hand-craft; summary table and **per
 - el/cyc = elements / VF cycles (state which VF).
 - Mid-avg = interior window (document window width, e.g. W=20); overall = whole-kernel.
 - Rooftop % always vs the binding resource named in that section (EXU, UB, serial stage roof, etc.).
-- Plots: embed running-IPC / opcode-issue PNGs (and stage plots) inline in ANALYSIS when they exist under the ST folder **for conclusion arms**.
+- Plots: embed running-IPC (and stage) PNGs inline in ANALYSIS under `benches/<st>/plots/` **for conclusion arms** — see §7 enforce list (MISSING+next-cmd if dump absent).
 
 ## Repo placement
 - Primary: `benches/<st>/ANALYSIS.md` (e.g. `benches/sv5/ANALYSIS.md`)
@@ -75,8 +92,10 @@ SIMD best, SIMT Ascend default, SIMT SoftLib hand-craft; summary table and **per
 1. Confirm Aims (+ optional section skips) with the author; **confirm conclusion arms** when unsure.
 2. `init` from Aims/design → inventory harness gaps (do not fabricate). Prefer inventory for conclusion arms.
 3. Rewrite ANALYSIS to the spine; move/keep plots under the ST; update theory roofs to match chosen layout/instr.
-4. Land via the usual ST push path; tip SHA + PR URL back.
-5. Ask before merge.
+4. After RESULT: COMPARE harvest filled or N/A.
+5. **Enforce list:** `st_report plot` + PR9-style figures (or MISSING+next-cmd) for every main arm.
+6. Land via the usual ST push path; tip SHA + PR URL back.
+7. Ask before merge.
 
 ## Out of scope
 - Changing kernel semantics or inventing new SoftLib numbers without a measured run
@@ -102,11 +121,6 @@ python -m scripts.st_report selftest-ipc   # synthetic fixture only
 
 - `init` writes `benches/<st>/report/arms.yaml` from Aims/design (ANALYSIS stub only if missing; `--refresh-aims` updates Aims section only).
 - `harvest` owns SUMMARY.tsv (schema stable; mid-IPC filled only from measured sources, never invented).
-- `plot` / `plot-ipc` generate **opcode-issue + running-IPC** PNGs (PR #9 style) from per-arm `artifacts` logs (`popped_dump`, `trace`+`instr_csv`, or `rolling_csv`) with window **W** (default 20, `(t−W,t]`):
-  - **Top panel:** one lane per instruction kind (short mnemonic); a mark at every issue inside the VF window.
-  - **Bottom panel:** rolling IPC on the same tick axis; mid-med IPC annotated when available.
-  - **Address math** (IADD / LEA / …) is counted in IPC but left off the lanes; the VF opcode is excluded from both.
-  - Precomputed `rolling_csv` falls back to an IPC-only chart (no opcode events).
-  - Or wire `running_ipc_png` / known tip maps. Missing inputs → skip + `gaps.md` (no fake PNGs).
+- `plot` / `plot-ipc` generate running-IPC PNGs from per-arm `artifacts` logs (`popped_dump`, `trace`+`instr_csv`, or `rolling_csv`) with window **W** (default 20, `(t−W,t]`); or wire `running_ipc_png` / known tip maps. Missing inputs → skip + `gaps.md` (no fake PNGs).
 - `gaps` / `fill` / `check` own gap report, stub fill, and trail leak detection.
 - See `benches/<st>/report/arms.yaml` for that ST's 3–4 arm spine (no dig numbers in this doc).
