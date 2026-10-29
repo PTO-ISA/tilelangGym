@@ -163,7 +163,32 @@ Historical green (2026-09-23, cann_91b3+deps-native) for compare: live VF=28402 
 
 ---
 
-## 7. Conclusion
+## 7. Running IPC + figures (enforce list)
+
+Style: W=20 left-open right-closed `(t−W, t]` from `core0.veccore0.instr_log.dump`. G16 measured arms only this tip; **G32 retarget in flight** (Lok t737) — prefer G32 plots when RESULT lands.
+
+| Arm | mid IPC W20 | mean_body | el/cyc | figure |
+|-----|------------:|----------:|-------:|--------|
+| SIMT-ASC live G16 | **0.1** | 0.1081 | **0.2864** | [`plots/simt_asc_live_g16_running_ipc.png`](plots/simt_asc_live_g16_running_ipc.png) |
+| SIMD sv8d live G16 | **0.25** | 0.2825 | **0.06361** | [`plots/simd_sv8d_live_g16_running_ipc.png`](plots/simd_sv8d_live_g16_running_ipc.png) |
+| SoftLib SIMT hand-craft | **MISSING** | — | unmeasured | A5 blocker — no dump |
+| G32 VL-resident / retarget | **MISSING** this tip | — | — | next: land G32 RESULT then re-run `gen_enforce_plots_t739u.py` |
+
+![SV8 SIMT-ASC live G16 running IPC](plots/simt_asc_live_g16_running_ipc.png)
+
+![SV8 SIMT-ASC live G16 instr mix](plots/simt_asc_live_g16_instr_mix.png)
+
+![SV8 SIMD sv8d live G16 running IPC](plots/simd_sv8d_live_g16_running_ipc.png)
+
+![SV8 SIMD sv8d live G16 instr mix](plots/simd_sv8d_live_g16_instr_mix.png)
+
+![SV8 G16 el/cyc summary](plots/sv8_elcyc_summary.png)
+
+**Next-cmd (G32):** when `/mnt/fluxdata/happybot/sv8_*g32*` RESULT + OPPROF exist, add arms to `scripts/gen_enforce_plots_t739u.py` and re-plot.
+
+---
+
+## 8. Conclusion
 
 ### Three arms (measured-only ratios)
 
