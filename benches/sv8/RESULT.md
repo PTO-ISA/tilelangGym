@@ -1,98 +1,76 @@
-# SV8 G32 Case-3 e2e RESULT (t737u steer — SIMD worst vs SIMT best)
+# SV8 G32 Case-3 e2e RESULT (t740u SoftLib + t737u VL-res)
 
 **Host:** pto-b10 / Ascend950PR_9599 camodel  
-**When:** 2026-10-29T14:15:00+08:00 Asia/Hong_Kong (G32 live PASS)  
-**Pack:** `/mnt/fluxdata/happybot/sv8_g16_e2e_t726u/` · box `/workspace/sv8_g16_e2e_t726u/`  
-**Labels:** `reduce_axis=inner` SoftLib_axis=`1xG` `era=case3-quant-bcast` §22 → absmax expects VC/VCGMAX family  
-**Shape:** R=64 C=128 **G=32** T=32  E=R*C=8192 (E kept; G retargeted from G16 per t737u)  
-**Env:**
-- **simt-asc:** TILELANG=`tilelang-pto-isa-st` + **cann_92b2** (`cann-9.2.0-beta.2`)
-- **sv8d VL-resident:** PTO-DSL handwritten (`sv8d_vl_resident_case3.py`) + **cann_91b3** opsim; OPPROF under `out/dsl_vlres/opsim_sv8d_vlres_r64_c128_g32_t32_vl_resident/`
+**When:** 2026-10-29T14:54:42+08:00 Asia/Hong_Kong (SoftLib matrix DONE)  
+**Packs:** SoftLib `/mnt/fluxdata/happybot/sv8_softlib_simt_c3_g32_t740u/` · prior VL-res/simt `/mnt/fluxdata/happybot/sv8_g16_e2e_t726u/`  
+**Labels:** `reduce_axis=inner` SoftLib_axis=`1xG` `era=case3-quant-bcast`  
+**Shape:** R=64 C=128 **G=32** E=8192  
 
-**Dtype footnote (era=case3-quant-bcast):** SIMT-ASC = **fp16** X/Out + f32 scale; VL-resident SIMD = **f32** X/Out (same split as G16 sv8d vs simt). Ratios are same-shape Case-3 e2e, not cross-dtype microbench SoT.
+**Env:**
+- **SoftLib SIMT:** bisheng dav-3510 `__simt_vf__` + **cann_92b2**
+- **simt-asc:** TILELANG=`tilelang-pto-isa-st` + **cann_92b2**
+- **sv8d VL-resident:** PTO-DSL handwritten + **cann_91b3** opsim
+
+**Dtype footnote:** SoftLib **f32** · VL-res **f32** · SIMT-ASC **fp16**. SoftLib÷SIMD is same-dtype f32.
 
 ---
 
-## 1. Analysis (hypothesis first)
+## 1. Analysis (hypothesis)
 
-### H1 — UB-BW is the G-size drawback on this e2e
-**Not the live bottleneck on R64×C128.** Outer GM↔UB ≈32–64 KiB ≪ VF body on both arms (SIMT VF=56714; VL-res VF=1964 still ≫ dual-VLD floor ~64–128 cyc).
-
-### H2 — Fused reduce+quant+eltwise with X VL/RF-resident → SIMD ~2× SIMT
-**Re-tested at G=32 with an explicit VL-resident SIMD motif.**
+### H2 — SIMD ~2× SIMT with X VL/RF-resident
+**Re-tested vs SoftLib SIMT** at absmax-class layout (dual_drain / loadall / T512), not vs SIMT-ASC 0.14.
 
 | arm | X residency | VF_cyc | el/cyc | notes |
 |-----|-------------|-------:|-------:|-------|
-| simt-asc live G32 | X **reloads** from `x_ub` (fp16); `sf_inv` fragment RF | **56714** | **0.1444** | stock SimtVF |
-| **sv8d VL-resident G32** | **X KEPT in VL vreg** across abs→reduce→mul; **no `RV_VLDS`** | **1964** | **4.1711** | per-group `vcmax(group=1)` (NG=2 compact PTOAS-illegal) |
+| SoftLib dual_drain T512 | **KEEP-X RF** (loadall→mul) | **1210** | **6.7702** | axis=1xG; gold PASS |
+| sv8d VL-resident G32 | **KEEP X VL** | **1964** | **4.1711** | vcmax g=1×NG |
+| simt-asc live G32 | X reloads from `x_ub` | **56714** | **0.1444** | stock |
 
-**Ratio (el/cyc):** SIMD÷SIMT = 4.1711 / 0.1444 ≈ **28.9×** (SIMD faster).  
-**~2× floor:** **exceeded** once X is VL-resident — opposite of G16 size-1+scratch sv8d (where SIMT÷SIMD≈4.50×).
-
-**Caveat (SEMANTICS_GATE):** VL-resident schedule is **not** compact `vcmax(group=NG=2)` / VCGMAX-on-NG=2 (PTOAS rejects `vreg<2xf32>`). It is **2× `vcmax(group=1)`** with lane masks + size-1 recip + `vbrc` expand. Not the Gmap VL=256 NG=8 SoT either. Valid as **VL-resident Case-3 motif** measure, **INCONCLUSIVE** as inner compact-VCGMAX G32 SoT.
-
-### H3 — membar/flag dominates small shape
-**VL-resident:** no intra-VF `RV_SMEM_BAR` in harvest (scratch expand removed). Outer SET/WAIT_FLAG only. Dominant VF body: `RV_VSEL` (1024), `RV_VDIV` (256), `RV_VCMAX` (256), `RV_VDUP` (256), `RV_VMUL` (128), `RV_VAND` (128).
-
-### G16 → G32 steer (t737u)
-G=32 chosen as **SIMD-worst vs SIMT-best** group size to explore the gap. Prior G16 tip retained under COMPARE (§5).
+**SoftLib÷SIMD** = 6.7702 / 4.1711 ≈ **1.62×** (SoftLib faster).  
+**SIMD÷SoftLib** ≈ **0.62×**. H2 ~2× **SIMD** vs SoftLib **falsified** (inverted).  
+**SIMD÷SIMT-ASC** ≈ **28.9×** still holds vs stock Ascend.
 
 ---
 
-## 2. Numbers table (G32 tip)
+## 2. SoftLib SIMT matrix (t740u) — measured
 
-| path | arm | compile | gold | wall_us (msprof vec) | VF_us | VF_cyc | el/cyc (E=8192) | notes |
-|------|-----|---------|------|---------------------:|------:|-------:|---------------:|-------|
-| simt-asc | live | OK | PASS maxabs=0 | 32.77 | 31.51 | **56714** | **0.1444** | cann_92b2; VF_SIMT; R64×C128 G32 |
-| simt-asc | spill_dist | OK | PASS maxabs=0 | 25.04 | 23.79 | **42819** | **0.1913** | spill faster than live this tip |
-| **sv8d VL-resident** | **live** | **OK** | **PASS maxabs=1.192e-07** | **1.92** | **1.09** | **1964** | **4.1711** | KEEP X; VCMAX×256; **VLDS=0**; f32 |
-| sv8d size-1 (G16 motif) | — | — | — | — | — | — | — | not re-run at G32 this tip |
-| simd-pto sv8v | — | FAIL (hist) | n/a | NA | NA | NA | NA | LowerParallel stride=0/0 |
+Best e2e: **`wc_c3e2e_back_loadall_absall_dual_drain_g32_t512_e8192`** el/cyc=**6.7702** VF=**1210** ok=True.
 
-**el/cyc formula:** E / VF_cyc with E=8192. Prefer named VF / VF_SIMT instr row.
+Full e2e table (sorted by el/cyc desc): see ANALYSIS §6. Scale-only appendix dual_drain T512 el/cyc=5.975 (n=256 — different basis).
 
-**Headline ratio:** VL-resident SIMD ÷ SIMT-ASC live ≈ **28.9×**.
+Layout inheritance: absmax SoftLib G32 dual_drain **8.22** (MATCHES_1xG). G16 wr 10.98 DIFFERENT_GOLD — not used.
 
 ---
 
-## 3. Paths
+## 3. SEMANTICS_GATE
 
-| kind | path |
-|------|------|
-| SO simt G32 | `out/simt_g32/so/sv8_r64_c128_g32_t32_{live,spill_dist}.so` |
-| ASC/TIR | `out/simt_g32/sources/sv8_r64_c128_g32_t32_*_{source,lowered,tir}.txt` |
-| opsim simt | `out/simt_g32/opsim_sv8_r64_c128_g32_t32_{live,spill_dist}/` |
-| VL-res SUMMARY | `out/dsl_vlres_g32/nohup_vlres_t737u_g32c.log` |
-| VL-res opsim | `out/dsl_vlres/opsim_sv8d_vlres_r64_c128_g32_t32_vl_resident/` |
-| VL-res instr_exe | `.../simulator/core0.veccore0/core0.veccore0_instr_exe.csv` |
-| kernel | `benches/sv8/sv8d_vl_resident_case3.py` |
-| oneshot | `oneshot_sv8_simt_g32.sh`, `run_vlres_live_g32.sh` |
-
----
-
-## 4. Hypothesis verdict (one line each)
-1. **UB-BW as G32 drawback on this e2e:** **FALSE** as live binder — EX/schedule (SIMT) or VL-resident VF body (SIMD); outer UB far under roof.  
-2. **X VL-resident → SIMD ~2× SIMT:** **SUPPORTED and exceeded** — SIMD÷SIMT ≈ **28.9×** at G32 with KEEP-X motif (dtype footnote applies).  
-3. **membar dominates VL-resident:** **FALSE** — no SMEM_BAR; VSEL/VDIV/VCMAX dominate.  
-4. **Compact NG=2 VCGMAX:** **blocked** by PTOAS (`vreg<2xf32>`); measured arm uses group=1 halves — gate INCONCLUSIVE as compact-VCGMAX SoT.
-
----
-
-## 5. COMPARE — prior G16 tip (t726u/t727u)
-
-| arm | G | VF_cyc | el/cyc | motif |
-|-----|--:|-------:|-------:|-------|
-| simt-asc live | 16 | 28603 | 0.2864 | stock; X from UB |
-| sv8d size-1 live | 16 | 128790 | 0.06361 | size-1 VMAX + scratch expand + VLDS=E |
-| simt-asc live | **32** | **56714** | **0.1444** | stock; X from UB |
-| sv8d VL-res live | **32** | **1964** | **4.1711** | KEEP X; VCMAX g=1 halves |
-
-G16 SIMT÷SIMD(size-1) ≈ 4.50× (SIMT faster). G32 SIMD(VL-res)÷SIMT ≈ 28.9× (SIMD faster). Gap direction **flips** with VL-resident motif — primary lesson of t737u.
-
----
-
-## 6. SEMANTICS_GATE
-
-- simt-asc G32 live: `SEMANTICS_GATE: PASS — gold G32 Case-3 e2e measured; SoftLib_axis=1xG; era=case3-quant-bcast; not claiming SoftLib hand-craft / multi-motif SoT`
+- SoftLib SIMT best: `SEMANTICS_GATE: PASS — gold G32 Case-3 e2e (Out=X*scale, n=8192); SoftLib_axis=1xG; motif=warp-coop dual_drain; era=case3-quant-bcast; layout inherited from absmax G32 dual_drain 8.22 (MATCHES_1xG); not wr/Nx1`
 - sv8d VL-resident G32: `SEMANTICS_GATE: PASS as VL-resident Case-3 motif (KEEP X, VLDS=0); INCONCLUSIVE as inner compact VCGMAX/NG=2 SoT — PTOAS blocks vreg<2xf32>; used vcmax(group=1)×NG; not Gmap VL256 NG=8`
-- SoftLib SIMT: `SEMANTICS_GATE: INCONCLUSIVE — SoftLib Case-3 hand-craft not measured this pack (A5 blocker)`
+- simt-asc G32 live: `SEMANTICS_GATE: PASS — gold G32 Case-3 e2e measured; SoftLib_axis=1xG; era=case3-quant-bcast; not claiming SoftLib hand-craft SoT`
+
+---
+
+## 4. IPC (W=20) — from core0.veccore0.instr_log.dump
+
+| arm | mid_ipc_W20 | mean_ipc_body | issues | span |
+|-----|------------:|--------------:|-------:|-----:|
+| SoftLib dual_drain G32 | 3.30 | 2.6893 | 3168 | 1178 |
+| VL-res G32 | 1.45 | 1.334 | 2568 | 1925 |
+| SIMT-ASC live G32 | 0.0 | 0.0685 | 3885 | 56682 |
+
+Figures: `benches/sv8/plots/softlib_simt_c3e2e_dual_drain_g32_{running_ipc,instr_mix}.png`, `simd_vlres_g32_*`, `simt_asc_live_g32_*`, `sv8_g32_elcyc_summary.png`.
+
+---
+
+## 5. COMPARE — prior G16 + absmax SoftLib peer
+
+| arm | G | era | el/cyc | motif |
+|-----|--:|-----|-------:|-------|
+| SoftLib Case-3 e2e dual_drain | 32 | case3-quant-bcast | **6.7702** | axis=1xG KEEP-X |
+| SoftLib absmax dual_drain (peer) | 32 | fp32-absmax | **8.22** | axis=1xG (layout peer only) |
+| VL-res SIMD | 32 | case3-quant-bcast | 4.1711 | KEEP X |
+| simt-asc live | 32 | case3-quant-bcast | 0.1444 | stock |
+| simt-asc live | 16 | case3-quant-bcast | 0.2864 | COMPARE |
+| sv8d size-1 | 16 | case3-quant-bcast | 0.06361 | COMPARE |
+
+Do **not** merge SoftLib 6.77 with absmax 8.22 as one era ladder (§13).
