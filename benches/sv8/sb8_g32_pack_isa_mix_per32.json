@@ -1,0 +1,93 @@
+{
+  "E": 8192,
+  "N": 32,
+  "units": 256.0,
+  "era": "case3-quant-bcast",
+  "G": 32,
+  "source": "RESULT.md + instr_exe.csv peanut dig t548u; PR9 from core0.veccore0.instr_log.dump",
+  "no_crown": true,
+  "arms": {
+    "simd_pack_ub_vl256": {
+      "VF_cyc": 969,
+      "body_calls": 1089,
+      "el_cyc": 8.4541,
+      "IPC_body": 1.1238390092879258,
+      "ops_per_N_body": 4.25390625,
+      "pred_el_cyc": 8.454076367389062,
+      "opcode_detail": {
+        "RV_VLDI": 196,
+        "RV_VSTI": 164,
+        "RV_VSELR": 128,
+        "RV_VMUL": 128,
+        "RV_VAND": 128,
+        "RV_VMAX": 100,
+        "RV_VDINTLV": 64,
+        "RV_VSLDB": 32,
+        "RV_VCGMAX": 32,
+        "RV_VDIV": 4,
+        "RV_VDUPS": 3,
+        "RV_VADDS": 3,
+        "RV_SMEM_BAR": 2
+      },
+      "families_ops_per_N": {
+        "load": 0.765625,
+        "store": 0.640625,
+        "reduce": 1.015625,
+        "scale": 0.515625,
+        "eltwise": 0.5,
+        "pred_tax": 0.0
+      },
+      "PR9": {
+        "mid_med_ipc": 1.1,
+        "plot_style": "opcode_lanes_ipc",
+        "png": "plots/simd_pack_ub_vl256_running_ipc_pr9.png"
+      }
+    },
+    "simd_keeplive_vbrc_vl256": {
+      "VF_cyc": 1065,
+      "body_calls": 983,
+      "el_cyc": 7.692,
+      "IPC_body": 0.9230046948356807,
+      "ops_per_N_body": 3.83984375,
+      "pred_el_cyc": 7.692018779342723,
+      "opcode_detail": {
+        "RV_VSTI": 160,
+        "RV_VINTLV": 128,
+        "RV_VMUL": 128,
+        "RV_VAND": 128,
+        "RV_VMAX": 128,
+        "RV_VDINTLV": 64,
+        "RV_VLDI": 64,
+        "RV_VDIV": 32,
+        "RV_VSELR": 32,
+        "RV_VCGMAX": 32,
+        "RV_VDUPS": 3
+      },
+      "families_ops_per_N": {
+        "load": 0.25,
+        "store": 0.625,
+        "reduce": 1.125,
+        "scale": 0.25,
+        "eltwise": 0.5,
+        "pred_tax": 0.0
+      },
+      "PR9": {
+        "mid_med_ipc": 0.9,
+        "plot_style": "opcode_lanes_ipc",
+        "png": "plots/simd_keeplive_vbrc_vl256_running_ipc_pr9.png"
+      }
+    },
+    "simd_vlres_paint": {
+      "VF_cyc": 1964,
+      "body_calls": 2581,
+      "el_cyc": 4.1711,
+      "note": "prior paint SoT \u2014 see sb8_g32_isa_mix_per32.json"
+    },
+    "softlib_dual_drain": {
+      "VF_cyc": 1210,
+      "body_calls": 3168,
+      "el_cyc": 6.7702,
+      "note": "SoftLib SoT leave alone \u2014 see sb8_g32_isa_mix_per32.json"
+    }
+  }
+}

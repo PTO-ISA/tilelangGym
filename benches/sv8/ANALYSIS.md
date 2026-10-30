@@ -1,13 +1,15 @@
 # ANALYSIS — SV8 Case-3 (voice SB8) G32 SoftLib ≻ SIMD
 
 **ST id:** `sv8` · voice **SB8** = SV8 Case-3 e2e (no literal `SB8` tree)  
-**When:** Asia/Hong_Kong 2026-10-30 · redo under tip `tilelanggym-st-report` + rebuilt harness  
-**Authorized:** Lok t542u → REGRESSION-2 handoff → PTO-ISA  
-**Pack / tip:** `/workspace/sv8_g32_sb8_t772u/` · dumps `dumps/` · plots `plots/` · tgz `/workspace/sv8_g32_sb8_t772u_pr9_t773u.tgz`  
+**When:** Asia/Hong_Kong 2026-10-30 · tip redo + **pack-scale PR9 update (t566u)**  
+**Authorized:** Lok t542u → t548u/t565u/t566u → PTO-ISA  
+**Pack / tip:** `/workspace/sv8_g32_sb8_t772u/` + dig `/workspace/sv8_simd_pack_scale_t548u/` · plots under `benches/sv8/plots/`  
 **Prior segment harvest (supporting, not replaced):** `ANALYSIS_SB8_SEGMENT_IPC_G32.md` · `sb8_g32_segment_harvest.json`  
 **Arch KS lock (Lok t540u):** npu_skills **`3101`** = default truth; SoftLib **`3510`** = microbench verify layer  
 **Harness cite:** `/workspace/research_topup_2026-10-25/HARNESS_REBUILD.md` + `SKILLS_REBUILD.md` — onesu §6.0* **N/A** for pure VF Case-3 (keep VF el/cyc + IPC primary)  
 **PRC index:** `REGRESSION_salvage_2026-09-17/perf-review-knowledge/perf-review-checklist.md` (gate OK 2026-10-30)
+
+**Pack-scale update (Lok t566u / dig t548u):** SIMD `pack_ub_vl256` **8.4541** / `keeplive_vbrc_vl256` **7.6920** measured on peanut; PR9 `*_running_ipc_pr9.png` added for both. SoftLib dual_drain **6.7702** leave alone. **No SoT crown / no merge** without Lok yes. Dig: `/workspace/sv8_simd_pack_scale_t548u/` · cite **PRC-SCH-003** · **PRC-IPC-001**.
 
 **Do not touch:** REGRESSION-2 SV5–7 Nx1 outer (`glm53_sv567_*` / t788u_r2).
 
@@ -18,8 +20,9 @@
 | id | Aim |
 |----|-----|
 | **A1** | Case-3 quant-bcast e2e (absmax → scale → mul) at **G32**, E=8192, `era=case3-quant-bcast`. |
-| **A2** | Headline SoftLib SIMT dual_drain ≻ SIMD best; explain via **per-segment mix + PR9 running-IPC+opcode overlay** (not IPC-only). |
-| **A3** | SIMD_best = max(VL-resident KEEP-X, …); fold recip+VMUL (t779) ≡ VL-res; UB-reload (t756) falsified; optional VDIV(x,absmax) contrast. |
+| **A2** | SoftLib SIMT dual_drain vs SIMD: explain via **per-segment mix + PR9 running-IPC+opcode overlay** (not IPC-only). Prior SoftLib≻**paint** SIMD (4.1711); pack_ub measured raw-beats SoftLib — **no crown** until Lok yes. |
+| **A3** | SIMD schedules: VL-resident KEEP-X paint; **pack_ub / keeplive** Legal Case-3 scale (t548u/t565u); recip+VMUL≡VL-res; UB-reload falsified; optional VDIV(x,absmax). Crown only on Lok yes. |
+| **A4** | Case-3 SIMD close must cover `pack_ub_vl256` + `keeplive_vbrc_vl256` (or COMPILE_CLIFF) + **stage×VL-util** (**PRC-SCH-003**). |
 
 Every measured claim below cites `A#`.
 
@@ -37,11 +40,11 @@ Every measured claim below cites `A#`.
 | Primary KPI | el/cyc = E / VF_cyc (name VF row: SoftLib `VF_SIMT` · SIMD `VF`) |
 | IPC | Running W=20 `(t−W,t]`; body proxy `body_calls/VF_cyc`; segment proxy `calls/sum_cycles` (pipe-overlapped; cyc% need not sum 100%) |
 
-**Conclusion arms (3):**
+**Conclusion arms (3 + pack measured, uncrowned):**
 
-1. **SIMD PTO-DSL best** — VL-resident KEEP-X (A3)
+1. **SIMD PTO-DSL** — paint VL-resident KEEP-X **4.1711** (prior SIMD_best cell); **pack_ub_vl256 8.4541** / **keeplive 7.6920** measured (A3/A4) — **no crown**
 2. **SIMT Ascend default** — stock simt-asc (~0.14 class)
-3. **SIMT SoftLib hand-craft** — dual_drain T512 KEEP-X `axis=1xG` (A2)
+3. **SIMT SoftLib hand-craft** — dual_drain T512 KEEP-X `axis=1xG` **6.7702** leave alone (A2)
 
 Dropped from headline: G16 SoftLib/size-1 pair (superseded), spill_dist (t756 optional unfinished), FA/membar trail tags.
 
@@ -52,7 +55,9 @@ Dropped from headline: G16 SoftLib/size-1 pair (superseded), spill_dist (t756 op
 | Arm | Layout | Reduce | Scale → mul | Sync walls |
 |-----|--------|--------|-------------|------------|
 | SoftLib SIMT dual_drain | T512 · loadall+absall · **KEEP-X RF** · `axis=1xG` | warp REDUX / SEL / FSETP | sparse **FDIV_I** → **FMUL** | **3×** `asm volatile("" ::: "memory")` compiler clobber (LD · ABS · REDUX/recip→mul) — **not** HW SMEM_BAR (**PRC-SCH-001**) |
-| SIMD VL-res | VL=64 · KEEP X in VL · **VLDS=0** | `VCMAX(group=1)×NG` + VMAX/VAND | size-1 **VDIV** + VSEL/VDUP paint + **VMUL** | no asm clobber; `S_sync=0%` |
+| SIMD VL-res (paint) | VL=64 · KEEP X in VL · **VLDS=0** | `VCMAX(group=1)×NG` + VMAX/VAND | size-1 **VDIV** + VSEL/VDUP paint + **VMUL** | no asm clobber; `S_sync=0%` |
+| **SIMD pack_ub_vl256** | VL=256 · `vcmax(group=NG)` → compact NG · **pack UB** | `VCGMAX×32` + VAND/VMAX | **VDIV×4** + expand (`VSELR` residual) + **VMUL** | `SMEM_BAR×2` in dump; **PRC-SCH-003** |
+| **SIMD keeplive_vbrc_vl256** | VL=256 · keeplive scale ladder | `VCGMAX×32` | **VDIV×32** + VINTLV/VSELR + **VMUL** | **PRC-SCH-003** |
 | SIMD UB-reload (falsified) | size-1 reduce + scratch expand + X reload | — | reload mul | **VLDS=8192** · **SMEM_BAR=256** (**PRC-MEM-001** / **PRC-MEM-002**) |
 | SIMT Asc stock | stock Ascend SimtVF | stock stream | — | not SoftLib best |
 
@@ -66,16 +71,44 @@ SoftLib SoT motif: **`axis=1xG` only** (Harness §21) · tag `wc_c3e2e_back_load
 
 | arm | el/cyc | VF | note |
 |-----|-------:|---:|------|
-| **SIMD VL-resident KEEP-X** | **4.1711** | **1964** | **SIMD_best** |
-| SIMD recip+VMUL (t779) | **4.1711** | **1964** | ≡ VL-res SoT (not a new schedule) |
-| SIMD VL VDIV(x,absmax) contrast (t779) | **4.9799** | **1645** | +19.4% vs recip; still SoftLib ahead |
+| **SIMD pack_ub_vl256** (t548u) | **8.4541** | **969** | measured · beats SoftLib raw · **no crown** · **PRC-SCH-003** |
+| **SIMD keeplive_vbrc_vl256** (t548u) | **7.6920** | **1065** | measured · beats SoftLib raw · **no crown** |
+| SIMD pack_ub_vl64 | NA | NA | **COMPILE_CLIFF** (VMI-RESIDUAL-OP) |
+| SIMD VL-resident KEEP-X (paint) | **4.1711** | **1964** | prior SIMD_best cell (paint SoT) |
+| SIMD recip+VMUL (t779) | **4.1711** | **1964** | ≡ VL-res paint (not a new schedule) |
+| SIMD VL VDIV(x,absmax) contrast (t779) | **4.9799** | **1645** | +19.4% vs recip paint |
 | SIMD UB-reload (t756) | **0.066739** | **122747** | falsified — VLDS=8192 |
 
-Sources: tip harvest · `RESULT_simd_recip_vmul_g32.md` · `/workspace/sv8_ubreload_g32_t756u/RESULT_t756u.md`.
+Sources: `/workspace/sv8_simd_pack_scale_t548u/RESULT.md` · tip harvest · `RESULT_simd_recip_vmul_g32.md` · `/workspace/sv8_ubreload_g32_t756u/RESULT_t756u.md`.
 
-**SIMD_best = max(4.1711, 0.066739, …) = 4.1711 (VL-resident).**  
+**Paint SIMD_best cell = 4.1711 (VL-resident).** Pack/keeplive raw-max = **8.4541** — **CONTINUE / no SoT crown** without Lok yes. SoftLib **6.7702** leave alone.  
 **PRC-MEM-001:** KEEP-X / VL-resident beats UB-reload on this shape.  
-**PRC-SCH-002:** scale forms A (recip+VMUL) ≡ VL-res; B (VL VDIV) faster inside SIMD but SoftLib÷B still **1.360×**.
+**PRC-SCH-002:** scale forms A (recip+VMUL) ≡ VL-res paint; B (VL VDIV) faster inside paint-SIMD.  
+**PRC-SCH-003:** pack/keeplive kill VSEL paint (TSV-VSEL=0; VDIV 4/32 ≪ 256) → el/cyc **8.45 / 7.69** vs paint **4.17**.
+
+### 4.0 SEMANTICS_GATE (pack arms · t548u)
+
+```
+SEMANTICS_GATE: PASS arms pack_ub_vl256 + keeplive_vbrc_vl256 (gold maxabs=1.192e-07); pack_ub_vl64 COMPILE_CLIFF (VMI-RESIDUAL-OP)
+```
+
+### 4.0b Stage×VL-util (SIMD Case-3 · FORCED t565u · harness §2b)
+
+| stage | paint VL-res | pack_ub_vl256 | keeplive_vbrc_vl256 |
+|-------|--------------|---------------|---------------------|
+| `S_reduce` working size | VL | VL → compact **NG** | VL → compact **NG** |
+| `S_scale` recip | size=**1** (VDIV×256) | size=**NG** (VDIV×**4**) | size≈**NG** (VDIV×**32**) |
+| `S_scale` expand | VSEL/VDUP paint (VL) | `VSELR` residual×128 | `VSELR`×32 + VINTLV |
+| `S_eltwise` | VL | VL | VL |
+
+### 4.0c Body / mid IPC (pack arms · PR9)
+
+| arm | VF | body_calls | body IPC | PR9 mid-med | PR9 plot |
+|-----|---:|-----------:|---------:|------------:|----------|
+| pack_ub_vl256 | 969 | 1089 | **1.1238** | **1.1** | [`plots/simd_pack_ub_vl256_running_ipc_pr9.png`](plots/simd_pack_ub_vl256_running_ipc_pr9.png) |
+| keeplive_vbrc_vl256 | 1065 | 983 | **0.9230** | **0.9** | [`plots/simd_keeplive_vbrc_vl256_running_ipc_pr9.png`](plots/simd_keeplive_vbrc_vl256_running_ipc_pr9.png) |
+
+`plot_style=opcode_lanes_ipc` · pack lanes include VCGMAX/VDIV/VSELR/VDINTLV/VSLDB (**PRC-IPC-001**). Note: pack mid-IPC (~1.1) < SoftLib (~3.4) but el/cyc higher via **ops/N collapse** on scale (ISA §9.4).
 
 ### 4.2 SEMANTICS_GATE (SIMD VL-res)
 
@@ -113,7 +146,7 @@ Stock path is LD/ST-bound / low density vs dual_drain hand-craft; kept as conclu
 |-----|----------|--------|-------:|-------:|----------:|-------------:|------------:|
 | **SoftLib SIMT dual_drain T512 KEEP-X** | loadall+absall · `axis=1xG` | `VF_SIMT` | **1210** | **6.7702** | 2.6182 | **3.30** | **3.40** |
 
-**Ratio SoftLib÷SIMD_best el/cyc = 1.623×** (VF gap ≈ 754 cyc).
+**Ratio SoftLib÷paint-SIMD el/cyc = 1.623×** (VF gap ≈ 754 cyc). Raw pack÷SoftLib = **8.4541/6.7702 ≈ 1.249×** (pack ahead) — **uncrowned**.
 
 ### SEMANTICS_GATE (SoftLib SIMT)
 
@@ -137,9 +170,11 @@ PR9: [`plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png`](plots/softl
 | arm | PR9 `*_running_ipc_pr9.png` | `plot_style` | `meta.lane_opcodes` (non-empty) | staged |
 |-----|----------------------------|--------------|----------------------------------|--------|
 | SoftLib dual_drain | [`plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png`](plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png) | **opcode_lanes_ipc** | S2R,LDS,FADD,SEL,FSETP_I,REDUX,FDIV_I,STS,END,MOVI,FMUL | [`…_pr9_staged.png`](plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9_staged.png) |
-| SIMD VL-res | [`plots/simd_vlres_g32_running_ipc_pr9.png`](plots/simd_vlres_g32_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCMAX,VDIV,VDUP,VSTI,VCI,VCMP_GE,VCMP_LT,VSEL | [`…_pr9_staged.png`](plots/simd_vlres_g32_running_ipc_pr9_staged.png) |
+| SIMD VL-res (paint) | [`plots/simd_vlres_g32_running_ipc_pr9.png`](plots/simd_vlres_g32_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCMAX,VDIV,VDUP,VSTI,VCI,VCMP_GE,VCMP_LT,VSEL | [`…_pr9_staged.png`](plots/simd_vlres_g32_running_ipc_pr9_staged.png) |
+| **SIMD pack_ub_vl256** | [`plots/simd_pack_ub_vl256_running_ipc_pr9.png`](plots/simd_pack_ub_vl256_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCGMAX,VDIV,VSTI,VDINTLV,VCI,VSHRI,VADDS,SMEM_BAR,VSLDB,VSELR | — (t566u) |
+| **SIMD keeplive_vbrc_vl256** | [`plots/simd_keeplive_vbrc_vl256_running_ipc_pr9.png`](plots/simd_keeplive_vbrc_vl256_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCGMAX,VDIV,VSTI,VCI,VSHRI,VDINTLV,VSELR,VINTLV | — (t566u) |
 
-**PRC-IPC-001:** both arms PRESENT — reject any IPC-only `*_running_ipc.png` without `_pr9`.
+**PRC-IPC-001:** SoftLib + paint + pack + keeplive PR9 PRESENT — reject any IPC-only `*_running_ipc.png` without `_pr9`. Dump source pack/keeplive: peanut `OPPROF_*/dump/core0.veccore0.instr_log.dump` (OUT-root 0-byte copies are stale).
 
 Remake (if needed):
 ```bash
@@ -149,6 +184,13 @@ PYTHONPATH=/workspace/tilelangGym-pr8-tip \
     --out-png /workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png \
     --title "sv8 / SoftLib SIMT Case-3 e2e dual_drain G32 T512 (axis=1xG) — running IPC (W=20)" --E 8192
 # same for dumps/vlres_g32.instr_log.dump → simd_vlres_g32_running_ipc_pr9.png
+# pack / keeplive (t566u):
+PYTHONPATH=/workspace/tilelangGym-pr8-tip \
+  python /workspace/REGRESSION_salvage_2026-09-17/scripts/make_pr9_running_ipc_overlay.py \
+    --dump /workspace/sv8_simd_pack_scale_t548u/dumps/pack_ub_vl256.instr_log.dump \
+    --out-png benches/sv8/plots/simd_pack_ub_vl256_running_ipc_pr9.png \
+    --title "sv8 Case-3 / SIMD pack_ub_vl256 — running IPC (W=20)" --E 8192
+# keeplive_vbrc_vl256.instr_log.dump → simd_keeplive_vbrc_vl256_running_ipc_pr9.png
 ```
 
 Rooftop % vs named resource: **N/A** this turn (VF el/cyc primary; no named A5 roof lock applied to Case-3 e2e beyond measured VF).
@@ -234,50 +276,70 @@ Raw `call_count` (opcode_detail in JSON): SoftLib LDS/STS/REDUX/FADD/FDIV/FMUL=2
 
 `pred_ratio_body` ≈ **1.623** ≈ SoftLib÷SIMD measured **1.623**.
 
-### 9.3 Attribution (one line)
+### 9.3 Attribution (one line · SoftLib vs paint)
 
-ops/N is **close** (12.4 vs 10.1) → SoftLib win ≈ **IPC density** (~2.62 vs ~1.31, ~2×), not fewer ISA ops; SIMD **VSEL scale paint** inflates scale ops/N (6.0 vs SoftLib 1.0 FDIV_I). SoftLib pays pred_tax (6.0) but still wins on issue density (PR9 mid ~3.4 vs ~1.35).
+ops/N is **close** (12.4 vs 10.1) → SoftLib win vs **paint** ≈ **IPC density** (~2.62 vs ~1.31, ~2×), not fewer ISA ops; SIMD **VSEL scale paint** inflates scale ops/N (6.0 vs SoftLib 1.0 FDIV_I). SoftLib pays pred_tax (6.0) but still wins on issue density (PR9 mid ~3.4 vs ~1.35).
+
+### 9.4 Pack / keeplive ISA bridge (measured · uncrowned · t566u)
+
+JSON: [`sb8_g32_pack_isa_mix_per32.json`](sb8_g32_pack_isa_mix_per32.json) · N=32 · E=8192 · units=256.
+
+| arm | VF | body_calls | body IPC | ops/N (body) | pred el/cyc | measured el/cyc |
+|-----|---:|-----------:|---------:|-------------:|------------:|----------------:|
+| pack_ub_vl256 | 969 | 1089 | **1.1238** | **4.2539** | **8.4541** | **8.4541** |
+| keeplive_vbrc_vl256 | 1065 | 983 | **0.9230** | **3.8398** | **7.6920** | **7.6920** |
+| SoftLib dual_drain (ref) | 1210 | 3168 | 2.618 | 12.375 | 6.7702 | 6.7702 |
+| paint VL-res (ref) | 1964 | 2581 | 1.314 | 10.082 | 4.1711 | 4.1711 |
+
+**Attribution:** pack mid-IPC (~1.1) is **below** SoftLib (~3.4), but **ops/N collapses** (~4.25 vs SoftLib 12.4 / paint 10.1) via scale tax kill (VDIV 4 + VSELR 128 vs paint VSEL 1024+VDIV 256) → el/cyc **8.45** (**PRC-SCH-003**). Bridge `|pred/meas−1|=0` on pack/keeplive body definition.
+
+Balanced opcode totals: pack body_calls **1089** / keeplive **983** (instr_exe; VF excluded) — see dig dumps CSVs.
 
 ---
 
-## 10. Conclusion (3 arms)
+## 10. Conclusion (3 arms + pack measured uncrowned)
 
 | # | Arm | el/cyc | VF | one-liner |
 |---|-----|-------:|---:|-----------|
-| 1 | **SIMD PTO-DSL best** (VL-res KEEP-X) | **4.1711** | 1964 | SIMD_best; recip+VMUL≡same; UB-reload 0.0667 falsified; VL-VDIV contrast 4.9799 still &lt; SoftLib (**A3**) |
+| 1a | **SIMD pack_ub_vl256** | **8.4541** | 969 | measured · raw > SoftLib · **no crown** (**A3/A4 · PRC-SCH-003**) |
+| 1b | **SIMD keeplive_vbrc_vl256** | **7.6920** | 1065 | measured · raw > SoftLib · **no crown** |
+| 1c | **SIMD paint VL-res KEEP-X** | **4.1711** | 1964 | prior SIMD_best cell; recip+VMUL≡same; UB-reload falsified (**A3**) |
 | 2 | **SIMT Ascend default** | **~0.14** | — | stock; not SoftLib best |
-| 3 | **SIMT SoftLib hand-craft** (dual_drain T512 `axis=1xG`) | **6.7702** | 1210 | SoftLib÷SIMD **1.623×**; density + cheap S_scale + compiler clobber walls (**A2**) |
+| 3 | **SIMT SoftLib hand-craft** (dual_drain T512 `axis=1xG`) | **6.7702** | 1210 | SoftLib SoT **leave alone**; vs paint SoftLib÷SIMD **1.623×** (**A2**) |
 
-**Headline (A2):** SoftLib SIMT ≻ SIMD on G32 Case-3 — explained by PR9 mid ~3.4 vs ~1.35 and S_scale Δcyc, citing **PRC-IPC-001 · PRC-SCH-001 · PRC-SCH-002 · PRC-MEM-001**. No G16 SoftLib headline drift.
+**Headline:** SoftLib ≻ **paint** SIMD on G32 Case-3 (PR9 mid ~3.4 vs ~1.35 + S_scale) citing **PRC-IPC-001 · PRC-SCH-001 · PRC-SCH-002 · PRC-MEM-001**. Pack/keeplive Legal schedule raw-beats SoftLib on el/cyc via ops/N collapse (**PRC-SCH-003**) with lower mid-IPC — **CONTINUE / no SoT crown / no merge** without Lok yes.
 
 ### COMPARE harvest
 
 | vs | status |
 |----|--------|
-| KPI vs REGRESSION-2 tip numbers (handoff table) | **MATCH** SoftLib 6.7702 / SIMD 4.1711 / t779 / t756 |
-| Motif-seed Coverage COMPARE | SoftLib dual_drain loadall+absall T512 ✓ · VL-res KEEP-X ✓ · recip≡VL-res ✓ · UB-reload falsified ✓ · stock Asc ~0.14 ✓ · spill_dist stop (not needed for SIMD_best) |
-| KPI N/A rows | none for primary pair |
+| KPI vs REGRESSION-2 tip numbers (handoff table) | **MATCH** SoftLib 6.7702 / paint SIMD 4.1711 / t779 / t756 |
+| Pack dig RESULT (t548u) | **MATCH** pack 8.4541 / keeplive 7.6920 / vl64 COMPILE_CLIFF |
+| Motif-seed Coverage COMPARE | SoftLib dual_drain ✓ · VL-res paint ✓ · **pack_ub_vl256 ✓** · **keeplive_vbrc_vl256 ✓** · pack_ub_vl64 COMPILE_CLIFF ✓ · recip≡VL-res ✓ · UB-reload falsified ✓ · stage×VL-util ✓ |
+| KPI N/A rows | none for primary pair; crown = N/A until Lok yes |
 
-### Checklist (st-report SoftLib≻SIMD bar)
+### Checklist (st-report SoftLib≻SIMD + Case-3 pack bar)
 
-- [x] Aims `A1…` cited
-- [x] SEMANTICS_GATE both main arms PASS
-- [x] SoftLib SIMT measured (not silent TODO)
+- [x] Aims `A1…` cited (+ A4 pack coverage)
+- [x] SEMANTICS_GATE SoftLib + paint + pack/keeplive PASS; vl64 cliff
+- [x] SoftLib SIMT measured (not silent TODO); SoftLib SoT leave alone
 - [x] `era=case3-quant-bcast` on rows
-- [x] PR9 both arms `*_running_ipc_pr9.png` + `opcode_lanes_ipc` + non-empty lanes
-- [x] Per-segment mix+IPC table both arms
-- [x] Stage mid-IPC table both arms (SIMD fused → mid≈body explicit)
-- [x] ISA-mix per 32×4B → el/cyc bridge both arms (`plots/sb8_g32_isa_mix_per32.json`)
-- [x] Ready PRC-ids cited
-- [ ] `EXPLORATION_TRACE.md` — **MISSING** (see §10)
+- [x] PR9 SoftLib + paint + **pack** + **keeplive** `*_running_ipc_pr9.png` + `opcode_lanes_ipc` + non-empty lanes
+- [x] Per-segment mix+IPC table SoftLib vs paint (pack PR9 mid recorded; full pack↔SoftLib segment CSV optional next)
+- [x] Stage mid-IPC SoftLib + paint; pack/keeplive PR9 mid-med recorded
+- [x] ISA-mix per 32×4B → el/cyc bridge SoftLib↔paint + **pack/keeplive §9.4**
+- [x] Stage×VL-util column (§4.0b) · **PRC-SCH-003**
+- [x] Ready PRC-ids cited (incl. PRC-SCH-003 · PRC-IPC-001)
+- [ ] Pack vs SoftLib full per-segment CSV harvest — **optional**
+- [ ] Tip `EXPLORATION_TRACE.md` — optional (dig TRACE present)
 
 ---
 
 ## 11. Trace pointer
 
-**MISSING:** `/workspace/sv8_g32_sb8_t772u/EXPLORATION_TRACE.md`  
-**Why:** this turn is an **ANALYSIS redo** from REGRESSION-2 measured tip (t740u/t772u/t773u/t756u/t779u) under tip st-report spine — **not** a fresh `tilelanggym-st-explore-from-prompt` / clean-regress loop. MB DONE for SoftLib schedule ladder was already claimed upstream; this deliverable does not re-open explore.  
-**Next-cmd (optional):** if Lok wants TRACE for peanut PR refresh, run explore-from-prompt companion and write `EXPLORATION_TRACE.md` linking the existing dumps — do **not** invent a synthetic TRACE.
+**Tip TRACE:** still optional for the SoftLib≻paint redo (`/workspace/sv8_g32_sb8_t772u/EXPLORATION_TRACE.md` MISSING).  
+**Dig TRACE (pack):** PRESENT at `/workspace/sv8_simd_pack_scale_t548u/EXPLORATION_TRACE.md` (t548u explore).  
+**Why tip TRACE optional:** SoftLib/paint ANALYSIS was a tip-skill redo, not explore-from-prompt; pack dig carries its own TRACE.
 
 ---
 
@@ -296,10 +358,16 @@ ops/N is **close** (12.4 vs 10.1) → SoftLib win ≈ **IPC density** (~2.62 vs 
 
 | item | status | next-cmd |
 |------|--------|----------|
-| PR9 both arms | **PRESENT** | — |
-| Per-segment + stage mid-IPC | **PRESENT** | — |
-| ISA-mix per-32 → el/cyc | **PRESENT** | — |
-| EXPLORATION_TRACE.md | **MISSING** | optional explore TRACE if peanut PR asks |
-| Peanut / tilelangGym PR #11 refresh | **not pushed** | needs Lok yes — see `STATUS.md` |
-| SIMD vdiv_x PR9 overlay | optional (not SIMD_best) | `make_pr9… --dump simd_recip_vmul_t779u/vdiv_x_g32.instr_log.dump` |
-| spill_dist (t756) | unfinished · not needed for SIMD_best | leave |
+| PR9 SoftLib + paint | **PRESENT** | — |
+| PR9 pack_ub + keeplive | **PRESENT** (t566u) | — |
+| Per-segment + stage mid-IPC (SoftLib↔paint) | **PRESENT** | — |
+| Stage×VL-util (Case-3 SIMD) | **PRESENT** §4.0b | — |
+| ISA-mix per-32 SoftLib↔paint + pack | **PRESENT** | — |
+| Pack vs SoftLib full per-segment harvest | optional | harvest pack instr_exe windows vs SoftLib CSV |
+| Dig EXPLORATION_TRACE.md | **PRESENT** | `/workspace/sv8_simd_pack_scale_t548u/EXPLORATION_TRACE.md` |
+| Tip EXPLORATION_TRACE.md | optional | leave |
+| tilelangGym PR #11 pack+PR9 refresh | this push | tip SHA in commit — **no merge** |
+| SoftLib SMEM half-warp / shared-mem LDS-STS (t556u/t567u) | **MISSING** PASS KPI | next-cmd in executor final report |
+| SIMD vdiv_x PR9 overlay | optional | `make_pr9… --dump simd_recip_vmul_t779u/vdiv_x_g32.instr_log.dump` |
+| spill_dist (t756) | unfinished · not needed | leave |
+| SoT crown pack over SoftLib | **not done** | needs Lok yes |
