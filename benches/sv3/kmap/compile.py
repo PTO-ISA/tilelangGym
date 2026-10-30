@@ -10,21 +10,21 @@ torch.utils.rename_privateuse1_backend("npu")
 
 import tilelang
 
-from kernels import build_simd, build_thread, build_warp
+from kernels import build_simd, build_thread, build_thread_ub, build_warp
 
 HERE = Path(__file__).resolve().parent
-BUILDERS = {"thread": build_thread, "warp": build_warp, "simd": build_simd}
+BUILDERS = {"thread": build_thread, "ub": build_thread_ub, "warp": build_warp, "simd": build_simd}
 
 
 def main(argv=None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     if len(args) not in (4, 5):
-        print("usage: compile.py thread|warp|simd rows cols K [threads]", flush=True)
+        print("usage: compile.py thread|ub|warp|simd rows cols K [threads]", flush=True)
         return 2
     kind, rows, cols, K = args[0], int(args[1]), int(args[2]), int(args[3])
     threads = int(args[4]) if len(args) == 5 else None
-    if threads is not None and kind != "thread":
-        print("threads is only valid for thread", flush=True)
+    if threads is not None and kind not in ("thread", "ub"):
+        print("threads is only valid for thread and ub", flush=True)
         return 2
     name = f"{kind}-r{rows}c{cols}-k{K}"
     if threads is not None:

@@ -56,6 +56,72 @@ def build_thread(rows: int, cols: int, K: int, threads: int | None = None):
     return main
 
 
+# Unified buffer budget used by the SIMD notes. A full 32×128, K=32 tile is 256 KB.
+UB_BYTES = 248 * 1024
+
+
+def _thread_launch(rows: int, cols: int, threads: int | None) -> int:
+    cells = rows * cols
+    if threads is None:
+        threads = THREADS if cells >= THREADS else cells
+    if threads < WARP or threads % WARP != 0 or threads > 2048:
+        raise ValueError(f"thread launch {threads} must be a multiple of {WARP} and at most 2048")
+    if cells < threads or cells % threads != 0:
+        raise ValueError(f"rows*cols={cells} is not divisible by {threads} threads")
+    return threads
+
+
+def build_thread_ub(rows: int, cols: int, K: int, threads: int | None = None):
+    """Thread k-map, but A and x are copied into UB before the VF."""
+    _check(rows, cols, K)
+    threads = _thread_launch(rows, cols, threads)
+    x_bytes = K * 2
+    out_bytes = rows * cols * 4
+    row_bytes = K * cols * 2
+    full = K * rows * cols * 2 + x_bytes + out_bytes
+    if full <= UB_BYTES:
+        slab = rows
+    else:
+        budget = UB_BYTES - x_bytes - out_bytes
+        if budget < row_bytes:
+            raise ValueError(f"one row of A does not fit in {UB_BYTES} bytes")
+        slab = 1
+        while slab * 2 <= rows and (slab * 2) * row_bytes <= budget:
+            slab *= 2
+        if (slab * cols) < threads or (slab * cols) % threads != 0:
+            raise ValueError(f"slab {slab}×{cols} is not divisible by {threads} threads")
+
+    @T.prim_func
+    def main(
+        A: T.Tensor((K, rows, cols), "float16"),
+        X: T.Tensor((K,), "float16"),
+        Out: T.Tensor((rows, cols), "float32"),
+    ):
+        with T.Kernel(1):
+            a_ub = T.alloc_shared((K, slab, cols), "float16")
+            x_ub = T.alloc_shared((K,), "float16")
+            out_ub = T.alloc_shared((rows, cols), "float32")
+            T.copy(X, x_ub)
+            for s in T.serial(rows // slab):
+                for r in T.serial(slab):
+                    for k in T.serial(K):
+                        T.copy(A[k, s * slab + r, :], a_ub[k, r, :])
+                with T.SimtVF(threads):
+                    acc = T.alloc_fragment((slab, cols), "float32")
+                    for row, col in T.Parallel(slab, cols):
+                        acc[row, col] = T.float32(0)
+                    for k in T.serial(K):
+                        xk = T.alloc_var("float32")
+                        xk = T.Cast("float32", x_ub[k])
+                        for row, col in T.Parallel(slab, cols):
+                            acc[row, col] = acc[row, col] + T.Cast("float32", a_ub[k, row, col]) * xk
+                    for row, col in T.Parallel(slab, cols):
+                        out_ub[s * slab + row, col] = acc[row, col]
+            T.copy(out_ub, Out)
+
+    return main
+
+
 def build_warp(rows: int, cols: int, K: int):
     _check(rows, cols, K)
     nwarps = THREADS // WARP
