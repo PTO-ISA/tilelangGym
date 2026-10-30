@@ -262,6 +262,8 @@ JSON: [`sb8_g32_segment_harvest.json`](sb8_g32_segment_harvest.json).
 
 ### 8.2 Stage mid-IPC (defining-opcode windows · W=20 mid 15–85%)
 
+**STAGE_TAXONOMY SoT:** [`scripts.st_report.stage_taxonomy.STAGE_TAXONOMY`](../../scripts/st_report/stage_taxonomy.py) · export [`plots/stage_taxonomy.json`](plots/stage_taxonomy.json) (shared with §8.1 seg names + staged PR9). ISA-mix §9 stays ops/N-orthogonal.
+
 Window = first..last issue of defining opcodes (**overlap OK**). SoftLib dual_drain overlaps heavily; SIMD VL-res is a **fused** loop → every stage mid ≈ body mid (~1.35) — written explicitly, not invented walls.
 
 #### SoftLib SIMT (official mid 3.30 / PR9 mid-med 3.40)

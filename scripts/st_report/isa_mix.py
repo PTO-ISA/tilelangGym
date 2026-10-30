@@ -11,6 +11,8 @@ Family map (SIMT SoftLib / SIMD RV prefixes stripped for matching):
 Bridge:
   ops_per_N = call_count / (E / N)
   pred_el/cyc ≈ IPC × (N / ops_per_N)   # prefer body IPC = body_calls / VF_cyc
+
+Orthogonal to STAGE_TAXONOMY (§8.1/§8.2 defining-opcode windows) — do not merge.
 """
 
 from __future__ import annotations

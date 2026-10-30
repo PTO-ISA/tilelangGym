@@ -34,6 +34,16 @@ def main() -> int:
     ap.add_argument("--E", type=float, default=None)
     ap.add_argument("--W", type=float, default=20.0)
     ap.add_argument("--repo", default="/workspace/tilelangGym-pr8-tip")
+    ap.add_argument(
+        "--frontend",
+        default="",
+        help="STAGE_TAXONOMY frontend (softlib_simt|simd) — annotate defining-opcode stage windows",
+    )
+    ap.add_argument(
+        "--staged-out",
+        default="",
+        help="optional second PNG with stage bands (*_pr9_staged.png); implies --frontend",
+    )
     args = ap.parse_args()
 
     repo = Path(args.repo)
@@ -64,6 +74,32 @@ def main() -> int:
     if style != "opcode_lanes_ipc":
         print("FAIL: need plot_style=opcode_lanes_ipc (IPC-only is not PR9 overlay)", file=sys.stderr)
         return 1
+
+    frontend = (args.frontend or "").strip()
+    staged_out = (args.staged_out or "").strip()
+    if staged_out and not frontend:
+        # infer from title
+        tl = args.title.lower()
+        frontend = "softlib_simt" if ("softlib" in tl or "simt" in tl) else "simd"
+    if frontend or staged_out:
+        art2 = dict(art)
+        art2["frontend"] = frontend or "simd"
+        out2 = Path(staged_out) if staged_out else out.with_name(out.stem + "_staged" + out.suffix)
+        result2 = build_from_artifacts(
+            art2,
+            st_root=out2.parent,
+            repo_root=repo,
+            W=args.W,
+            out_png=out2,
+            title=args.title + " — staged",
+            E=args.E,
+        )
+        meta2 = result2.get("meta") or {}
+        print(
+            f"staged={out2} exists={out2.is_file()} stages={len(meta2.get('stages') or [])} "
+            f"taxonomy={meta2.get('stage_taxonomy')}"
+        )
+        print(f"staged_json={result2.get('json')}")
     return 0
 
 

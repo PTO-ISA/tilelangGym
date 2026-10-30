@@ -89,7 +89,9 @@
         }
       ],
       "png_pr9": "/workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png",
-      "png_pr9_staged": "/workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9_staged.png"
+      "png_pr9_staged": "/workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9_staged.png",
+      "frontend": "softlib_simt",
+      "taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
     },
     "simd_vlres_g32": {
       "title": "sv8 / SIMD VL-resident KEEP-X G32 Case-3 \u2014 PR9 lanes+IPC",
@@ -178,7 +180,11 @@
         }
       ],
       "png_pr9": "/workspace/sv8_g32_sb8_t772u/plots/simd_vlres_g32_running_ipc_pr9.png",
-      "png_pr9_staged": "/workspace/sv8_g32_sb8_t772u/plots/simd_vlres_g32_running_ipc_pr9_staged.png"
+      "png_pr9_staged": "/workspace/sv8_g32_sb8_t772u/plots/simd_vlres_g32_running_ipc_pr9_staged.png",
+      "frontend": "simd",
+      "taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
     }
-  }
+  },
+  "taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY",
+  "taxonomy_json": "plots/stage_taxonomy.json"
 }

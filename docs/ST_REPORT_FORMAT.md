@@ -78,6 +78,13 @@ For **each main conclusion arm** that has an opsim dump (`instr_log.dump` / OPPR
 
 When SoftLib≻SIMD / SIMD≻SIMT / both-arm perf compare: both arms get per-segment opcode mix + IPC + stage mid-IPC (see `tilelanggym-st-report`). Pair with PR9 overlays.
 
+**STAGE_TAXONOMY (SoT):** `scripts.st_report.stage_taxonomy.STAGE_TAXONOMY` — one defining-opcode map per frontend (`softlib_simt` / `simd`) for seg ids `S_load` · `S_reduce` · `S_scale` · `S_eltwise` · `S_store` (+ optional `S_sync`). Export: `python -m scripts.st_report export-stage-taxonomy [--st <id>]` → `benches/<st>/plots/stage_taxonomy.json`.
+
+- **§8.1 mix** — CSV call aggregates bucketed under the **same** seg names; primary opcode→seg via `classify_opcode` / defining lists (companions like MTE2/MTE3 may share the harvest row but are not window-defining).
+- **§8.2 stage mid-IPC** — windows = first..last issue of defining opcodes (overlap OK); harvest: `python -m scripts.st_report stage-mid --st <id> …`.
+- **Staged PR9** — `*_pr9_staged.png` bands must use the same defining windows (`make_pr9_running_ipc_overlay.py --frontend softlib_simt|simd [--staged-out …]`).
+- **ISA-mix §9** stays orthogonal (ops/N families in `isa_mix.py`) — do **not** merge into stage windows.
+
 ### 9. ISA mix SIMT vs SIMD — per N×4B ops → el/cyc bridge (FORCED · t546u)
 
 Same trigger as §8. Normalize opcode `call_count` to **N elements × 4B** (default **N=32**):
