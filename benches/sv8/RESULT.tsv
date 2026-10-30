@@ -1,0 +1,19 @@
+path	arm	G	T	compile	gold	VF_cyc	el_per_cyc	notes
+softlib-simt	wc_c3e2e_back_loadall_absall_dual_drain	32	512	PASS	PASS	1210	6.7702	BEST_E2E;axis=1xG;era=case3-quant-bcast;KEEP-X;layout_peer_absmax_8.22
+softlib-simt	wc_c3e2e_back_dual_drain_fused_mul	32	512	PASS	PASS	1288	6.3602	era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_back_loadall_absall_dual_drain	32	256	PASS	PASS	1405	5.8306	era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_back_loadall_absall_membar	32	512	PASS	PASS	1458	5.6187	era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_back_loadall_membar	32	512	PASS	PASS	1487	5.5091	era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_back_dual_drain_fused_mul	32	256	PASS	PASS	1624	5.0443	era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_back_loadall_membar	32	256	PASS	PASS	2107	3.8880	era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_back_loadall_absall_membar	32	256	PASS	PASS	2133	3.8406	era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_lds32_redux	32	512	PASS	PASS	2565	3.1938	stock;era=case3-quant-bcast;axis=1xG
+softlib-simt	wc_c3e2e_lds32_redux	32	128	PASS	PASS	6418	1.2764	stock;era=case3-quant-bcast;axis=1xG
+softlib-simt-scale	wc_c3_back_loadall_absall_dual_drain	32	512	PASS	PASS	1371	5.9752	APPENDIX_scale_only;n=256;not_e2e_E
+softlib-simt-scale	wc_c3_back_loadall_absall_dual_drain	32	256	PASS	PASS	1562	5.2446	APPENDIX_scale_only;n=256;not_e2e_E
+sv8d_vl_resident	live	32	32	PASS	PASS	1964	4.1711	KEEP_X;VLDS=0;vcmax_group1_xNG;f32;era=case3-quant-bcast
+simt-asc	live	32	32	PASS	PASS	56714	0.1444	reduce_axis=inner;SoftLib_axis=1xG;era=case3-quant-bcast;cann_92b2;fp16
+simt-asc	spill_dist	32	32	PASS	PASS	42819	0.1913	reduce_axis=inner;era=case3-quant-bcast;fp16
+simt-asc	live	16	32	PASS	PASS	28603	0.2864	COMPARE prior t726u;era=case3-quant-bcast
+sv8d_size1	live	16	32	PASS	PASS	128790	0.06361	COMPARE prior t727u;size-1+scratch;VLDS=E
+simd-pto	sv8v	16	32	FAIL	n/a	NA	NA	AscendSimdVFLowerParallel stride=0/0

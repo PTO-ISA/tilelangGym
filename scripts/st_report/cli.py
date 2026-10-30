@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""CLI: init | harvest | plot | plot-ipc | gaps | fill | check --st <id>"""
+"""CLI: init | harvest | plot | plot-ipc | gaps | fill | check | export-stage-taxonomy | stage-mid --st <id>"""
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -163,6 +164,104 @@ def cmd_selftest() -> int:
         return 0 if ok else 1
 
 
+
+def cmd_export_stage_taxonomy(st: str, out: str) -> int:
+    from scripts.st_report.stage_taxonomy import default_export_path, write_json
+
+    path = Path(out) if out else default_export_path(st or None)
+    wrote = write_json(path)
+    print(f"wrote {wrote}")
+    print("module=scripts.st_report.stage_taxonomy.STAGE_TAXONOMY")
+    return 0
+
+
+def cmd_stage_mid(
+    st: str,
+    out: str,
+    window: float,
+    softlib_dump: str,
+    simd_dump: str,
+    softlib_id: str,
+    simd_id: str,
+) -> int:
+    """Harvest stage mid-IPC; prefer arms.yaml artifacts, else explicit dumps."""
+    from scripts.st_report.registry import load_arms, st_dir
+    from scripts.st_report.stage_taxonomy import harvest_stage_mid, write_json as write_tax
+
+    specs: list[dict] = []
+    # Explicit dumps win; else scan arms.yaml spine for popped_dump + path/frontend.
+    if softlib_dump or simd_dump:
+        if softlib_dump:
+            specs.append(
+                {
+                    "id": softlib_id,
+                    "frontend": "softlib_simt",
+                    "popped_dump": softlib_dump,
+                    "title": f"{st} / SoftLib SIMT — stage mid-IPC",
+                }
+            )
+        if simd_dump:
+            specs.append(
+                {
+                    "id": simd_id,
+                    "frontend": "simd",
+                    "popped_dump": simd_dump,
+                    "title": f"{st} / SIMD — stage mid-IPC",
+                }
+            )
+    else:
+        try:
+            arms = load_arms(st)
+        except FileNotFoundError as e:
+            print(f"ERROR: {e}; pass --softlib-dump/--simd-dump or add arms.yaml", file=sys.stderr)
+            return 1
+        for arm in arms.get("spine") or []:
+            art = arm.get("artifacts") if isinstance(arm.get("artifacts"), dict) else {}
+            dump = art.get("popped_dump")
+            if not dump:
+                continue
+            path_kind = (arm.get("path") or arm.get("role") or arm.get("id") or "").lower()
+            if "softlib" in path_kind or (
+                "simt" in path_kind and "asc" not in path_kind and "simd" not in path_kind
+            ):
+                fe = "softlib_simt"
+            elif "simd" in path_kind or "dsl" in path_kind or "vmi" in path_kind:
+                fe = "simd"
+            else:
+                # skip simt_asc by default for stage-mid dual-arm SoT
+                continue
+            root = st_dir(st)
+            dump_path = Path(dump)
+            if not dump_path.is_file():
+                cand = root / dump
+                if cand.is_file():
+                    dump_path = cand
+            specs.append(
+                {
+                    "id": arm["id"],
+                    "frontend": fe,
+                    "popped_dump": str(dump_path),
+                    "title": arm.get("label") or arm["id"],
+                }
+            )
+    if not specs:
+        print(
+            "ERROR: no SoftLib/SIMD dumps resolved; pass --softlib-dump/--simd-dump",
+            file=sys.stderr,
+        )
+        return 1
+
+    doc = harvest_stage_mid(specs, W=window)
+    out_path = Path(out) if out else (st_dir(st) / "plots" / f"{st}_stage_mid_ipc.json")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    # Always refresh co-located taxonomy export
+    tax = write_tax(st_dir(st) / "plots" / "stage_taxonomy.json")
+    print(f"wrote {out_path} arms={list(doc.get('arms') or {})}")
+    print(f"taxonomy {tax}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="st_report", description="tilelangGym ST report harness")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -215,6 +314,51 @@ def build_parser() -> argparse.ArgumentParser:
         help="refused in milestone 1 unless explicitly allowed later",
     )
 
+    sp_tax = sub.add_parser(
+        "export-stage-taxonomy",
+        help="write STAGE_TAXONOMY JSON (SoT for §8.1/§8.2/staged PR9)",
+    )
+    sp_tax.add_argument("--st", default="", help="optional ST id → benches/<st>/plots/stage_taxonomy.json")
+    sp_tax.add_argument(
+        "-o",
+        "--out",
+        default="",
+        help="output path (default: benches/<st>/plots/stage_taxonomy.json or scripts/st_report/stage_taxonomy.json)",
+    )
+
+    sp_sm = sub.add_parser(
+        "stage-mid",
+        help="harvest stage mid-IPC JSON from dumps using STAGE_TAXONOMY defining windows",
+    )
+    sp_sm.add_argument("--st", required=True)
+    sp_sm.add_argument(
+        "-o",
+        "--out",
+        default="",
+        help="output JSON (default: benches/<st>/plots/<st>_stage_mid_ipc.json)",
+    )
+    sp_sm.add_argument("--window", type=float, default=20.0)
+    sp_sm.add_argument(
+        "--softlib-dump",
+        default="",
+        help="SoftLib SIMT popped dump (overrides arms.yaml artifacts)",
+    )
+    sp_sm.add_argument(
+        "--simd-dump",
+        default="",
+        help="SIMD popped dump (overrides arms.yaml artifacts)",
+    )
+    sp_sm.add_argument(
+        "--softlib-id",
+        default="softlib_simt",
+        help="arm id key in output JSON",
+    )
+    sp_sm.add_argument(
+        "--simd-id",
+        default="simd",
+        help="arm id key in output JSON",
+    )
+
     sub.add_parser("selftest-ipc", help="synthetic chrome fixture → PNG (no ST dig)")
     return p
 
@@ -225,6 +369,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.cmd == "selftest-ipc":
         return cmd_selftest()
+    if args.cmd == "export-stage-taxonomy":
+        return cmd_export_stage_taxonomy(getattr(args, "st", "") or "", getattr(args, "out", "") or "")
     st = args.st
     if args.cmd == "init":
         return cmd_init(
@@ -244,6 +390,16 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_fill(st, write=write)
     if args.cmd == "check":
         return cmd_check(st)
+    if args.cmd == "stage-mid":
+        return cmd_stage_mid(
+            st,
+            out=getattr(args, "out", "") or "",
+            window=float(getattr(args, "window", 20.0)),
+            softlib_dump=getattr(args, "softlib_dump", "") or "",
+            simd_dump=getattr(args, "simd_dump", "") or "",
+            softlib_id=getattr(args, "softlib_id", "softlib_simt") or "softlib_simt",
+            simd_id=getattr(args, "simd_id", "simd") or "simd",
+        )
     parser.error(f"unknown cmd {args.cmd}")
     return 2
 

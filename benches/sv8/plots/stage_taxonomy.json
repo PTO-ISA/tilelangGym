@@ -1,0 +1,77 @@
+{
+  "schema": "stage_taxonomy.v1",
+  "stage_window_def": "first..last issue of defining opcodes (windows may overlap under dual_drain / fused VL-res)",
+  "seg_order": [
+    "S_load",
+    "S_reduce",
+    "S_scale",
+    "S_eltwise",
+    "S_store",
+    "S_sync"
+  ],
+  "frontends": {
+    "softlib_simt": {
+      "S_load": [
+        "LDS"
+      ],
+      "S_reduce": [
+        "REDUX",
+        "FADD",
+        "SEL",
+        "FSETP_I"
+      ],
+      "S_scale": [
+        "FDIV_I"
+      ],
+      "S_eltwise": [
+        "FMUL"
+      ],
+      "S_store": [
+        "STS"
+      ],
+      "S_sync": []
+    },
+    "simd": {
+      "S_load": [
+        "VLDI"
+      ],
+      "S_reduce": [
+        "VCMAX",
+        "VMAX",
+        "VAND"
+      ],
+      "S_scale": [
+        "VSEL",
+        "VDIV",
+        "VDUP"
+      ],
+      "S_eltwise": [
+        "VMUL"
+      ],
+      "S_store": [
+        "VSTI"
+      ],
+      "S_sync": []
+    }
+  },
+  "aliases": {
+    "softlib_simt": "softlib_simt",
+    "softlib": "softlib_simt",
+    "simt_softlib": "softlib_simt",
+    "simt": "softlib_simt",
+    "body4": "softlib_simt",
+    "simd": "simd",
+    "simd_dsl": "simd",
+    "dsl": "simd",
+    "vmi": "simd",
+    "pto_dsl": "simd",
+    "vlres": "simd"
+  },
+  "notes": {
+    "\u00a78.1": "CSV call aggregates: assign opcodes via classify_opcode; companions (MTE2/MTE3/IADD_\u2026) may sit in the same harvest row but are not defining for windows.",
+    "\u00a78.2": "Stage mid-IPC windows = first..last issue of defining opcodes.",
+    "PR9_staged": "Annotate *_pr9_staged.png from the same defining windows.",
+    "isa_mix": "Orthogonal ops/N families (load/store/reduce/\u2026); do not merge."
+  },
+  "module": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
+}

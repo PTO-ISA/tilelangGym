@@ -1,0 +1,4 @@
+arm	path	VF	el_cyc	mid_ipc_W	mid_in_el_cyc	mid_out_el_cyc	roof_name	roof_value	pct_overall	pct_mid	LDS_width	status	source
+softlib_simt_c3e2e_dual_drain_g32	softlib_simt	1210	6.7702	3.3								PASS	arms.yaml#seed
+simd_vlres_g32	dsl	1964	4.1711	1.45							n/a	PASS	arms.yaml#seed
+simt_asc_live_g32	simt_asc	56714	0.1444	0								PASS	arms.yaml#seed

@@ -502,8 +502,13 @@ def render_instr_issue_ipc(
     mid_med: float | None = None,
     footer: str = "",
     vf_cyc: int | None = None,
+    stages: list[dict[str, Any]] | None = None,
 ) -> Path:
-    """PR #9 composite: opcode issue lanes (top) + rolling IPC (bottom)."""
+    """PR #9 composite: opcode issue lanes (top) + rolling IPC (bottom).
+
+    Optional ``stages``: list of {seg, t0, t1} from STAGE_TAXONOMY windows
+    (``scripts.st_report.stage_taxonomy``). Draws light axvspan bands on both panes.
+    """
     plt = _import_pyplot()
     out_png = Path(out_png)
     out_png.parent.mkdir(parents=True, exist_ok=True)
@@ -578,6 +583,38 @@ def render_instr_issue_ipc(
     )
     if mid_med is not None and mid_med == mid_med:
         ax_ipc.axhline(mid_med, color="#c45911", ls="--", lw=1.0, label=f"mid-med={mid_med:.3f}")
+
+    # Optional STAGE_TAXONOMY defining-opcode windows (may overlap).
+    if stages:
+        stage_colors = {
+            "S_load": "#cfe2f3",
+            "S_reduce": "#d9ead3",
+            "S_scale": "#fff2cc",
+            "S_eltwise": "#fce5cd",
+            "S_store": "#ead1dc",
+            "S_sync": "#efefef",
+        }
+        for stg in stages:
+            t0, t1 = stg.get("t0"), stg.get("t1")
+            if t0 is None or t1 is None:
+                continue
+            color = stage_colors.get(str(stg.get("seg") or ""), "#dddddd")
+            ax_lanes.axvspan(float(t0), float(t1), color=color, alpha=0.22, lw=0, zorder=0)
+            ax_ipc.axvspan(float(t0), float(t1), color=color, alpha=0.15, lw=0, zorder=0)
+            # label at mid of span on lanes pane
+            mid_t = 0.5 * (float(t0) + float(t1))
+            ax_lanes.text(
+                mid_t,
+                n_lanes - 0.15,
+                str(stg.get("seg") or ""),
+                ha="center",
+                va="top",
+                fontsize=7,
+                color="#555555",
+                alpha=0.9,
+                clip_on=True,
+            )
+
     ax_ipc.set_xlabel("tick inside the VF window")
     ax_ipc.set_ylabel("IPC")
     ax_ipc.grid(True, alpha=0.3)
@@ -712,6 +749,14 @@ def build_from_artifacts(
     footer = "  ".join(footer_parts)
 
     if events:
+        stage_spans = artifacts.get("stages")
+        if stage_spans is None and artifacts.get("frontend"):
+            try:
+                from scripts.st_report.stage_taxonomy import stage_windows_from_events
+
+                stage_spans = stage_windows_from_events(events, str(artifacts["frontend"]))
+            except Exception:
+                stage_spans = None
         render_instr_issue_ipc(
             events=events,
             times=times,
@@ -722,13 +767,25 @@ def build_from_artifacts(
             mid_med=mid_med if mid_med == mid_med else None,
             footer=footer,
             vf_cyc=vf_cyc or None,
+            stages=stage_spans,
         )
+        if stage_spans:
+            meta_stages = [
+                {"seg": s.get("seg"), "t0": s.get("t0"), "t1": s.get("t1"),
+                 "defining": s.get("defining"), "n_defining": s.get("n_defining")}
+                for s in stage_spans
+            ]
+        else:
+            meta_stages = None
         groups = lane_groups(events)
         meta = dict(meta)
         meta["lane_opcodes"] = groups
         meta["lane_counts"] = {g: sum(1 for _, op in events if op == g) for g in groups}
         meta["n_issues_all_named"] = float(len(events))
         meta["plot_style"] = "opcode_lanes_ipc"
+        if meta_stages is not None:
+            meta["stages"] = meta_stages
+            meta["stage_taxonomy"] = "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
     else:
         render_running_ipc(
             times=times,

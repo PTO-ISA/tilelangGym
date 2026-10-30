@@ -25,6 +25,6 @@ Per-case status:
 |------|--------|
 | **simd-pto** | Active focus — Oct-10 VF-mode twin matrix still largely red (`0/61` suite-wide); per-bench remeasure TBD |
 | **Handwritten SIMD DSL** (`*d`) | Active focus — use `kernel_dsl` when present |
-| **simt-pto SoftLib** | **Deferred** — do not drive fixes from historical 29-FAIL list |
+| **simt-pto SoftLib** | **Measured (t740u)** — Case-3 e2e G32 dual_drain **6.7702** vs VL-res SIMD **4.1711** (SoftLib÷SIMD≈1.62×); H2 ~2× SIMD falsified vs SoftLib |
 
 See also: [`docs/regression/`](../../docs/regression/) and suite README.

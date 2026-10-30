@@ -1,0 +1,190 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "stage_window_def": "first..last issue of defining opcodes (windows may overlap under dual_drain / fused VL-res)",
+  "arms": {
+    "softlib_simt_c3e2e_dual_drain_g32": {
+      "title": "sv8 / SoftLib SIMT Case-3 e2e dual_drain G32 T512 (axis=1xG) \u2014 PR9 lanes+IPC",
+      "popped_dump": "/workspace/sv8_softlib_t740u/dumps/softlib_dual_drain_g32.instr_log.dump",
+      "official_VF_cyc": 1210.0,
+      "official_el_cyc": 6.7702,
+      "official_mid_IPC_W20": 3.3,
+      "plot_VF_cyc": 1178,
+      "plot_el_cyc": 6.95416,
+      "plot_mid_med_ipc": 3.4,
+      "plot_mean_body": 2.7285405872193436,
+      "stages": [
+        {
+          "seg": "S_load",
+          "defining": [
+            "LDS"
+          ],
+          "n_defining": 256,
+          "n_all_in_window": 1876,
+          "t0": 51.0,
+          "t1": 695.0,
+          "span": 645.0,
+          "mid_med_ipc_W20": 3.25,
+          "mid_mean_ipc_W20": 3.0724,
+          "full_issue_proxy_ipc": 2.9085
+        },
+        {
+          "seg": "S_reduce",
+          "defining": [
+            "REDUX",
+            "FADD",
+            "SEL",
+            "FSETP_I"
+          ],
+          "n_defining": 1536,
+          "n_all_in_window": 2745,
+          "t0": 190.0,
+          "t1": 1037.0,
+          "span": 848.0,
+          "mid_med_ipc_W20": 3.5,
+          "mid_mean_ipc_W20": 3.4901,
+          "full_issue_proxy_ipc": 3.237
+        },
+        {
+          "seg": "S_scale",
+          "defining": [
+            "FDIV_I"
+          ],
+          "n_defining": 256,
+          "n_all_in_window": 2466,
+          "t0": 320.0,
+          "t1": 1065.0,
+          "span": 746.0,
+          "mid_med_ipc_W20": 3.5,
+          "mid_mean_ipc_W20": 3.4719,
+          "full_issue_proxy_ipc": 3.3056
+        },
+        {
+          "seg": "S_eltwise",
+          "defining": [
+            "FMUL"
+          ],
+          "n_defining": 256,
+          "n_all_in_window": 2386,
+          "t0": 369.0,
+          "t1": 1137.0,
+          "span": 769.0,
+          "mid_med_ipc_W20": 3.45,
+          "mid_mean_ipc_W20": 3.3511,
+          "full_issue_proxy_ipc": 3.1027
+        },
+        {
+          "seg": "S_store",
+          "defining": [
+            "STS"
+          ],
+          "n_defining": 256,
+          "n_all_in_window": 2225,
+          "t0": 421.0,
+          "t1": 1177.0,
+          "span": 757.0,
+          "mid_med_ipc_W20": 3.4,
+          "mid_mean_ipc_W20": 3.2209,
+          "full_issue_proxy_ipc": 2.9392
+        }
+      ],
+      "png_pr9": "/workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png",
+      "png_pr9_staged": "/workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9_staged.png",
+      "frontend": "softlib_simt",
+      "taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
+    },
+    "simd_vlres_g32": {
+      "title": "sv8 / SIMD VL-resident KEEP-X G32 Case-3 \u2014 PR9 lanes+IPC",
+      "popped_dump": "/workspace/sv8_softlib_t740u/dumps/vlres_g32.instr_log.dump",
+      "official_VF_cyc": 1964.0,
+      "official_el_cyc": 4.1711,
+      "official_mid_IPC_W20": 1.45,
+      "plot_VF_cyc": 1935,
+      "plot_el_cyc": 4.233592,
+      "plot_mid_med_ipc": 1.35,
+      "plot_mean_body": 1.3395300261096605,
+      "stages": [
+        {
+          "seg": "S_load",
+          "defining": [
+            "VLDI"
+          ],
+          "n_defining": 128,
+          "n_all_in_window": 2500,
+          "t0": 13.0,
+          "t1": 1857.0,
+          "span": 1845.0,
+          "mid_med_ipc_W20": 1.35,
+          "mid_mean_ipc_W20": 1.363,
+          "full_issue_proxy_ipc": 1.355
+        },
+        {
+          "seg": "S_reduce",
+          "defining": [
+            "VCMAX",
+            "VMAX",
+            "VAND"
+          ],
+          "n_defining": 640,
+          "n_all_in_window": 2537,
+          "t0": 16.0,
+          "t1": 1889.0,
+          "span": 1874.0,
+          "mid_med_ipc_W20": 1.35,
+          "mid_mean_ipc_W20": 1.3639,
+          "full_issue_proxy_ipc": 1.3538
+        },
+        {
+          "seg": "S_scale",
+          "defining": [
+            "VSEL",
+            "VDIV",
+            "VDUP"
+          ],
+          "n_defining": 1536,
+          "n_all_in_window": 2556,
+          "t0": 18.0,
+          "t1": 1918.0,
+          "span": 1901.0,
+          "mid_med_ipc_W20": 1.35,
+          "mid_mean_ipc_W20": 1.3627,
+          "full_issue_proxy_ipc": 1.3446
+        },
+        {
+          "seg": "S_eltwise",
+          "defining": [
+            "VMUL"
+          ],
+          "n_defining": 128,
+          "n_all_in_window": 2491,
+          "t0": 77.0,
+          "t1": 1922.0,
+          "span": 1846.0,
+          "mid_med_ipc_W20": 1.35,
+          "mid_mean_ipc_W20": 1.365,
+          "full_issue_proxy_ipc": 1.3494
+        },
+        {
+          "seg": "S_store",
+          "defining": [
+            "VSTI"
+          ],
+          "n_defining": 128,
+          "n_all_in_window": 2481,
+          "t0": 84.0,
+          "t1": 1929.0,
+          "span": 1846.0,
+          "mid_med_ipc_W20": 1.35,
+          "mid_mean_ipc_W20": 1.3651,
+          "full_issue_proxy_ipc": 1.344
+        }
+      ],
+      "png_pr9": "/workspace/sv8_g32_sb8_t772u/plots/simd_vlres_g32_running_ipc_pr9.png",
+      "png_pr9_staged": "/workspace/sv8_g32_sb8_t772u/plots/simd_vlres_g32_running_ipc_pr9_staged.png",
+      "frontend": "simd",
+      "taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
+    }
+  },
+  "taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY",
+  "taxonomy_json": "plots/stage_taxonomy.json"
+}

@@ -1,0 +1,56 @@
+# benches/sv8/report/arms.yaml
+# Seeded from published RESULT.md / ANALYSIS.md (t740u SoftLib + t737u VL-res) — no invented KPI.
+st: sv8
+aims: >-
+  SoftLib SIMT Case-3 e2e (dual_drain G32) vs SIMD VL-resident Case-3 vs SIMT Ascend default;
+  explain SoftLib≻SIMD via per-segment mix + PR9 opcode_lanes_ipc + STAGE_TAXONOMY stage mid-IPC.
+
+design: >-
+  E=8192 R64xC128 G32 Case-3 quant-bcast; SoftLib axis=1xG dual_drain T512; SIMD VL-res KEEP-X;
+  STAGE_TAXONOMY softlib_simt vs simd defining-opcode windows for §8.1/§8.2/staged PR9.
+
+spine:
+  - id: softlib_simt_c3e2e_dual_drain_g32
+    label: SoftLib SIMT dual_drain G32 T512
+    path: softlib_simt
+    role: simt_hand
+    el_cyc: 6.7702
+    VF: 1210
+    mid_ipc_W: 3.3
+    notes: Published RESULT SoftLib best; axis=1xG KEEP-X
+    artifacts:
+      popped_dump: /workspace/sv8_softlib_t740u/dumps/softlib_dual_drain_g32.instr_log.dump
+      E: 8192
+      frontend: softlib_simt
+      running_ipc_png: plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png
+  - id: simd_vlres_g32
+    label: SIMD VL-resident KEEP-X G32
+    path: dsl
+    role: simd_best
+    el_cyc: 4.1711
+    VF: 1964
+    mid_ipc_W: 1.45
+    notes: Published RESULT VL-res paint SoT (not crown vs pack_ub)
+    artifacts:
+      popped_dump: /workspace/sv8_softlib_t740u/dumps/vlres_g32.instr_log.dump
+      E: 8192
+      frontend: simd
+      running_ipc_png: plots/simd_vlres_g32_running_ipc_pr9.png
+  - id: simt_asc_live_g32
+    label: SIMT Ascend default live G32
+    path: simt_asc
+    role: simt_asc
+    el_cyc: 0.1444
+    VF: 56714
+    mid_ipc_W: 0.0
+    notes: Published RESULT simt-asc live; stock X reloads
+    artifacts:
+      popped_dump: /workspace/sv8_softlib_t740u/dumps/simt_asc_g32.instr_log.dump
+      E: 8192
+      running_ipc_png: plots/simt_asc_live_g32_running_ipc.png
+
+trail:
+  - id: simd_pack_ub_vl256
+    reason: pack_ub measured raw-beats SoftLib in dig — no crown until Lok yes; trail for sensitivity
+  - id: softlib_fused_noeps_e4096
+    reason: E4K fused appendix / win-IPC sensitivity

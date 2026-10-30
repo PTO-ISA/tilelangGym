@@ -52,7 +52,11 @@ python -m scripts.st_report plot    --st <id>
 python -m scripts.st_report gaps    --st <id>
 python -m scripts.st_report fill    --st <id> [--dry-run]
 python -m scripts.st_report check   --st <id>
+python -m scripts.st_report export-stage-taxonomy [--st <id>]   # STAGE_TAXONOMY JSON
+python -m scripts.st_report stage-mid --st <id> [--softlib-dump … --simd-dump …]
 ```
+
+§8.1 / §8.2 / staged PR9 share `scripts.st_report.stage_taxonomy.STAGE_TAXONOMY` (defining-opcode map). ISA-mix §9 stays ops/N-orthogonal.
 
 - `init` writes `benches/<st>/report/arms.yaml` (+ ANALYSIS stub if missing) from Aims/design only.
 - `harvest` / `plot` / `gaps` / `fill` / `check` own SUMMARY.tsv, plots, gap report, stub fill, and trail leak detection.

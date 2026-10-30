@@ -1,0 +1,54 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "sv8 Case-3 E=4096 SoftLib fused+noeps \u2014 running IPC (W=20)",
+  "png": "/workspace/sv8_e4k_simt_win_ipc_t582u/plots/softlib_fused_noeps_e4096_running_ipc_pr9.png",
+  "E": 4096.0,
+  "el_cyc": 8.110891089108911,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simt",
+    "vf_index": 0,
+    "vf_cyc": 505,
+    "vf_cyc_sum": 505,
+    "n_issues": 1104,
+    "n_issues_all": 1104,
+    "source": "popped_dump",
+    "popped_dump": "/workspace/sv8_e4k_simt_win_ipc_t582u/dumps/softlib_fused_noeps_e4096/instr_popped_log.dump",
+    "absolute_first": 2211,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 504.0,
+    "peak_ipc": 3.2,
+    "mean_ipc_body": 2.263298969072165,
+    "mid_med_ipc": 2.65,
+    "mid_mean_ipc": 2.631444759206799,
+    "n_windows": 485.0,
+    "n_issues": 1104.0,
+    "lane_opcodes": [
+      "S2R",
+      "LDS",
+      "FADD",
+      "REDUX",
+      "FDIV_I",
+      "STS",
+      "END",
+      "FMUL"
+    ],
+    "lane_counts": {
+      "S2R": 32,
+      "LDS": 128,
+      "FADD": 128,
+      "REDUX": 128,
+      "FDIV_I": 128,
+      "STS": 128,
+      "END": 16,
+      "FMUL": 128
+    },
+    "n_issues_all_named": 1104.0,
+    "plot_style": "opcode_lanes_ipc"
+  }
+}
