@@ -1,5 +1,9 @@
 # SV2 — one scale for the block, divide in the register
 
+## 1. Aims
+
+### 1.1 Block scale
+
 One scale for the whole block. The scale stays live across the reduce, and pass 2 divides the value already in the thread.
 
 ```text
@@ -9,20 +13,45 @@ Out = X / scale
 
 Pass 1 finds the scale. Pass 2 writes `X / scale`.
 
-## SIMD
+
+### 1.2 Column scale
+
+#### 1.2.1 From the block scale to a column scale
+
+Pass 2 divides every value by the block scale. That is one `FDIV` per element. The same result is one inverse of the scale, `inv = 1 / scale`, then a multiply.
+
+The redux is the other cost. It crosses warps. On the 1024-thread, 16-row shape the copy is 10.95 el/cyc and the full kernel is 6.93, because the redux sits between the load and the divide. The redux window itself issues at 1.95 el/cyc.
+
+A scale per column stays in the lane. There is no broadcast and no cross-warp redux. That case is SV2.A.
+
+
+#### 1.2.2 SV2.A — scale per column, multiply by the inverse
+
+One scale per column. The column never leaves its lane, so nothing is broadcast. After the max, the kernel takes the inverse once and multiplies.
+
+```text
+scale[col] = max(eps, max over rows |X[row, col]|)
+Out[row, col] = X[row, col] * (1 / scale[col])
+```
+
+
+## 2. Test-case design
+
+### 2.1 Block scale
 
 VL = 64. VF is the tick the `VF` opcode completes minus the tick it was issued. el/cyc is N/VF. IPC excludes the `VF` opcode.
 
-| N | N/64 | VF | el/cyc | IPC |
-| ---: | ---: | ---: | ---: | ---: |
-| 64 | 1 | 95 | 0.67 | 0.19 |
-| 512 | 8 | 126 | 4.06 | 0.56 |
-| 4096 | 64 | 351 | 11.67 | 1.32 |
-| 16384 | 256 | 1119 | **14.64** | 1.61 |
 
-**Note:** el/cyc rises with N, to 14.64 at 16384. At that N the shape does not matter: 32×512, 64×256, 256×64, and 512×32 share this VF.
+### 2.2 Column scale
 
-## SIMT
+VL = 64. One lane owns one column. VF is the tick the `VF` opcode completes minus the tick it was issued. el/cyc is N/VF. IPC excludes the `VF` opcode.
+
+The absolute value and the max issue in the same tick.
+
+
+## 3. Layout and schedule
+
+### 3.1 Block scale
 
 One thread owns one column. The max of that column stays in the thread. The block scale is a max across threads, and it stays in a register for the divide.
 
@@ -46,6 +75,85 @@ t127:  x[127], x[255], ...
 then one redux across these 128 threads
 ```
 
+128 threads, one column per thread. The scale stays in the register. R doubles. MRF is the live registers, unique Rn × 128 × 4 bytes, against 128KB.
+
+```text
+thread col owns column col
+m = 0
+for row in 0 .. R-1:
+    held[row] = X[row, col]
+    m = max(m, abs(held[row]))
+scale = max(eps, redux(m))
+for row in 0 .. R-1:
+    Out[row, col] = held[row] / scale
+
+Unroll keeps one local per row, and pass 2 divides that local. GM loads each value from X and stores it to Out, with no data in UB.
+
+
+### 3.2 Column scale
+
+One thread owns one column. The max of that column stays in the thread, the inverse is taken once, and pass 2 multiplies the value already in the thread. Nothing is broadcast. `REDUX` and `BAR` stay at 0.
+
+128 threads, one column per thread. The inverse stays in the register. R doubles. MRF is the live registers, unique Rn × 128 × 4 bytes, against 128KB.
+
+```text
+thread col owns column col
+m = 0
+for row in 0 .. R-1:
+    held[row] = X[row, col]
+    m = max(m, abs(held[row]))
+inv = 1 / max(m, eps)
+for row in 0 .. R-1:
+    Out[row, col] = held[row] * inv
+```
+
+Unroll keeps one local per row, and pass 2 multiplies that local by the inverse. GM loads each value from X and stores it to Out, with no data in UB.
+
+
+## 4. SIMD performance
+
+### 4.1 Block scale
+
+| N | N/64 | VF | el/cyc | IPC |
+| ---: | ---: | ---: | ---: | ---: |
+| 64 | 1 | 95 | 0.67 | 0.19 |
+| 512 | 8 | 126 | 4.06 | 0.56 |
+| 4096 | 64 | 351 | 11.67 | 1.32 |
+| 16384 | 256 | 1119 | **14.64** | 1.61 |
+
+**Note:** el/cyc rises with N, to 14.64 at 16384. At that N the shape does not matter: 32×512, 64×256, 256×64, and 512×32 share this VF.
+
+
+### 4.2 Column scale
+
+| N | Shape | VF | el/cyc | IPC |
+| ---: | :---: | ---: | ---: | ---: |
+| 64 | 1×64 | 77 | 0.83 | 0.16 |
+| 512 | 8×64 | 103 | 4.97 | 0.62 |
+| 4096 | 32×128 | 279 | **14.68** | 1.65 |
+
+**Note:** el/cyc rises with N, to 14.68 at 4096.
+
+N=16384 depends on the shape. Each column keeps its own scale. One instruction covers 64 columns, one lane each.
+
+| Shape | VF | el/cyc | IPC |
+| :---: | ---: | ---: | ---: |
+| 256×64 | 849 | **19.30** | 2.12 |
+| 64×256 | 1064 | 15.40 | 1.70 |
+| 32×512 | 1255 | 13.05 | 1.45 |
+| 16×1024 | 902 | 18.16 | 2.08 |
+
+**Note:** 256×64 is the fastest shape at this N, at 19.30 el/cyc. Sixty-four columns fit in one instruction, so the inverse is one `VDIV` for the tile. More columns repeat that walk. SIMD needs C as a multiple of 64, so 512×32 is out.
+
+For R>1 the steady counts are `VMUL = VMAX = 2×N/64`, `VST = N/64`, and one `VDIV` per 64 columns.
+
+
+## 5. SIMT performance
+
+### 5.1 Block scale
+
+#### 5.1.1 Cross and loop
+
 Bold is the lower VF at that N.
 
 | N | Cross VF | Cross REDUX | Cross BAR | Loop VF | Loop REDUX | Loop BAR |
@@ -62,20 +170,10 @@ Bold is the lower VF at that N.
 
 ![Cross against the 128-thread loop](plots/block/simt_cross_vs_loop_vf.png)
 
-### No-Reload
+**Figure.** Cross against the 128-thread loop
 
-128 threads, one column per thread. The scale stays in the register. R doubles. MRF is the live registers, unique Rn × 128 × 4 bytes, against 128KB.
 
-```text
-thread col owns column col
-m = 0
-for row in 0 .. R-1:
-    held[row] = X[row, col]
-    m = max(m, abs(held[row]))
-scale = max(eps, redux(m))
-for row in 0 .. R-1:
-    Out[row, col] = held[row] / scale
-```
+#### 5.1.2 No-Reload
 
 | Rows | Elements | Method | Reload | LDK | MRF | VF | el/cyc |
 | ---: | ---: | :---: | :---: | ---: | :---: | ---: | ---: |
@@ -86,9 +184,8 @@ for row in 0 .. R-1:
 
 **Takeaway:** The best unrolled rate is 3.31 el/cyc, at 64 rows. The GM reload falls to 0.29.
 
-Unroll keeps one local per row, and pass 2 divides that local. GM loads each value from X and stores it to Out, with no data in UB.
 
-### Thread sensitivity
+#### 5.1.3 Thread sensitivity
 
 Same N, so rows × threads stays fixed. Rows per thread is N / threads. Bold is the best el/cyc inside that N.
 
@@ -125,176 +222,12 @@ Same N, so rows × threads stays fixed. Rows per thread is N / threads. Bold is 
 
 ![VF and IPC against thread count](plots/block/simt_threads.png)
 
-### Theoretical model
-
-**In-Progress.** The estimate below is only for 512 threads (`W = 16`). A `REDUX` is 17 ticks, and the 16 warps do not overlap those issues. The barrier spread is 220 ticks, from the first warp's load to the last.
-
-```text
-pass1  = (R−1)×16 + 32    one max per row per warp, plus two S2R per warp
-reduce = 17×16 + 220
-pass2  = 32×R             one add and one divide, per row per warp
-end    = 9                END issue to complete
-VF     ≈ pass1 + reduce + pass2 + end
-```
-
-Measured VF is the 512-thread row from the sensitivity table.
-
-| N | Rows | Measured VF | Model VF |
-| ---: | ---: | ---: | ---: |
-| 4096 | 8 | 904 | 901 |
-| 8192 | 16 | 1332 | 1285 |
-| 16384 | 32 | 2513 | 2053 |
-
-**Note:** The 8-row estimate is 3 ticks short. The 16-row estimate is 47 ticks short. At 32 rows the estimate is 460 ticks short.
-
-## Head-to-head
-
-N=16384. SIMD is the N=16384 row above. SIMT is the best row in the thread sensitivity table, 1024 threads and 16 rows.
-
-| Path | Shape | VF | el/cyc | IPC |
-| :---: | :---: | ---: | ---: | ---: |
-| SIMD | N=16384 | 1119 | **14.64** | 1.61 |
-| SIMT | 1024 threads, 16 rows | 2363 | 6.93 | 1.68 |
-
-**Takeaway:** SIMD is 2.11× this SIMT row. IPC is close. The gap is the element rate.
-
-**SIMD instructions.** One vector pipe. `VLD` and `VMAX` run together. One `VCMAX`, then `VDUP`. Pass 2 is `VLD` again with `VDIV` and `VST`. The line underneath is the same IPC.
-
-![SIMD instructions, N=16384](plots/block/simd_vf_instr.png)
-
-**SIMT instructions.** All 32 warps. Each opcode has its own color. Address math is left off the rows. The IPC line still counts it. `FMNMX` (×480) is the register max, one for each row after the first. `FMNMX_I` (×96) is the immediate form, three per warp: the first row against 0, `max(acc, m)` where acc starts at −inf, and `max(scale, eps)` just before the divide.
-
-![SIMT instructions, 1024 threads, 16 rows](plots/block/simt_best_instr.png)
-
-**SIMT warps.** One row per warp, in issue order of each PC. The legend is the same opcodes. The lower panel is ticks 240–1250, where the two max opcodes, the redux, and the barrier sit together.
-
-![SIMT warps, 32 warps](plots/block/simt_best_warps.png)
-
-The trace has no warp id. Each PC is issued 32 times, and the row is that order. Warp 0 issues its first `FMNMX_I` at tick 260 and its first `FMNMX` at tick 273.
-
-## Schedule fence
-
-A schedule fence keeps the full program and forces one stage to finish before the next stage starts. The case is N=16384, 1024 threads, 16 rows, the same shape as the head-to-head.
-
-Every row is the full block scale. A cut flushes the values that stage produced, by a volatile read and write of the same bits. An empty compiler fence is deleted in this VF, so it is not in the table. `LDS`, `STS`, `FDIV`, and `FMNMX` stay 576, 576, 512, and 480. `REDUX` stays 64 and `BAR` stays 128. `LDK` and `STK` are the flush.
-
-This handwritten kernel measures 2360 ticks with no cut. The stock head-to-head kernel above is 2363. The two are not the same binary.
-
-| Cut | VF | el/cyc | IPC | Issues | LDK | STK |
-| :---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| fused | 2360 | **6.94** | 1.69 | 4000 | 0 | 0 |
-| split | 2360 | **6.94** | 1.69 | 4000 | 0 | 0 |
-| after load | 8355 | 1.96 | 0.66 | 5536 | 512 | 1024 |
-| after max | 3179 | 5.15 | 1.29 | 4096 | 32 | 64 |
-| after redux | 2368 | 6.92 | 1.73 | 4096 | 32 | 64 |
-| after divide | 7158 | 2.29 | 0.77 | 5536 | 512 | 1024 |
-| after load and divide | 14212 | 1.15 | 0.50 | 7072 | 1024 | 2048 |
-| after every stage | 15181 | 1.08 | 0.48 | 7264 | 1088 | 2176 |
-
-- fused: each load is written with its max, then the redux, then each divide with its store. No flush.
-- split: load, max, redux, divide, store, in that order. No flush. This compiles to the same binary as fused, so both rows are one measurement.
-- after load: flush the 16 loaded values.
-- after max: flush the column max.
-- after redux: flush the block scale.
-- after divide: flush the 16 quotients.
-- after load and divide: both of those flushes.
-- after every stage: flush after the load, the max, the redux, and the divide.
-
-**Takeaway:** No cut is fastest, at 6.94 el/cyc. Flushing the block scale stays at 6.92, because the redux already waits. Flushing the 16 loads or the 16 quotients falls to 1.96 and 2.29.
-
-## Operation breakdown
-
-Same shape as the fence and the head-to-head: N=16384, 1024 threads, 16 rows. Each row is its own kernel. The dashed line on the chart is the stock kernel, 6.93 el/cyc.
-
-**Whole kernel.** The first table, and the blue bar. el/cyc is 16384/VF over the entire VF window, including the loads an operator needs and the store that keeps the result.
-
-**Operator window.** The second table, and the orange bar. It runs from the first issue of that opcode to the last. el/cyc is the elements that opcode issues, divided by that span. The redux window is the 1024 values, so that bar is 1.95.
-
-`max` and `fdiv` both start from an `LDS`. The max loads all 16 rows, then reduces them inside the thread. The divide loads all 16 rows and divides each by the column's first value. `redux` loads that first row, one value per thread, and takes the max across the 1024 threads. `load` writes the 16 values back. `sts` stores the constant 1 and does not load. Pass 2 is the divide, so there is no multiply.
-
-![Operation breakdown, 1024 threads, 16 rows](plots/block/op_breakdown.png)
-
-| Kernel | VF | el/cyc | IPC | Opcodes |
-| :---: | ---: | ---: | ---: | :---: |
-| load | 1496 | 10.95 | 1.48 | 512 LDS, 512 STS |
-| max | 879 | 18.64 | 2.00 | 512 LDS, 512 max, 32 STS |
-| redux | 1026 | 15.97 | 1.03 | 64 REDUX, 128 BAR, 96 LDS |
-| fdiv | 1572 | 10.42 | 1.75 | 512 LDS, 512 FDIV, 512 STS |
-| sts | 773 | **21.20** | 1.61 | 512 STS |
-
-| Kernel | Operator | Ticks | Window el/cyc |
-| :---: | :---: | :---: | ---: |
-| load | LDS | 55–1224 | 14.02 |
-| max | max | 209–846 | **25.72** |
-| redux | REDUX | 98–624 | 1.95 |
-| fdiv | FDIV | 187–1488 | 12.59 |
-| sts | STS | 88–747 | 24.86 |
-
-**Takeaway:** The 16 divides run at 10.42 el/cyc, next to the copy at 10.95. The full kernel is 6.93 because the redux sits between them. A store with no load reaches 21.20. The column max, without the cross-thread reduce, reaches 18.64. The max is the fastest issue window, at 25.72. The redux of 1024 values issues at 1.95.
+**Figure.** VF and IPC against thread count
 
 
-# From the block scale to a column scale
+### 5.2 Column scale
 
-Pass 2 divides every value by the block scale. That is one `FDIV` per element. The same result is one inverse of the scale, `inv = 1 / scale`, then a multiply.
-
-The redux is the other cost. It crosses warps. On the 1024-thread, 16-row shape the copy is 10.95 el/cyc and the full kernel is 6.93, because the redux sits between the load and the divide. The redux window itself issues at 1.95 el/cyc.
-
-A scale per column stays in the lane. There is no broadcast and no cross-warp redux. That case is SV2.A.
-
-# SV2.A — scale per column, multiply by the inverse
-
-One scale per column. The column never leaves its lane, so nothing is broadcast. After the max, the kernel takes the inverse once and multiplies.
-
-```text
-scale[col] = max(eps, max over rows |X[row, col]|)
-Out[row, col] = X[row, col] * (1 / scale[col])
-```
-
-## SIMD
-
-VL = 64. One lane owns one column. VF is the tick the `VF` opcode completes minus the tick it was issued. el/cyc is N/VF. IPC excludes the `VF` opcode.
-
-The absolute value and the max issue in the same tick.
-
-| N | Shape | VF | el/cyc | IPC |
-| ---: | :---: | ---: | ---: | ---: |
-| 64 | 1×64 | 77 | 0.83 | 0.16 |
-| 512 | 8×64 | 103 | 4.97 | 0.62 |
-| 4096 | 32×128 | 279 | **14.68** | 1.65 |
-
-**Note:** el/cyc rises with N, to 14.68 at 4096.
-
-N=16384 depends on the shape. Each column keeps its own scale. One instruction covers 64 columns, one lane each.
-
-| Shape | VF | el/cyc | IPC |
-| :---: | ---: | ---: | ---: |
-| 256×64 | 849 | **19.30** | 2.12 |
-| 64×256 | 1064 | 15.40 | 1.70 |
-| 32×512 | 1255 | 13.05 | 1.45 |
-| 16×1024 | 902 | 18.16 | 2.08 |
-
-**Note:** 256×64 is the fastest shape at this N, at 19.30 el/cyc. Sixty-four columns fit in one instruction, so the inverse is one `VDIV` for the tile. More columns repeat that walk. SIMD needs C as a multiple of 64, so 512×32 is out.
-
-For R>1 the steady counts are `VMUL = VMAX = 2×N/64`, `VST = N/64`, and one `VDIV` per 64 columns.
-
-## SIMT
-
-One thread owns one column. The max of that column stays in the thread, the inverse is taken once, and pass 2 multiplies the value already in the thread. Nothing is broadcast. `REDUX` and `BAR` stay at 0.
-
-### No-Reload
-
-128 threads, one column per thread. The inverse stays in the register. R doubles. MRF is the live registers, unique Rn × 128 × 4 bytes, against 128KB.
-
-```text
-thread col owns column col
-m = 0
-for row in 0 .. R-1:
-    held[row] = X[row, col]
-    m = max(m, abs(held[row]))
-inv = 1 / max(m, eps)
-for row in 0 .. R-1:
-    Out[row, col] = held[row] * inv
-```
+#### 5.2.1 No-Reload
 
 | Rows | Elements | Method | Reload | LDK | MRF | VF | el/cyc |
 | ---: | ---: | :---: | :---: | ---: | :---: | ---: | ---: |
@@ -305,9 +238,8 @@ for row in 0 .. R-1:
 
 **Takeaway:** Unrolled rows stay near 3.8 el/cyc. The GM reload falls to 0.23.
 
-Unroll keeps one local per row, and pass 2 multiplies that local by the inverse. GM loads each value from X and stores it to Out, with no data in UB.
 
-### Thread sensitivity
+#### 5.2.2 Thread sensitivity
 
 Same N, so rows × threads stays fixed. Rows per thread is N / threads. `REDUX` and `BAR` are 0 on every row. LDK is 0 except 36 at 128 threads and 128 rows. Bold is the best el/cyc inside that N.
 
@@ -342,38 +274,91 @@ Same N, so rows × threads stays fixed. Rows per thread is N / threads. `REDUX` 
 
 ![VF and IPC against thread count](plots/column/simt_threads.png)
 
-### Theoretical model
+**Figure.** VF and IPC against thread count
 
-**In-Progress.** A cycle model for this per-column inverse is not settled.
 
-What is known is the issue count. `W` is threads / 32 and `R` is rows per thread. `LDS = STS = FMUL = R×W`, `FMNMX = (R−1)×W`, and there is one `FDIV` per warp. For a fixed N the row issues stay put, and the inverse prologue grows with W.
+## 6. Running IPC and figures
 
-## Head-to-head
+### 6.1 Block scale
 
-N=16384. SIMD is the fastest shape in the SIMD table, 256×64. SIMT is the best row in the thread sensitivity table, 512 threads and 32 rows.
+**SIMD instructions.** One vector pipe. `VLD` and `VMAX` run together. One `VCMAX`, then `VDUP`. Pass 2 is `VLD` again with `VDIV` and `VST`. The line underneath is the same IPC.
 
-| Path | Shape | VF | el/cyc | IPC |
-| :---: | :---: | ---: | ---: | ---: |
-| SIMD | 256×64 | 849 | **19.30** | 2.12 |
-| SIMT | 512 threads, 32 rows | 1665 | 9.84 | 1.91 |
+![SIMD instructions, N=16384](plots/block/simd_vf_instr.png)
 
-**Takeaway:** SIMD is 1.96× this SIMT row. IPC is close. The gap is the element rate.
+**Figure.** SIMD instructions, N=16384
+
+**SIMT instructions.** All 32 warps. Each opcode has its own color. Address math is left off the rows. The IPC line still counts it. `FMNMX` (×480) is the register max, one for each row after the first. `FMNMX_I` (×96) is the immediate form, three per warp: the first row against 0, `max(acc, m)` where acc starts at −inf, and `max(scale, eps)` just before the divide.
+
+![SIMT instructions, 1024 threads, 16 rows](plots/block/simt_best_instr.png)
+
+**Figure.** SIMT instructions, 1024 threads, 16 rows
+
+**SIMT warps.** One row per warp, in issue order of each PC. The legend is the same opcodes. The lower panel is ticks 240–1250, where the two max opcodes, the redux, and the barrier sit together.
+
+![SIMT warps, 32 warps](plots/block/simt_best_warps.png)
+
+**Figure.** SIMT warps, 32 warps
+
+The trace has no warp id. Each PC is issued 32 times, and the row is that order. Warp 0 issues its first `FMNMX_I` at tick 260 and its first `FMNMX` at tick 273.
+
+
+### 6.2 Column scale
 
 **SIMD instructions.** One vector pipe. Each opcode has its own color. The single `VDIV` is the orange mark. The line underneath counts every issue, including the ones left off the rows.
 
 ![SIMD instructions, 256×64](plots/column/simd_vf_instr.png)
 
+**Figure.** SIMD instructions, 256×64
+
 **SIMT instructions.** All 16 warps. Each opcode has its own color. Address math is left off the rows. The IPC line still counts it. `FMNMX` (×496) is the register max, one for each row after the first. `FMNMX_I` (×32) is the immediate form: the first row maxes against 0, and `max(m, eps)` sits just before the inverse. The 16 `FDIV_I` marks are one inverse per warp.
 
 ![SIMT instructions, 512 threads, 32 rows](plots/column/simt_best_instr.png)
+
+**Figure.** SIMT instructions, 512 threads, 32 rows
 
 **SIMT warps.** One row per warp, in issue order of each PC. The legend is the same opcodes.
 
 ![SIMT warps, 16 warps](plots/column/simt_best_warps.png)
 
+**Figure.** SIMT warps, 16 warps
+
 Each PC is issued 16 times. The multiply is underway while later warps are still loading.
 
-## Schedule fence
+
+## 7. Schedule fence
+
+### 7.1 Block scale
+
+A schedule fence keeps the full program and forces one stage to finish before the next stage starts. The case is N=16384, 1024 threads, 16 rows, the same shape as the head-to-head.
+
+Every row is the full block scale. A cut flushes the values that stage produced, by a volatile read and write of the same bits. An empty compiler fence is deleted in this VF, so it is not in the table. `LDS`, `STS`, `FDIV`, and `FMNMX` stay 576, 576, 512, and 480. `REDUX` stays 64 and `BAR` stays 128. `LDK` and `STK` are the flush.
+
+This handwritten kernel measures 2360 ticks with no cut. The stock head-to-head kernel above is 2363. The two are not the same binary.
+
+| Cut | VF | el/cyc | IPC | Issues | LDK | STK |
+| :---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| fused | 2360 | **6.94** | 1.69 | 4000 | 0 | 0 |
+| split | 2360 | **6.94** | 1.69 | 4000 | 0 | 0 |
+| after load | 8355 | 1.96 | 0.66 | 5536 | 512 | 1024 |
+| after max | 3179 | 5.15 | 1.29 | 4096 | 32 | 64 |
+| after redux | 2368 | 6.92 | 1.73 | 4096 | 32 | 64 |
+| after divide | 7158 | 2.29 | 0.77 | 5536 | 512 | 1024 |
+| after load and divide | 14212 | 1.15 | 0.50 | 7072 | 1024 | 2048 |
+| after every stage | 15181 | 1.08 | 0.48 | 7264 | 1088 | 2176 |
+
+- fused: each load is written with its max, then the redux, then each divide with its store. No flush.
+- split: load, max, redux, divide, store, in that order. No flush. This compiles to the same binary as fused, so both rows are one measurement.
+- after load: flush the 16 loaded values.
+- after max: flush the column max.
+- after redux: flush the block scale.
+- after divide: flush the 16 quotients.
+- after load and divide: both of those flushes.
+- after every stage: flush after the load, the max, the redux, and the divide.
+
+**Takeaway:** No cut is fastest, at 6.94 el/cyc. Flushing the block scale stays at 6.92, because the redux already waits. Flushing the 16 loads or the 16 quotients falls to 1.96 and 2.29.
+
+
+### 7.2 Column scale
 
 A schedule fence keeps the full program and forces one stage to finish before the next stage starts. The case is N=16384, 1024 threads, 16 rows. That is the 9.69 row in the thread table, not the 512-thread head-to-head.
 
@@ -401,7 +386,43 @@ Every row is the full column scale. A cut flushes the values that stage produced
 
 **Takeaway:** No cut is fastest, at 9.69 el/cyc. Flushing one value, the max or the inverse, stays near 8.3. Flushing the 16 loads or the 16 products falls to 2.13 and 2.56.
 
-## Operation breakdown
+
+## 8. Operation breakdown
+
+### 8.1 Block scale
+
+Same shape as the fence and the head-to-head: N=16384, 1024 threads, 16 rows. Each row is its own kernel. The dashed line on the chart is the stock kernel, 6.93 el/cyc.
+
+**Whole kernel.** The first table, and the blue bar. el/cyc is 16384/VF over the entire VF window, including the loads an operator needs and the store that keeps the result.
+
+**Operator window.** The second table, and the orange bar. It runs from the first issue of that opcode to the last. el/cyc is the elements that opcode issues, divided by that span. The redux window is the 1024 values, so that bar is 1.95.
+
+`max` and `fdiv` both start from an `LDS`. The max loads all 16 rows, then reduces them inside the thread. The divide loads all 16 rows and divides each by the column's first value. `redux` loads that first row, one value per thread, and takes the max across the 1024 threads. `load` writes the 16 values back. `sts` stores the constant 1 and does not load. Pass 2 is the divide, so there is no multiply.
+
+![Operation breakdown, 1024 threads, 16 rows](plots/block/op_breakdown.png)
+
+**Figure.** Operation breakdown, 1024 threads, 16 rows
+
+| Kernel | VF | el/cyc | IPC | Opcodes |
+| :---: | ---: | ---: | ---: | :---: |
+| load | 1496 | 10.95 | 1.48 | 512 LDS, 512 STS |
+| max | 879 | 18.64 | 2.00 | 512 LDS, 512 max, 32 STS |
+| redux | 1026 | 15.97 | 1.03 | 64 REDUX, 128 BAR, 96 LDS |
+| fdiv | 1572 | 10.42 | 1.75 | 512 LDS, 512 FDIV, 512 STS |
+| sts | 773 | **21.20** | 1.61 | 512 STS |
+
+| Kernel | Operator | Ticks | Window el/cyc |
+| :---: | :---: | :---: | ---: |
+| load | LDS | 55–1224 | 14.02 |
+| max | max | 209–846 | **25.72** |
+| redux | REDUX | 98–624 | 1.95 |
+| fdiv | FDIV | 187–1488 | 12.59 |
+| sts | STS | 88–747 | 24.86 |
+
+**Takeaway:** The 16 divides run at 10.42 el/cyc, next to the copy at 10.95. The full kernel is 6.93 because the redux sits between them. A store with no load reaches 21.20. The column max, without the cross-thread reduce, reaches 18.64. The max is the fastest issue window, at 25.72. The redux of 1024 values issues at 1.95.
+
+
+### 8.2 Column scale
 
 Same shape as the fence: N=16384, 1024 threads, 16 rows. Each row is its own kernel. The dashed line on the chart is that full kernel, 9.69 el/cyc.
 
@@ -412,6 +433,8 @@ Same shape as the fence: N=16384, 1024 threads, 16 rows. Each row is its own ker
 `max` and `fdiv` both start from an `LDS`. The max loads all 16 rows. The divide loads the first row of the column, then takes the inverse. `load` writes the 16 values back. `fmul` multiplies each row by the column's first value and stores the products. `sts` stores the constant 1 and does not load.
 
 ![Operation breakdown, 1024 threads, 16 rows](plots/column/op_breakdown.png)
+
+**Figure.** Operation breakdown, 1024 threads, 16 rows
 
 | Kernel | VF | el/cyc | IPC | Opcodes |
 | :---: | ---: | ---: | ---: | :---: |
@@ -431,9 +454,10 @@ Same shape as the fence: N=16384, 1024 threads, 16 rows. Each row is its own ker
 
 **Takeaway:** The full kernel at 9.69 sits next to the copy (10.95) and the multiply (10.56). The column max, which writes one value, reaches 18.64, and a store with no load reaches 21.20. The 26.05 on `fdiv` is a whole-kernel number for 1024 inverses. Those inverses themselves issue at 2.43. The max is the fastest issue window, at 25.72.
 
+
 ## Appendix
 
-### SV2 — recreating the cases
+### A.1 SV2 — recreating the cases
 
 Run these from `benches/sv2/block`.
 
@@ -490,7 +514,8 @@ python ops.py compile
 npusim record -s Ascend950 -o ops/<name>/npusim -g -n 0 "python ops_launch.py ops/<name>/kernel.so <name>"
 ```
 
-### SV2 — counting VF, el/cyc, and IPC
+
+### A.2 SV2 — counting VF, el/cyc, and IPC
 
 All of these come from veccore0 (`core == 0`, `sub == 1`). Each instruction is paired by PC and ID. `is_popped == 1` is the issue tick, and `0` is the completion tick.
 
@@ -525,7 +550,8 @@ each row:
 
 Totals: `FDIV = R×W`, `FMNMX = (R−1)×W`, `BAR = 4×W`, `IADD = W×(2R+1)`, `STS = W×(R+2)`, `LDS = R×W + REDUX`. `REDUX = W+1` up to 16 warps, and `REDUX = 2W` at 32 warps. Row issues fall with R. Reduce issues grow with W.
 
-### SV2.A — recreating the cases
+
+### A.3 SV2.A — recreating the cases
 
 Run these from `benches/sv2/column`.
 
@@ -573,7 +599,8 @@ python ops.py compile
 npusim record -s Ascend950 -o ops/<name>/npusim -g -n 0 "python ops_launch.py ops/<name>/kernel.so <name>"
 ```
 
-### SV2.A — counting VF, el/cyc, and IPC
+
+### A.4 SV2.A — counting VF, el/cyc, and IPC
 
 All of these come from veccore0 (`core == 0`, `sub == 1`). Each instruction is paired by PC and ID. `is_popped == 1` is the issue tick, and `0` is the completion tick.
 
@@ -587,3 +614,29 @@ All of these come from veccore0 (`core == 0`, `sub == 1`). Each instruction is p
 - **Phase bar.** From the first issue of that row's opcodes to the last. The number in the bar is that difference. The count beside it is the issue count.
 
 Address math (`IADD`) is counted in IPC and left off the instruction rows. The max is two opcodes: `FMNMX` is the register form, and `FMNMX_I` is the immediate form.
+
+
+## 9. Conclusion
+
+### 9.1 Block scale
+
+N=16384. SIMD is the N=16384 row above. SIMT is the best row in the thread sensitivity table, 1024 threads and 16 rows.
+
+| Path | Shape | VF | el/cyc | IPC |
+| :---: | :---: | ---: | ---: | ---: |
+| SIMD | N=16384 | 1119 | **14.64** | 1.61 |
+| SIMT | 1024 threads, 16 rows | 2363 | 6.93 | 1.68 |
+
+**Takeaway:** SIMD is 2.11× this SIMT row. IPC is close. The gap is the element rate.
+
+
+### 9.2 Column scale
+
+N=16384. SIMD is the fastest shape in the SIMD table, 256×64. SIMT is the best row in the thread sensitivity table, 512 threads and 32 rows.
+
+| Path | Shape | VF | el/cyc | IPC |
+| :---: | :---: | ---: | ---: | ---: |
+| SIMD | 256×64 | 849 | **19.30** | 2.12 |
+| SIMT | 512 threads, 32 rows | 1665 | 9.84 | 1.91 |
+
+**Takeaway:** SIMD is 1.96× this SIMT row. IPC is close. The gap is the element rate.
