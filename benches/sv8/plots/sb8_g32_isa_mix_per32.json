@@ -1,0 +1,88 @@
+{
+  "E": 8192,
+  "N": 32,
+  "units": 256.0,
+  "era": "case3-quant-bcast",
+  "shape": "R64xC128 G32",
+  "IPC_def": "body_calls / VF_cyc",
+  "SoftLib": {
+    "arm": "dual_drain loadall+absall T512 axis=1xG",
+    "VF_cyc": 1210,
+    "el_cyc": 6.7702,
+    "body_calls": 3168,
+    "body_IPC": 2.618181818181818,
+    "mid_IPC_W20": 3.3,
+    "ops_raw": {
+      "load": 256,
+      "store": 256,
+      "reduce": 512,
+      "scale": 256,
+      "eltwise": 256,
+      "pred_tax": 1536
+    },
+    "ops_per_N": {
+      "load": 1.0,
+      "store": 1.0,
+      "reduce": 2.0,
+      "scale": 1.0,
+      "eltwise": 1.0,
+      "pred_tax": 6.0
+    },
+    "ops_per_N_listed_total": 12.0,
+    "ops_per_N_body_calls": 12.375,
+    "pred_el_cyc_body": 6.770247933884298
+  },
+  "SIMD": {
+    "arm": "VL-resident KEEP X vcmax(g=1)\u00d7NG",
+    "VF_cyc": 1964,
+    "el_cyc": 4.1711,
+    "body_calls": 2581,
+    "body_IPC": 1.3141547861507128,
+    "mid_IPC_W20": 1.45,
+    "ops_raw": {
+      "load": 128,
+      "store": 128,
+      "reduce": 640,
+      "scale": 1536,
+      "eltwise": 128,
+      "pred_tax": 0
+    },
+    "ops_per_N": {
+      "load": 0.5,
+      "store": 0.5,
+      "reduce": 2.5,
+      "scale": 6.0,
+      "eltwise": 0.5,
+      "pred_tax": 0.0
+    },
+    "ops_per_N_listed_total": 10.0,
+    "ops_per_N_body_calls": 10.08203125,
+    "pred_el_cyc_body": 4.171079429735234
+  },
+  "pred_ratio_body": 1.6231404958677684,
+  "meas_ratio": 1.6231209992567908,
+  "opcode_detail": {
+    "SoftLib": {
+      "SIMT_LDS": 256,
+      "SIMT_STS": 256,
+      "SIMT_REDUX": 256,
+      "SIMT_FADD": 256,
+      "SIMT_FDIV_I": 256,
+      "SIMT_FMUL": 256,
+      "SIMT_IADD_I": 512,
+      "SIMT_FSETP_I": 512,
+      "SIMT_SEL": 512
+    },
+    "SIMD": {
+      "RV_VLDI": 128,
+      "RV_VSTI": 128,
+      "RV_VCMAX": 256,
+      "RV_VMAX": 256,
+      "RV_VAND": 128,
+      "RV_VSEL": 1024,
+      "RV_VDIV": 256,
+      "RV_VDUP": 256,
+      "RV_VMUL": 128
+    }
+  }
+}

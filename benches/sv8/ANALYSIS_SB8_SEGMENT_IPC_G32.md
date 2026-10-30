@@ -19,6 +19,11 @@ Official mid IPC from t740u absolute-cycle mid; PR9 mid-med = median over mid 15
 
 Sources: SoftLib tag `wc_c3e2e_back_loadall_absall_dual_drain_g32_t512_e8192` · VL-res `sv8d_vlres_r64_c128_g32_t32_vl_resident` · dumps `dumps/softlib_dual_drain_g32.instr_log.dump` · `dumps/vlres_g32.instr_log.dump`.
 
+
+## ISA-mix pointer (t546u)
+
+Full **ISA mix SIMT vs SIMD (per 32×4B → el/cyc)** bridge lives in primary [`ANALYSIS.md`](ANALYSIS.md) §9 (JSON [`plots/sb8_g32_isa_mix_per32.json`](plots/sb8_g32_isa_mix_per32.json)). This segment note keeps per-segment mix+IPC + PR9; do not duplicate the ops/N table here.
+
 ## PR9 running-IPC + instr-mix overlay (both arms)
 
 | arm | PR9 overlay (lanes+IPC) | staged (+ stage bounds) | one-line |

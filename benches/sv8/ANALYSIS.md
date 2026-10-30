@@ -202,7 +202,45 @@ JSON: [`plots/sb8_g32_stage_mid_ipc.json`](plots/sb8_g32_stage_mid_ipc.json).
 
 ---
 
-## 9. Conclusion (3 arms)
+## 9. ISA mix SIMT vs SIMD (per 32×4B → el/cyc) (A2 · Lok t546u)
+
+**Unit:** N=**32** elements × 4B · E=**8192** · units = E/N = **256**.  
+**IPC def:** body IPC = `body_calls / VF_cyc` (prefer over mid for the bridge).  
+**Bridge:** `pred_el/cyc ≈ IPC × (N / ops_per_N)` with `ops_per_N = call_count / units` (family sum or body_calls/units).
+
+Measured harvest JSON: [`plots/sb8_g32_isa_mix_per32.json`](plots/sb8_g32_isa_mix_per32.json).
+
+### 9.1 Family ops / 32×4B (both arms)
+
+| family | SoftLib ops/N (opcodes) | SIMD ops/N (opcodes) |
+|--------|-------------------------|----------------------|
+| load | **1.0** (LDS×256) | **0.5** (VLDI×128) |
+| store | **1.0** (STS×256) | **0.5** (VSTI×128) |
+| reduce | **2.0** (REDUX+FADD) | **2.5** (VCMAX+VMAX+VAND) |
+| scale | **1.0** (FDIV_I) | **6.0** (VSEL×1024 + VDIV+VDUP) |
+| eltwise | **1.0** (FMUL) | **0.5** (VMUL×128) |
+| pred_tax | **6.0** (IADD+FSETP+SEL ×512 each) | **0.0** |
+| **listed total** | **12.0** | **10.0** |
+| body_calls/units | **12.375** (3168/256) | **10.082** (2581/256) |
+
+Raw `call_count` (opcode_detail in JSON): SoftLib LDS/STS/REDUX/FADD/FDIV/FMUL=256; IADD/FSETP/SEL=512. SIMD VLDI/VSTI/VMUL/VAND=128; VCMAX/VMAX/VDIV/VDUP=256; VSEL=1024.
+
+### 9.2 Bridge: pred el/cyc ↔ measured
+
+| arm | VF_cyc | body_calls | body IPC | mid W20 | ops/N (body) | pred el/cyc | measured el/cyc |
+|-----|-------:|-----------:|---------:|--------:|-------------:|------------:|----------------:|
+| SoftLib dual_drain | 1210 | 3168 | **2.618** | 3.30 | 12.375 | **6.7702** | **6.7702** |
+| SIMD VL-res | 1964 | 2581 | **1.314** | 1.45 | 10.082 | **4.1711** | **4.1711** |
+
+`pred_ratio_body` ≈ **1.623** ≈ SoftLib÷SIMD measured **1.623**.
+
+### 9.3 Attribution (one line)
+
+ops/N is **close** (12.4 vs 10.1) → SoftLib win ≈ **IPC density** (~2.62 vs ~1.31, ~2×), not fewer ISA ops; SIMD **VSEL scale paint** inflates scale ops/N (6.0 vs SoftLib 1.0 FDIV_I). SoftLib pays pred_tax (6.0) but still wins on issue density (PR9 mid ~3.4 vs ~1.35).
+
+---
+
+## 10. Conclusion (3 arms)
 
 | # | Arm | el/cyc | VF | one-liner |
 |---|-----|-------:|---:|-----------|
@@ -229,12 +267,13 @@ JSON: [`plots/sb8_g32_stage_mid_ipc.json`](plots/sb8_g32_stage_mid_ipc.json).
 - [x] PR9 both arms `*_running_ipc_pr9.png` + `opcode_lanes_ipc` + non-empty lanes
 - [x] Per-segment mix+IPC table both arms
 - [x] Stage mid-IPC table both arms (SIMD fused → mid≈body explicit)
+- [x] ISA-mix per 32×4B → el/cyc bridge both arms (`plots/sb8_g32_isa_mix_per32.json`)
 - [x] Ready PRC-ids cited
 - [ ] `EXPLORATION_TRACE.md` — **MISSING** (see §10)
 
 ---
 
-## 10. Trace pointer
+## 11. Trace pointer
 
 **MISSING:** `/workspace/sv8_g32_sb8_t772u/EXPLORATION_TRACE.md`  
 **Why:** this turn is an **ANALYSIS redo** from REGRESSION-2 measured tip (t740u/t772u/t773u/t756u/t779u) under tip st-report spine — **not** a fresh `tilelanggym-st-explore-from-prompt` / clean-regress loop. MB DONE for SoftLib schedule ladder was already claimed upstream; this deliverable does not re-open explore.  
@@ -242,7 +281,7 @@ JSON: [`plots/sb8_g32_stage_mid_ipc.json`](plots/sb8_g32_stage_mid_ipc.json).
 
 ---
 
-## 11. G16 footnote (superseded SoftLib target)
+## 12. G16 footnote (superseded SoftLib target)
 
 | arm | el/cyc | VF | note |
 |-----|-------:|---:|------|
@@ -253,12 +292,13 @@ JSON: [`plots/sb8_g32_stage_mid_ipc.json`](plots/sb8_g32_stage_mid_ipc.json).
 
 ---
 
-## 12. MISSING / next
+## 13. MISSING / next
 
 | item | status | next-cmd |
 |------|--------|----------|
 | PR9 both arms | **PRESENT** | — |
 | Per-segment + stage mid-IPC | **PRESENT** | — |
+| ISA-mix per-32 → el/cyc | **PRESENT** | — |
 | EXPLORATION_TRACE.md | **MISSING** | optional explore TRACE if peanut PR asks |
 | Peanut / tilelangGym PR #11 refresh | **not pushed** | needs Lok yes — see `STATUS.md` |
 | SIMD vdiv_x PR9 overlay | optional (not SIMD_best) | `make_pr9… --dump simd_recip_vmul_t779u/vdiv_x_g32.instr_log.dump` |
