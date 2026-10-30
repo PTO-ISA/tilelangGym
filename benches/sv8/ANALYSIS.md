@@ -1,15 +1,17 @@
 # ANALYSIS — SV8 Case-3 (voice SB8) G32 SoftLib ≻ SIMD
 
 **ST id:** `sv8` · voice **SB8** = SV8 Case-3 e2e (no literal `SB8` tree)  
-**When:** Asia/Hong_Kong 2026-10-30 · tip redo + **pack-scale PR9 update (t566u)**  
-**Authorized:** Lok t542u → t548u/t565u/t566u → PTO-ISA  
-**Pack / tip:** `/workspace/sv8_g32_sb8_t772u/` + dig `/workspace/sv8_simd_pack_scale_t548u/` · plots under `benches/sv8/plots/`  
+**When:** Asia/Hong_Kong 2026-10-30 · tip redo + pack-scale PR9 (t566u) + **E=4k SoftLib turning-point (t584u)**  
+**Authorized:** Lok t542u → t548u/t565u/t566u → t573u–t582u → **t584u** → PTO-ISA  
+**Pack / tip:** `/workspace/sv8_g32_sb8_t772u/` + dig `/workspace/sv8_simd_pack_scale_t548u/` + `/workspace/sv8_e4k_simt_win_ipc_t582u/` · plots under `benches/sv8/plots/`  
 **Prior segment harvest (supporting, not replaced):** `ANALYSIS_SB8_SEGMENT_IPC_G32.md` · `sb8_g32_segment_harvest.json`  
 **Arch KS lock (Lok t540u):** npu_skills **`3101`** = default truth; SoftLib **`3510`** = microbench verify layer  
 **Harness cite:** `/workspace/research_topup_2026-10-25/HARNESS_REBUILD.md` + `SKILLS_REBUILD.md` — onesu §6.0* **N/A** for pure VF Case-3 (keep VF el/cyc + IPC primary)  
 **PRC index:** `REGRESSION_salvage_2026-09-17/perf-review-knowledge/perf-review-checklist.md` (gate OK 2026-10-30)
 
 **Pack-scale update (Lok t566u / dig t548u):** SIMD `pack_ub_vl256` **8.4541** / `keeplive_vbrc_vl256` **7.6920** measured on peanut; PR9 `*_running_ipc_pr9.png` added for both. SoftLib dual_drain **6.7702** leave alone. **No SoT crown / no merge** without Lok yes. Dig: `/workspace/sv8_simd_pack_scale_t548u/` · cite **PRC-SCH-003** · **PRC-IPC-001**.
+
+**E=4k SoftLib turning-point (Lok t584u / digs t573u–t582u):** fused+noeps SoftLib vs SIMD keep/pack tile matrix 1k–8k; SoftLib wins **only E=4096** (7.543 vs keep 7.420 / pack 7.038). PR9 mid-IPC SoftLib **2.65** vs keep **0.95** / pack **1.05** — cause = **dual_drain IPC density**, not 1/32-vs-1/64 wastage; pack SMEM_BAR valley noted but SoftLib also beats keep. See **§6.1**. Dig: `/workspace/sv8_e4k_simt_win_ipc_t582u/` · cite **PRC-IPC-001** · **PRC-SCH-003** · **PRC-MEM-002**. **No SoftLib DONE crown / no merge.**
 
 **Do not touch:** REGRESSION-2 SV5–7 Nx1 outer (`glm53_sv567_*` / t788u_r2).
 
@@ -163,6 +165,45 @@ SEMANTICS_GATE: PASS — axis=1xG (not Nx1/wr merge); G32 gold; era=case3-quant-
 
 PR9: [`plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png`](plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png) · lanes LDS→REDUX/SEL/FSETP→FDIV→FMUL→STS.
 
+## 6.1 Tile sensitivity — SoftLib fused+noeps vs SIMD keep/pack (Lok t573u–t582u / t584u)
+
+**Era:** `case3-quant-bcast-noeps1` · SoftLib = **fused Abs** on `SIMT_REDUX` (`asc_reduce_max(__fabsf)`) + bare `1/wm` (no eps clamp) · SIMD = `pack_ub_vl256` / `keeplive_vbrc_vl256` also no-eps · G=32 · VL=256 · SoftLib T=512 dual_drain `axis=1xG`.  
+**Not** a SoftLib DONE crown — appendix turning-point only. Digs: `sv8_no_eps1_t576u` · `sv8_fused_noeps_show_t579u` · `sv8_e4k_simt_win_ipc_t582u`. Cite **PRC-IPC-001** · **PRC-SCH-003** · **PRC-MEM-002**.
+
+### Tile matrix (el/cyc · higher better)
+
+| E | SoftLib fused+noeps | SIMD keeplive | SIMD pack_ub | Winner |
+|---:|--------------------:|--------------:|-------------:|--------|
+| 1024 | 1.333 (VF 768) | **5.224** (VF 196) | 3.631 (VF 282) | **SIMD keeplive** |
+| 2048 | 5.020 (VF 408) | **6.440** (VF 318) | 5.347 (VF 383) | **SIMD keeplive** |
+| **4096** | **7.543** (VF 543) | 7.420 (VF 552) | 7.038 (VF 582) | **SoftLib fused+noeps** |
+| 8192 | 8.167 (VF 1003) | 8.031 (VF 1020) | **8.472** (VF 967) | **SIMD pack** |
+
+Source: t579u SHOW · `pad_N_SCALE_lt_VL` on pack for E&lt;8192 (N_SCALE=E/32); at E=8192 N_SCALE==VL=256.
+
+### E=4096 PR9 mid-IPC (FORCED · `opcode_lanes_ipc`)
+
+| arm | mid-med IPC | peak | PR9 plot |
+|-----|------------:|-----:|----------|
+| SoftLib fused+noeps | **2.65** | 3.2 | [`plots/softlib_fused_noeps_e4096_running_ipc_pr9.png`](plots/softlib_fused_noeps_e4096_running_ipc_pr9.png) |
+| SIMD keeplive | **0.95** | 1.2 | [`plots/simd_keeplive_vbrc_vl256_e4096_running_ipc_pr9.png`](plots/simd_keeplive_vbrc_vl256_e4096_running_ipc_pr9.png) |
+| SIMD pack_ub | **1.05** | 2.05 | [`plots/simd_pack_ub_vl256_e4096_running_ipc_pr9.png`](plots/simd_pack_ub_vl256_e4096_running_ipc_pr9.png) |
+
+![SoftLib fused+noeps E4096 PR9](plots/softlib_fused_noeps_e4096_running_ipc_pr9.png)
+
+![SIMD keeplive E4096 PR9](plots/simd_keeplive_vbrc_vl256_e4096_running_ipc_pr9.png)
+
+![SIMD pack E4096 PR9](plots/simd_pack_ub_vl256_e4096_running_ipc_pr9.png)
+
+### Cause at E=4k (confirm / refute)
+
+1. **Cause = dual_drain IPC density**, not “1/32 SIMT vs 1/64 SIMD wastage.” SoftLib mid-med **2.65** ≈2.5× SIMD (~0.95–1.05) with LDS∥REDUX∥FDIV∥STS∥FMUL overlap. SoftLib fills 16×32 warps cleanly (rounds=8); pack pad at 4k is **N_SCALE/VL=128/256=50%**, not 1/64.
+2. **Pack SMEM_BAR valley noted** — pack PR9 shows SMEM_BAR + IPC dip ~0.2 mid-window (compact store→reload) + 50% pad. That hurts pack vs SoftLib.
+3. **SoftLib also beats keeplive** (7.54 > 7.42) with **no SMEM_BAR** on keep — so SoftLib’s 4k win is **not** “only because SIMD-best must pack-in-UB and pay membar.”
+4. At E=8k pack wins el/cyc despite still-low mid-IPC (~1.1) via **ops/N collapse** (VDIV×4, N_SCALE==VL) — **PRC-SCH-003**. SoftLib fused+noeps **not DONE**; E=8192 with-eps dual_drain **6.7702** remains SoftLib SoT cell in §6 (different eps/era than this noeps tile matrix).
+
+**Status:** CONTINUE · **no SoftLib DONE crown** · **no merge** without Lok yes.
+
 ---
 
 ## 7. Running IPC + PR9 overlay figures (FORCED · both arms · A2)
@@ -173,8 +214,11 @@ PR9: [`plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png`](plots/softl
 | SIMD VL-res (paint) | [`plots/simd_vlres_g32_running_ipc_pr9.png`](plots/simd_vlres_g32_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCMAX,VDIV,VDUP,VSTI,VCI,VCMP_GE,VCMP_LT,VSEL | [`…_pr9_staged.png`](plots/simd_vlres_g32_running_ipc_pr9_staged.png) |
 | **SIMD pack_ub_vl256** | [`plots/simd_pack_ub_vl256_running_ipc_pr9.png`](plots/simd_pack_ub_vl256_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCGMAX,VDIV,VSTI,VDINTLV,VCI,VSHRI,VADDS,SMEM_BAR,VSLDB,VSELR | — (t566u) |
 | **SIMD keeplive_vbrc_vl256** | [`plots/simd_keeplive_vbrc_vl256_running_ipc_pr9.png`](plots/simd_keeplive_vbrc_vl256_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCGMAX,VDIV,VSTI,VCI,VSHRI,VDINTLV,VSELR,VINTLV | — (t566u) |
+| SoftLib fused+noeps E4096 | [`plots/softlib_fused_noeps_e4096_running_ipc_pr9.png`](plots/softlib_fused_noeps_e4096_running_ipc_pr9.png) | **opcode_lanes_ipc** | S2R,LDS,FADD,REDUX,FDIV_I,STS,END,FMUL | — (t582u/t584u) mid-med **2.65** |
+| SIMD keeplive E4096 | [`plots/simd_keeplive_vbrc_vl256_e4096_running_ipc_pr9.png`](plots/simd_keeplive_vbrc_vl256_e4096_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCGMAX,VDIV,VSTI,VCI,VSHRI,VDINTLV,VSELR,VINTLV | — (t582u/t584u) mid-med **0.95** |
+| SIMD pack_ub E4096 | [`plots/simd_pack_ub_vl256_e4096_running_ipc_pr9.png`](plots/simd_pack_ub_vl256_e4096_running_ipc_pr9.png) | **opcode_lanes_ipc** | VLDI,VMUL,VAND,VMAX,VCGMAX,VDIV,VSTI,SMEM_BAR,VDINTLV,VCI,VSHRI,VADDS,VSLDB,VSELR | — (t582u/t584u) mid-med **1.05** · SMEM_BAR valley |
 
-**PRC-IPC-001:** SoftLib + paint + pack + keeplive PR9 PRESENT — reject any IPC-only `*_running_ipc.png` without `_pr9`. Dump source pack/keeplive: peanut `OPPROF_*/dump/core0.veccore0.instr_log.dump` (OUT-root 0-byte copies are stale).
+**PRC-IPC-001:** SoftLib + paint + pack + keeplive PR9 PRESENT (+ **E4096 fused+noeps / keep / pack** t584u) — reject any IPC-only `*_running_ipc.png` without `_pr9`. Dump source pack/keeplive: peanut `OPPROF_*/dump/core0.veccore0.instr_log.dump` (OUT-root 0-byte copies are stale).
 
 Remake (if needed):
 ```bash
@@ -307,6 +351,8 @@ Balanced opcode totals: pack body_calls **1089** / keeplive **983** (instr_exe; 
 | 2 | **SIMT Ascend default** | **~0.14** | — | stock; not SoftLib best |
 | 3 | **SIMT SoftLib hand-craft** (dual_drain T512 `axis=1xG`) | **6.7702** | 1210 | SoftLib SoT **leave alone**; vs paint SoftLib÷SIMD **1.623×** (**A2**) |
 
+**E=4k appendix (§6.1):** fused+noeps SoftLib mid-IPC **2.65** beats keep/pack (~1.0) at E=4096 only — dual_drain density, not 1/32-vs-1/64; **CONTINUE / no SoftLib DONE**.
+
 **Headline:** SoftLib ≻ **paint** SIMD on G32 Case-3 (PR9 mid ~3.4 vs ~1.35 + S_scale) citing **PRC-IPC-001 · PRC-SCH-001 · PRC-SCH-002 · PRC-MEM-001**. Pack/keeplive Legal schedule raw-beats SoftLib on el/cyc via ops/N collapse (**PRC-SCH-003**) with lower mid-IPC — **CONTINUE / no SoT crown / no merge** without Lok yes.
 
 ### COMPARE harvest
@@ -366,7 +412,9 @@ Balanced opcode totals: pack body_calls **1089** / keeplive **983** (instr_exe; 
 | Pack vs SoftLib full per-segment harvest | optional | harvest pack instr_exe windows vs SoftLib CSV |
 | Dig EXPLORATION_TRACE.md | **PRESENT** | `/workspace/sv8_simd_pack_scale_t548u/EXPLORATION_TRACE.md` |
 | Tip EXPLORATION_TRACE.md | optional | leave |
-| tilelangGym PR #11 pack+PR9 refresh | this push | tip SHA in commit — **no merge** |
+| tilelangGym PR #11 pack+PR9 + E4k §6.1 | this push (t584u) | tip SHA in commit — **no merge** |
+| E=4k SoftLib turning-point §6.1 + 3× E4096 PR9 | **PRESENT** (t584u) | dig `/workspace/sv8_e4k_simt_win_ipc_t582u/` — **no SoftLib DONE** |
+| SoftLib fused+noeps DONE across tiles | **not done** | SoftLib wins only E=4096 in noeps matrix; E=8192 pack still ahead — CONTINUE |
 | SoftLib SMEM half-warp / shared-mem LDS-STS (t556u wait → t568u scaffold / t567u) | **MISSING** PASS KPI (peanut dig empty reports; box has ASC+TAGS) | `bash /mnt/fluxdata/happybot/sv8_softlib_smem_t568u/scripts/run_t568u.sh` → read `reports/RESULT_t568u.tsv` vs dual_drain **6.7702** |
 | SIMD vdiv_x PR9 overlay | optional | `make_pr9… --dump simd_recip_vmul_t779u/vdiv_x_g32.instr_log.dump` |
 | spill_dist (t756) | unfinished · not needed | leave |

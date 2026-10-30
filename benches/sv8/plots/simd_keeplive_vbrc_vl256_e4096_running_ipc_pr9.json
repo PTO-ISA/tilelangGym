@@ -1,0 +1,62 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "sv8 Case-3 E=4096 SIMD keeplive_vbrc \u2014 running IPC (W=20)",
+  "png": "/workspace/sv8_e4k_simt_win_ipc_t582u/plots/simd_keeplive_vbrc_vl256_e4096_running_ipc_pr9.png",
+  "E": 4096.0,
+  "el_cyc": 7.937984496124031,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 516,
+    "vf_cyc_sum": 516,
+    "n_issues": 450,
+    "n_issues_all": 450,
+    "source": "popped_dump",
+    "popped_dump": "/workspace/sv8_e4k_simt_win_ipc_t582u/dumps/simd_keeplive_vbrc_vl256_e4096/instr_popped_log.dump",
+    "absolute_first": 5494,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 515.0,
+    "peak_ipc": 1.2,
+    "mean_ipc_body": 0.8703629032258065,
+    "mid_med_ipc": 0.95,
+    "mid_mean_ipc": 0.9388888888888889,
+    "n_windows": 496.0,
+    "n_issues": 450.0,
+    "lane_opcodes": [
+      "VLDI",
+      "VMUL",
+      "VAND",
+      "VMAX",
+      "VCGMAX",
+      "VDIV",
+      "VSTI",
+      "VCI",
+      "VSHRI",
+      "VDINTLV",
+      "VSELR",
+      "VINTLV"
+    ],
+    "lane_counts": {
+      "VLDI": 32,
+      "VMUL": 64,
+      "VAND": 64,
+      "VMAX": 48,
+      "VCGMAX": 16,
+      "VDIV": 16,
+      "VSTI": 80,
+      "VCI": 1,
+      "VSHRI": 1,
+      "VDINTLV": 32,
+      "VSELR": 16,
+      "VINTLV": 64
+    },
+    "n_issues_all_named": 450.0,
+    "plot_style": "opcode_lanes_ipc"
+  }
+}
