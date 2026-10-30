@@ -367,7 +367,7 @@ Balanced opcode totals: pack body_calls **1089** / keeplive **983** (instr_exe; 
 | Dig EXPLORATION_TRACE.md | **PRESENT** | `/workspace/sv8_simd_pack_scale_t548u/EXPLORATION_TRACE.md` |
 | Tip EXPLORATION_TRACE.md | optional | leave |
 | tilelangGym PR #11 pack+PR9 refresh | this push | tip SHA in commit — **no merge** |
-| SoftLib SMEM half-warp / shared-mem LDS-STS (t556u/t567u) | **MISSING** PASS KPI | next-cmd in executor final report |
+| SoftLib SMEM half-warp / shared-mem LDS-STS (t556u wait → t568u scaffold / t567u) | **MISSING** PASS KPI (peanut dig empty reports; box has ASC+TAGS) | `bash /mnt/fluxdata/happybot/sv8_softlib_smem_t568u/scripts/run_t568u.sh` → read `reports/RESULT_t568u.tsv` vs dual_drain **6.7702** |
 | SIMD vdiv_x PR9 overlay | optional | `make_pr9… --dump simd_recip_vmul_t779u/vdiv_x_g32.instr_log.dump` |
 | spill_dist (t756) | unfinished · not needed | leave |
 | SoT crown pack over SoftLib | **not done** | needs Lok yes |
