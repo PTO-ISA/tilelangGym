@@ -1,0 +1,8 @@
+Provenance (real opsim; do not invent)
+host: pto-b10 (edgexpert-59a6)
+pack: /tmp/sv5_vmi_vand_20261022
+arm:  vmi_vl128_g8_storeA_vand
+OPPROF: OPPROF_20261022162055_HPQMIFRLNAGGNWWE
+shape: E=8192 R=64 VL=128 G=8 fp32 VAND clear-sign
+measured: VF_cyc=245 el/cyc=33.4367 (SUMMARY seed 33.44)
+date: 2026-10-22 Asia/Hong_Kong

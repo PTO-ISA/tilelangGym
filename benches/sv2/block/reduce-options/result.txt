@@ -1,0 +1,7 @@
+N=128 fp32 absmax, one scale out. Ascend950PR camodel, VF_SIMT ticks.
+Both PASS, scale=2.98562, maxabs=0.
+
+cross-warp  threads=128  warps=4  VF=631  REDUX=5  BAR_THREAD_BLOCK=16
+one-warp    threads=32   warps=1  VF=543  REDUX=1  BAR_THREAD_BLOCK=0
+
+one-warp is 88 ticks shorter.
