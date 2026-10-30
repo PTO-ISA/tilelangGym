@@ -1,8 +1,8 @@
-# ANALYSIS — SB8 per-segment instr mix + IPC (G32 SoftLib ≻ SIMD)
+# ANALYSIS — SV8 Case-3 per-segment instr mix + IPC (G32 SoftLib ≻ SIMD)
 
-**Identity:** Voice **SB8** = **SV8 Case-3 e2e** harness case. No literal `SB8`/`sb8` tree.
+**ST id:** `sv8` · Case-3 e2e harness case.
 **Primary pair (SoftLib SIMT ≻ SIMD):** **G32** R64×C128 E=8192 · `era=case3-quant-bcast` · `reduce_axis=inner` · SoftLib `axis=1xG`.
-**NOT the G16 pair:** G16 simt-asc 0.286 vs size-1 SIMD 0.064 was the wrong target for this voice ask — see footnote + `/workspace/sv8_g16_e2e_t726u/ANALYSIS_SB8_SEGMENT_IPC.md` (superseded for SoftLib headline).
+**NOT the G16 pair:** G16 simt-asc 0.286 vs size-1 SIMD 0.064 was the wrong SoftLib headline target — see footnote + `/workspace/sv8_g16_e2e_t726u/ANALYSIS_SB8_SEGMENT_IPC.md` (superseded for SoftLib headline).
 **When:** Asia/Hong_Kong 2026-10-29 · method: `tilelanggym-st-report` § Per-segment + **PR9 opcode-lanes+IPC** (t773u).
 **Packs:** SoftLib `/mnt/fluxdata/happybot/sv8_softlib_simt_c3_g32_t740u/` · VL-res under `/mnt/fluxdata/happybot/sv8_g16_e2e_t726u/out/dsl_vlres/` · box `/workspace/sv8_g32_sb8_t772u/` (+ dumps `/workspace/sv8_g32_sb8_t772u/dumps/`, plots `/workspace/sv8_g32_sb8_t772u/plots/`).
 **IPC definition:** segment proxy = `calls / sum_cycles(instr_exe.csv cycles column)` (pipe-overlapped; **cyc% need not sum to 100%**). Body IPC ≈ `body_calls / VF_cyc`. Running IPC W=20: **PR9 overlay PRESENT** (`plot_style=opcode_lanes_ipc`).
@@ -86,7 +86,7 @@ JSON: [`plots/sb8_g32_stage_mid_ipc.json`](plots/sb8_g32_stage_mid_ipc.json).
 
 ## Overall conclusion
 
-On SB8 (=SV8 Case-3 **G32**), SoftLib SIMT dual_drain T512 reaches **6.7702 el/cyc** (VF **1210**) vs SIMD VL-resident **4.1711** (VF **1964**) — SoftLib÷SIMD ≈ **1.62×**. PR9 overlays make the difference visual: SoftLib lanes show staged LDS→REDUX/SEL→FDIV→FMUL→STS with body mid-med **~3.4**; SIMD lanes show a **fused** VL-res loop (VSEL/VCMAX/VMAX/…) with flat mid-med **~1.35**. SoftLib wins on **schedule density + cheap S_scale**, not on “avoid second VLDS” (SIMD already VLDS=0).
+On SV8 Case-3 **G32**, SoftLib SIMT dual_drain T512 reaches **6.7702 el/cyc** (VF **1210**) vs SIMD VL-resident **4.1711** (VF **1964**) — SoftLib÷SIMD ≈ **1.62×**. PR9 overlays make the difference visual: SoftLib lanes show staged LDS→REDUX/SEL→FDIV→FMUL→STS with body mid-med **~3.4**; SIMD lanes show a **fused** VL-res loop (VSEL/VCMAX/VMAX/…) with flat mid-med **~1.35**. SoftLib wins on **schedule density + cheap S_scale**, not on “avoid second VLDS” (SIMD already VLDS=0).
 
 ## How to remake the plots (harness)
 
@@ -116,6 +116,6 @@ PYTHONPATH=/workspace/tilelangGym-pr8-tip \
 - PR9 opcode-lanes+IPC for both G32 arms: **PRESENT** (this turn).
 - Older IPC-only PNGs remain for archive; do not cite as PR9.
 - Body4 firstLDS→lastSTS window: SoftLib LDS→STS span is the PR9 body; not further split beyond defining-opcode stages.
-- Literal SB8 tree: none found.
+- No separate Case-3 tree id beyond `sv8`.
 
 JSON harvest: `/workspace/sv8_g32_sb8_t772u/sb8_g32_segment_harvest.json` · stage mid `/workspace/sv8_g32_sb8_t772u/plots/sb8_g32_stage_mid_ipc.json`.

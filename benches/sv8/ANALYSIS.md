@@ -1,6 +1,6 @@
-# ANALYSIS — SV8 Case-3 (voice SB8) G32 SoftLib ≻ SIMD
+# ANALYSIS — SV8 Case-3 G32 SoftLib ≻ SIMD
 
-**ST id:** `sv8` · voice **SB8** = SV8 Case-3 e2e (no literal `SB8` tree)  
+**ST id:** `sv8`  
 **When:** Asia/Hong_Kong 2026-10-30 · tip redo + pack-scale PR9 (t566u) + **E=4k SoftLib turning-point (t584u)**  
 **Authorized:** Lok t542u → t548u/t565u/t566u → t573u–t582u → **t584u** → PTO-ISA  
 **Pack / tip:** `/workspace/sv8_g32_sb8_t772u/` + dig `/workspace/sv8_simd_pack_scale_t548u/` + `/workspace/sv8_e4k_simt_win_ipc_t582u/` · plots under `benches/sv8/plots/`  
