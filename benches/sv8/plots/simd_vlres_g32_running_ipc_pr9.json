@@ -1,0 +1,62 @@
+{
+  "W": 20,
+  "window": "(t-W,t]",
+  "title": "sv8 / SIMD VL-resident KEEP-X G32 Case-3 \u2014 running IPC (W=20)",
+  "png": "/workspace/sv8_g32_sb8_t772u/plots/simd_vlres_g32_running_ipc_pr9.png",
+  "E": 8192.0,
+  "el_cyc": 4.2335917312661495,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 1935,
+    "vf_cyc_sum": 1935,
+    "n_issues": 2580,
+    "n_issues_all": 2580,
+    "source": "popped_dump",
+    "popped_dump": "/workspace/sv8_softlib_t740u/dumps/vlres_g32.instr_log.dump",
+    "absolute_first": 3148,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 1934.0,
+    "peak_ipc": 1.65,
+    "mean_ipc_body": 1.3395300261096605,
+    "mid_med_ipc": 1.35,
+    "mid_mean_ipc": 1.362269031781227,
+    "n_windows": 1915.0,
+    "n_issues": 2580.0,
+    "lane_opcodes": [
+      "VLDI",
+      "VMUL",
+      "VAND",
+      "VMAX",
+      "VCMAX",
+      "VDIV",
+      "VDUP",
+      "VSTI",
+      "VCI",
+      "VCMP_GE",
+      "VCMP_LT",
+      "VSEL"
+    ],
+    "lane_counts": {
+      "VLDI": 128,
+      "VMUL": 128,
+      "VAND": 128,
+      "VMAX": 256,
+      "VCMAX": 256,
+      "VDIV": 256,
+      "VDUP": 256,
+      "VSTI": 128,
+      "VCI": 1,
+      "VCMP_GE": 2,
+      "VCMP_LT": 2,
+      "VSEL": 1024
+    },
+    "n_issues_all_named": 2580.0,
+    "plot_style": "opcode_lanes_ipc"
+  }
+}

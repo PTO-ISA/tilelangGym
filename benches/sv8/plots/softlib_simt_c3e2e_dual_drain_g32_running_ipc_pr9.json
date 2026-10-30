@@ -1,0 +1,60 @@
+{
+  "W": 20,
+  "window": "(t-W,t]",
+  "title": "sv8 / SoftLib SIMT Case-3 e2e dual_drain G32 T512 (axis=1xG) \u2014 running IPC (W=20)",
+  "png": "/workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png",
+  "E": 8192.0,
+  "el_cyc": 6.954159592529711,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simt",
+    "vf_index": 0,
+    "vf_cyc": 1178,
+    "vf_cyc_sum": 1178,
+    "n_issues": 3168,
+    "n_issues_all": 3168,
+    "source": "popped_dump",
+    "popped_dump": "/workspace/sv8_softlib_t740u/dumps/softlib_dual_drain_g32.instr_log.dump",
+    "absolute_first": 2741,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 1177.0,
+    "peak_ipc": 4.35,
+    "mean_ipc_body": 2.7285405872193436,
+    "mid_med_ipc": 3.4,
+    "mid_mean_ipc": 3.2655339805825245,
+    "n_windows": 1158.0,
+    "n_issues": 3168.0,
+    "lane_opcodes": [
+      "S2R",
+      "LDS",
+      "FADD",
+      "SEL",
+      "FSETP_I",
+      "REDUX",
+      "FDIV_I",
+      "STS",
+      "END",
+      "MOVI",
+      "FMUL"
+    ],
+    "lane_counts": {
+      "S2R": 32,
+      "LDS": 256,
+      "FADD": 256,
+      "SEL": 512,
+      "FSETP_I": 512,
+      "REDUX": 256,
+      "FDIV_I": 256,
+      "STS": 256,
+      "END": 16,
+      "MOVI": 16,
+      "FMUL": 256
+    },
+    "n_issues_all_named": 3168.0,
+    "plot_style": "opcode_lanes_ipc"
+  }
+}
