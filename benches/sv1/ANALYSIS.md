@@ -41,7 +41,7 @@ Example (host with cann_92b2 + venv-ptoas-vmi-0.1.3; paths as in config.toml):
 python benches/sv1/sv1_stream_eltwise.py
 # handwritten SIMD twin
 python benches/sv1/sv1dt_tiled_add.py
-`
+```
 
 ## 2. Test-case design
 
