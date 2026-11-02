@@ -78,3 +78,7 @@ python -m scripts.st_report stage-mid --st <id> [--softlib-dump … --simd-dump 
 - Merging without explicit author yes
 - Stuffing trail cases into main ANALYSIS without author confirm
 - Putting host paths, ST dig el/cyc values, or agent prefs into this skill file
+
+## ANALYSIS regen — MERGE not replace (FORCED · t816u / t817u)
+
+When regenerating ANALYSIS for PR9 / SEMANTICS_GATE / ISA-mix: **MERGE** into the full existing spine. **FORBIDDEN** thin-shell replace that drops SoftLib LDS.32 SoT, LDS.32 vs LDS.64 matrix, SoftLib schedule narrative, or prior COMPARE tables without explicit user drop order. SoftLib SIMT schedule details: companion softlib-simt skill / Motif ladder.

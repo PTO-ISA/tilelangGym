@@ -150,3 +150,7 @@ python -m scripts.st_report selftest-ipc   # synthetic fixture only
 - **PR9 overlay gate FORCED (t774u):** SoftLib≻SIMD / both-arm compare / mix-split → PNG **must** be dual-pane `opcode_lanes_ipc` (`*_running_ipc_pr9.png`); IPC-only = FAIL. Recipe: `REGRESSION_salvage_2026-09-17/scripts/make_pr9_running_ipc_overlay.py` or tip `rolling_ipc.build_from_artifacts`. Self-check: `python -m scripts.st_report selftest-ipc`.
 - `gaps` / `fill` / `check` own gap report, stub fill, and trail leak detection.
 - See `benches/<st>/report/arms.yaml` for that ST's 3–4 arm spine (no dig numbers in this doc).
+
+## ANALYSIS regen — MERGE not replace (FORCED · t816u / t817u)
+
+When regenerating ANALYSIS for PR9 / SEMANTICS_GATE / ISA-mix: **MERGE** into the full existing spine. **FORBIDDEN** thin-shell replace that drops SoftLib LDS.32 SoT, LDS.32 vs LDS.64 matrix, SoftLib schedule narrative, or prior COMPARE tables without explicit user drop order. SoftLib SIMT schedule details: companion softlib-simt skill / Motif ladder.
