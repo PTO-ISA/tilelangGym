@@ -1,0 +1,98 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "SV1 / handwritten SIMD twin E8192 TILE8192 VL64 \u2014 running IPC (W=20) \u00b7 all ISA groups \u2014 staged",
+  "png": "/mnt/fluxdata/happybot/tilelangGym-sv1-t815u/benches/sv1/plots/sv1_simdt_running_ipc_pr9_staged.png",
+  "E": 8192.0,
+  "el_cyc": 33.99170124481328,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 241,
+    "vf_cyc_sum": 241,
+    "n_issues": 519,
+    "n_issues_all": 519,
+    "source": "popped_dump",
+    "popped_dump": "/mnt/fluxdata/happybot/glm53_sv1567_sf_mr2_t813u/out/sv1/opsim_sv1dt_e8192_tile8192_vl64/OPPROF_20261031164454_RFRDZRUKZRTQKIED/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 7235,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 240.0,
+    "peak_ipc": 3.4,
+    "mean_ipc_body": 2.183257918552036,
+    "mid_med_ipc": 2.2,
+    "mid_mean_ipc": 2.21301775147929,
+    "n_windows": 221.0,
+    "n_issues": 519.0,
+    "lane_opcodes": [
+      "VLD",
+      "VADD",
+      "VST"
+    ],
+    "lane_counts": {
+      "VLD": 256,
+      "VADD": 128,
+      "VST": 128
+    },
+    "n_issues_all_named": 519.0,
+    "lane_coverage": 0.9865125240847784,
+    "lane_mode": "all_isa_groups",
+    "plot_style": "opcode_lanes_ipc",
+    "stages": [
+      {
+        "seg": "S_load",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VLDI"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_reduce",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VCMAX",
+          "VMAX",
+          "VAND"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_scale",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VSEL",
+          "VDIV",
+          "VDUP"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_eltwise",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VMUL"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_store",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VSTI"
+        ],
+        "n_defining": 0
+      }
+    ],
+    "stage_taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
+  }
+}

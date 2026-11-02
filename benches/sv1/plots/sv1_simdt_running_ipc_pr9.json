@@ -1,8 +1,8 @@
 {
   "W": 20.0,
   "window": "(t-W,t]",
-  "title": "SV1 / handwritten SIMD twin E8192 TILE8192 VL64 - running IPC (W=20)",
-  "png": "/mnt/fluxdata/happybot/glm53_sv1567_sf_mr2_t813u/t815u_sv1_regen/plots/sv1_simdt_running_ipc_pr9.png",
+  "title": "SV1 / handwritten SIMD twin E8192 TILE8192 VL64 \u2014 running IPC (W=20) \u00b7 all ISA groups",
+  "png": "/mnt/fluxdata/happybot/tilelangGym-sv1-t815u/benches/sv1/plots/sv1_simdt_running_ipc_pr9.png",
   "E": 8192.0,
   "el_cyc": 33.99170124481328,
   "plot_style": "opcode_lanes_ipc",
@@ -39,12 +39,67 @@
       "VST": 128
     },
     "n_issues_all_named": 519.0,
-    "plot_style": "opcode_lanes_ipc"
+    "lane_coverage": 0.9865125240847784,
+    "lane_mode": "all_isa_groups",
+    "plot_style": "opcode_lanes_ipc",
+    "stages": [
+      {
+        "seg": "S_load",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VLDI"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_reduce",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VCMAX",
+          "VMAX",
+          "VAND"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_scale",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VSEL",
+          "VDIV",
+          "VDUP"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_eltwise",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VMUL"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_store",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VSTI"
+        ],
+        "n_defining": 0
+      }
+    ],
+    "stage_taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
   },
   "lane_opcodes": [
     "VLD",
     "VADD",
     "VST"
   ],
-  "mid_med_ipc": 2.2
+  "lane_coverage": 0.9865125240847784,
+  "lane_mode": "all_isa_groups"
 }

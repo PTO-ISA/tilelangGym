@@ -148,6 +148,8 @@ python -m scripts.st_report selftest-ipc   # synthetic fixture only
 - `harvest` owns SUMMARY.tsv (schema stable; mid-IPC filled only from measured sources, never invented).
 - `plot` / `plot-ipc` generate running-IPC PNGs from per-arm `artifacts` logs (`popped_dump`, `trace`+`instr_csv`, or `rolling_csv`) with window **W** (default 20, `(t−W,t]`); or wire `running_ipc_png` / known tip maps. Missing inputs → skip + `gaps.md` (no fake PNGs).
 - **PR9 overlay gate FORCED (t774u):** SoftLib≻SIMD / both-arm compare / mix-split → PNG **must** be dual-pane `opcode_lanes_ipc` (`*_running_ipc_pr9.png`); IPC-only = FAIL. Recipe: `REGRESSION_salvage_2026-09-17/scripts/make_pr9_running_ipc_overlay.py` or tip `rolling_ipc.build_from_artifacts`. Self-check: `python -m scripts.st_report selftest-ipc`.
+
+- **PR9 ISA-group lanes FORCED (t822u):** `lane_mode=all_isa_groups`; `lane_coverage≥0.95`; every named body ISA group in the dump (incl. IADD/LEA/SHFI when present) must appear as a top-pane lane — reject compute-only thin lanes.
 - `gaps` / `fill` / `check` own gap report, stub fill, and trail leak detection.
 - See `benches/<st>/report/arms.yaml` for that ST's 3–4 arm spine (no dig numbers in this doc).
 

@@ -1,6 +1,6 @@
 # SV1 ANALYSIS — short-live stream eltwise (Simt + SIMD + SoftLib rooftop) — restore t816u
 
-**Date:** stock / SoftLib SoT **2026-10-20** HKT (main tip narrative) · clean-regress KPI **2026-10-31** HKT (pack glm53_sv1567_sf_mr2_t813u) · **PR9 overlays + SEMANTICS_GATE regen t815u / SoftLib restore t816u:** **2026-11-02** HKT · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (config.toml pins) · KPI **el/cyc = E / named VF_cyc**.
+**Date:** stock / SoftLib SoT **2026-10-20** HKT (main tip narrative) · clean-regress KPI **2026-10-31** HKT (pack glm53_sv1567_sf_mr2_t813u) · **PR9 overlays + SEMANTICS_GATE regen t815u / SoftLib restore t816u / all-ISA-group lanes t822u:** **2026-11-02** HKT · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (config.toml pins) · KPI **el/cyc = E / named VF_cyc**.
 
 **SEMANTICS_GATE: PASS — S1 in-kernel / suite numeric check (C=A+B fp32); S2 SimtVF VF_SIMT body vs SIMD twin vf_real_execute_time body (era=fp32-stream-eltwise, reduce_axis=na-eltwise); S3 stream mix only (LDS/FADD/STS vs VLD/VADD/VST — no reduce family); S4 named counters (VF_SIMT / vf_real_execute_time) — A1 / A10.**
 
@@ -12,7 +12,7 @@
 
 **Restore note (t816u):** PR #15 tip 6cfd9b9 (t815u) **overwrote** main ANALYSIS.md (314 lines) with a thin 154-line template that marked SoftLib as N/A and dropped §§ SoftLib LDS.32/LDS.64 + stock CBT/shared narrative. This revision **restores** the main SoftLib / stock SoT spine and **keeps** the t815u PR9 *_running_ipc_pr9.png dual-pane overlays + ISA-mix / call_count / SEMANTICS_GATE that t815u asked for. Legacy IPC-only PNGs remain on disk (not deleted); they are historical narrative refs, **not** PR9 compliance.
 
-**Format note (PR9 / PRC-IPC-001):** fresh-era both-arm compare uses only plots/sv1_*_running_ipc_pr9.png + JSON sidecars (plot_style=opcode_lanes_ipc, non-empty lane_opcodes). IPC-only *_ex_ipc_30cyc.png / *_rolling20_ipc.png stay embedded where the 2026-10-20 narrative cites them.
+**Format note (PR9 / PRC-IPC-001 · t822u):** both-arm compare uses `plots/sv1_*_running_ipc_pr9.png` + JSON (`plot_style=opcode_lanes_ipc`, `lane_mode=all_isa_groups`, `lane_coverage≥0.95`, **each body ISA group** as a lane — incl. address-math IADD_I/LEA/SHFI on SimtVF). Optional `*_pr9_staged.png` adds STAGE_TAXONOMY bands. IPC-only `*_ex_ipc_30cyc.png` / `*_rolling20_ipc.png` stay as historical narrative refs, **not** PR9 compliance.
 
 **Primary stock Simt (era 1):** E=8192 **TILE8192** float2 (max_vector_bits=64, LDS.64-class; TILE=E) · §5.1 multi-TILE **E=16K** @ T512 (peak TILE4K **3.771**) · §5.2 TILE8192 T-dim peak T1024 **3.846** · SoftLib §7. **Aligned e700041f float4 E16K:** appendix-only.
 
@@ -376,8 +376,8 @@ TILE ladder: per-tile MTE fill/drain amortizes 2K→16K (20.1→31.6); per-tile 
 
 | arm | png | plot_style | mid-med IPC | lane_opcodes |
 |-----|-----|------------|------------:|--------------|
-| SimtVF E8192 T512 frag | `plots/sv1_simtvf_running_ipc_pr9.png` | **opcode_lanes_ipc** | 0.50 | S2R, LDS, FADD, STS, END, MOV, LOP3 |
-| SIMD twin E8192 TILE8192 VL64 | `plots/sv1_simdt_running_ipc_pr9.png` | **opcode_lanes_ipc** | 2.20 | VLD, VADD, VST |
+| SimtVF E8192 T512 frag | `plots/sv1_simtvf_running_ipc_pr9.png` (+ `_staged`) | **opcode_lanes_ipc** / `all_isa_groups` cov=1.0 | 0.50 | S2R, IADD_I, LEA, SHFI, LDS, FADD, STS, END, LOP3, MOV |
+| SIMD twin E8192 TILE8192 VL64 | `plots/sv1_simdt_running_ipc_pr9.png` (+ `_staged`) | **opcode_lanes_ipc** / `all_isa_groups` cov=0.9865 | 2.20 | VLD, VADD, VST |
 
 JSON sidecars co-located: `plots/sv1_*_running_ipc_pr9.json` (top-level + `meta.lane_opcodes` non-empty). **REJECT** IPC-only `*_running_ipc.png` / `*_ex_ipc_30cyc.png` / `*_rolling20_ipc.png` as PR9 compliance.
 
