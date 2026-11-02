@@ -1,0 +1,56 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "SV1 / SoftLib A+B LDS.b32 T512 loadall_barrier E8192 \u2014 running IPC (W=20) \u00b7 all ISA groups",
+  "png": "benches/sv1/plots/sv1_softlib_lds32_ab_t512_loadall_barrier_running_ipc_pr9.png",
+  "E": 8192.0,
+  "el_cyc": 7.6992481203007515,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simt",
+    "vf_index": 0,
+    "vf_cyc": 1064,
+    "vf_cyc_sum": 1064,
+    "n_issues": 1872,
+    "n_issues_all": 1872,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/st_out_cce_lds32_ab_20261019/opsim_ab_b32_loadall_barrier_e8192_t512/OPPROF_20261019162717_PYCDEDBJDNAKDSMF/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 3868,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 1063.0,
+    "peak_ipc": 2.6,
+    "mean_ipc_body": 1.78654214559387,
+    "mid_med_ipc": 1.9,
+    "mid_mean_ipc": 1.8614247311827958,
+    "n_windows": 1044.0,
+    "n_issues": 1872.0,
+    "lane_opcodes": [
+      "S2R",
+      "IADD_I",
+      "LEA",
+      "SHFI",
+      "LDS",
+      "FADD",
+      "STS",
+      "END"
+    ],
+    "lane_counts": {
+      "S2R": 32,
+      "IADD_I": 768,
+      "LEA": 16,
+      "SHFI": 16,
+      "LDS": 512,
+      "FADD": 256,
+      "STS": 256,
+      "END": 16
+    },
+    "n_issues_all_named": 1872.0,
+    "lane_coverage": 1.0,
+    "lane_mode": "all_isa_groups",
+    "plot_style": "opcode_lanes_ipc"
+  }
+}

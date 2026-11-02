@@ -2,7 +2,7 @@
   "W": 20.0,
   "window": "(t-W,t]",
   "title": "SV1 / handwritten SIMD twin E8192 TILE8192 VL64 \u2014 running IPC (W=20) \u00b7 all ISA groups \u2014 staged",
-  "png": "/mnt/fluxdata/happybot/tilelangGym-sv1-t815u/benches/sv1/plots/sv1_simdt_running_ipc_pr9_staged.png",
+  "png": "benches/sv1/plots/sv1_simdt_running_ipc_pr9_staged.png",
   "E": 8192.0,
   "el_cyc": 33.99170124481328,
   "plot_style": "opcode_lanes_ipc",
