@@ -32,11 +32,11 @@ Kernel: one TileLang file `sv1_stream_eltwise.py` (`vf_region` + `ST_VF_MODE`); 
 
 ## How to run / reproduce
 
-In-repo kernels under enches/sv1/ (stock / twin scripts checked in on this tree). Opsim / CANN pins: config.toml. SoftLib handwritten CCE reports cited in §7 live under the dig paths listed in §9 Artifacts (provenance; not the in-repo run path). Clean-regress t813u dumps: pack /mnt/fluxdata/happybot/glm53_sv1567_sf_mr2_t813u/out/sv1/ — PR9 overlays re-emitted with scripts/make_pr9_running_ipc_overlay.py (see REGEN_NOTES_t815u.md / REGEN_NOTES_t816u.md / REGEN_NOTES_t822u.md / REGEN_NOTES_t823u.md). SoftLib best PR9 dump: `/tmp/st_out_cce_lds32_ab_20261019/.../core0.veccore0.instr_popped_log.dump`.
+In-repo kernels under benches/sv1/ (stock / twin scripts checked in on this tree). Opsim / CANN pins: config.toml. SoftLib handwritten CCE reports cited in §7 live under the dig paths listed in §9 Artifacts (provenance; not the in-repo run path). Clean-regress t813u dumps: pack /mnt/fluxdata/happybot/glm53_sv1567_sf_mr2_t813u/out/sv1/ — PR9 overlays re-emitted with scripts/make_pr9_running_ipc_overlay.py (see REGEN_NOTES_t815u.md / REGEN_NOTES_t816u.md / REGEN_NOTES_t822u.md / REGEN_NOTES_t823u.md). SoftLib best PR9 dump: `/tmp/st_out_cce_lds32_ab_20261019/.../core0.veccore0.instr_popped_log.dump`.
 
 Example (host with cann_92b2 + venv-ptoas-vmi-0.1.3; paths as in config.toml):
 
-`ash
+```bash
 # stock SimtVF stream eltwise (era-1 / era-2 tip may differ — cite which)
 python benches/sv1/sv1_stream_eltwise.py
 # handwritten SIMD twin
