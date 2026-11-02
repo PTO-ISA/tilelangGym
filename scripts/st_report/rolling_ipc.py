@@ -597,7 +597,7 @@ def render_instr_issue_ipc(
     ax_lanes.text(
         0.0,
         1.02,
-        "One lane per opcode kind. Address math counted in IPC, left off lanes. Marks = issues.",
+        "One lane per body ISA group (all_isa_groups). Noise-only hide. Marks = issues.",
         transform=ax_lanes.transAxes,
         fontsize=8,
         color="#666666",

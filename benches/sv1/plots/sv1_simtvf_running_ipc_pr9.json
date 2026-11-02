@@ -2,7 +2,7 @@
   "W": 20.0,
   "window": "(t-W,t]",
   "title": "SV1 / SimtVF E8192 T512 frag \u2014 running IPC (W=20) \u00b7 all ISA groups",
-  "png": "/mnt/fluxdata/happybot/tilelangGym-sv1-t815u/benches/sv1/plots/sv1_simtvf_running_ipc_pr9.png",
+  "png": "benches/sv1/plots/sv1_simtvf_running_ipc_pr9.png",
   "E": 8192.0,
   "el_cyc": 2.443914081145585,
   "plot_style": "opcode_lanes_ipc",
@@ -55,71 +55,6 @@
     "n_issues_all_named": 2128.0,
     "lane_coverage": 1.0,
     "lane_mode": "all_isa_groups",
-    "plot_style": "opcode_lanes_ipc",
-    "stages": [
-      {
-        "seg": "S_load",
-        "t0": 30.0,
-        "t1": 3186.0,
-        "defining": [
-          "LDS"
-        ],
-        "n_defining": 128
-      },
-      {
-        "seg": "S_reduce",
-        "t0": 155.0,
-        "t1": 3330.0,
-        "defining": [
-          "REDUX",
-          "FADD",
-          "SEL",
-          "FSETP_I"
-        ],
-        "n_defining": 256
-      },
-      {
-        "seg": "S_scale",
-        "t0": null,
-        "t1": null,
-        "defining": [
-          "FDIV_I"
-        ],
-        "n_defining": 0
-      },
-      {
-        "seg": "S_eltwise",
-        "t0": null,
-        "t1": null,
-        "defining": [
-          "FMUL"
-        ],
-        "n_defining": 0
-      },
-      {
-        "seg": "S_store",
-        "t0": 190.0,
-        "t1": 3347.0,
-        "defining": [
-          "STS"
-        ],
-        "n_defining": 64
-      }
-    ],
-    "stage_taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
-  },
-  "lane_opcodes": [
-    "S2R",
-    "IADD_I",
-    "LEA",
-    "SHFI",
-    "LDS",
-    "FADD",
-    "STS",
-    "END",
-    "LOP3",
-    "MOV"
-  ],
-  "lane_coverage": 1.0,
-  "lane_mode": "all_isa_groups"
+    "plot_style": "opcode_lanes_ipc"
+  }
 }
