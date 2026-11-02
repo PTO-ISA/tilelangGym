@@ -125,8 +125,8 @@ run_one "sv7d_r64_c128_g128_t32_multiwarp_ub" "benches/sv7/sv7d_reduce_large.py"
 run_one "sv7d_r64_c128_g128_t32_reload" "benches/sv7/sv7d_reduce_large.py" 64 128 128 32 reload
 
 # ---- SV8d NEW ----
-run_one "sv8d_r64_c128_g16_t32_live" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 live
-run_one "sv8d_r64_c128_g16_t32_spill_dist" "benches/sv8/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
+run_one "sv8d_r64_c128_g16_t32_live" "benches/sv8/softlib/sv8d_case3_bcast.py" 64 128 16 32 live
+run_one "sv8d_r64_c128_g16_t32_spill_dist" "benches/sv8/softlib/sv8d_case3_bcast.py" 64 128 16 32 spill_dist
 
 # ---- SV9d ----
 run_one "sv9d_e256_k8_t32_keep" "benches/sv9/sv9d_topk_e2e.py" 256 8 32 keep

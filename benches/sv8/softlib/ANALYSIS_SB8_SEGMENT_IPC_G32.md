@@ -31,7 +31,7 @@ Full **ISA mix SIMT vs SIMD (per 32×4B → el/cyc)** bridge lives in primary [`
 | SoftLib | [`plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png`](plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png) | [`…_pr9_staged.png`](plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9_staged.png) | Top: LDS→REDUX/SEL/FSETP→FDIV→FMUL→STS issue marks; bottom: IPC ramp to ~4.3, mid-med **3.40** |
 | SIMD VL-res | [`plots/simd_vlres_g32_running_ipc_pr9.png`](plots/simd_vlres_g32_running_ipc_pr9.png) | [`…_pr9_staged.png`](plots/simd_vlres_g32_running_ipc_pr9_staged.png) | Top: VLDI/VAND/VMAX/VCMAX/VDIV/VDUP/VSEL/VMUL/VSTI fused across VF; bottom: flat ~1.1–1.5, mid-med **1.35** |
 
-**Note:** Older `benches/sv8/plots/*_running_ipc.png` without `_pr9` are **IPC-only** (t740u) — **not** PR9 overlay. Prefer `*_pr9*.png` for stage / mix claims.
+**Note:** Older `benches/sv8/softlib/plots/*_running_ipc.png` without `_pr9` are **IPC-only** (t740u) — **not** PR9 overlay. Prefer `*_pr9*.png` for stage / mix claims.
 
 Absolute box paths (parent attach):
 - `file:///workspace/sv8_g32_sb8_t772u/plots/softlib_simt_c3e2e_dual_drain_g32_running_ipc_pr9.png`

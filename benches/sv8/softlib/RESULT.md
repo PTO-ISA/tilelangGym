@@ -58,7 +58,7 @@ Layout inheritance: absmax SoftLib G32 dual_drain **8.22** (MATCHES_1xG). G16 wr
 | VL-res G32 | 1.45 | 1.334 | 2568 | 1925 |
 | SIMT-ASC live G32 | 0.0 | 0.0685 | 3885 | 56682 |
 
-Figures: `benches/sv8/plots/softlib_simt_c3e2e_dual_drain_g32_{running_ipc,instr_mix}.png`, `simd_vlres_g32_*`, `simt_asc_live_g32_*`, `sv8_g32_elcyc_summary.png`.
+Figures: `benches/sv8/softlib/plots/softlib_simt_c3e2e_dual_drain_g32_{running_ipc,instr_mix}.png`, `simd_vlres_g32_*`, `simt_asc_live_g32_*`, `sv8_g32_elcyc_summary.png`.
 
 ---
 
