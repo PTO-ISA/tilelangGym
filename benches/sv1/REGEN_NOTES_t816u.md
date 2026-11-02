@@ -37,4 +37,8 @@
 
 ## Skill gap (t817u)
 
-Prior DONE bars forced PR9/ISA-mix/SEMANTICS_GATE but did NOT forbid dropping SoftLib LDS.32 SoT / LDS32-LDS64 matrix / full SoT narrative on ANALYSIS regen. Patched into tilelanggym-st-report + softlib-simt-schedule + st-explore-from-prompt (+ L6 note) as MERGE-not-replace regen rule.
+Prior DONE bars forced PR9/ISA-mix/SEMANTICS_GATE but did NOT forbid dropping SoftLib LDS.32 SoT / LDS32-LDS64 matrix / full SoT narrative on ANALYSIS regen. Patched into tilelanggym-st-report + softlib-simt-schedule + st-explore-from-prompt (+ L6 note) as no-loss / proven-supersede / TODO regen rule.
+
+## Policy correction (t821u)
+
+Lok clarified: ANALYSIS **full rewrite is allowed**. The enforce bar is **no information loss** and **no silent contradiction** vs previously shipped ANALYSIS; replacements need **proven supersede** (dump/RESULT/harvest) else **TODO / open clarification**. Not merely merge-not-replace.

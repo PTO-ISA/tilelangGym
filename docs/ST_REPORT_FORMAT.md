@@ -151,6 +151,6 @@ python -m scripts.st_report selftest-ipc   # synthetic fixture only
 - `gaps` / `fill` / `check` own gap report, stub fill, and trail leak detection.
 - See `benches/<st>/report/arms.yaml` for that ST's 3–4 arm spine (no dig numbers in this doc).
 
-## ANALYSIS regen — MERGE not replace (FORCED · t816u / t817u)
+## ANALYSIS rewrite — no-loss / no-silent-contradict (FORCED · t816u / t821u)
 
-When regenerating ANALYSIS for PR9 / SEMANTICS_GATE / ISA-mix: **MERGE** into the full existing spine. **FORBIDDEN** thin-shell replace that drops SoftLib LDS.32 SoT, LDS.32 vs LDS.64 matrix, SoftLib schedule narrative, or prior COMPARE tables without explicit user drop order. SoftLib SIMT schedule details: companion softlib-simt skill / Motif ladder.
+Full rewrite of ANALYSIS is allowed. Before DONE / tip / PR ready: **no information loss** and **no silent contradiction** vs the previously shipped ANALYSIS (SoftLib LDS.32 SoT, LDS.32 vs LDS.64 matrix, schedule tags, COMPARE, running-IPC narrative, KPI, How-to-run, etc.). If new data replaces old, **prove supersede** with dump/RESULT/harvest citation; otherwise add **TODO / open clarification**. Do not silently drop or silently overwrite.

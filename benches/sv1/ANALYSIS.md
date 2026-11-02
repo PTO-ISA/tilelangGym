@@ -8,6 +8,8 @@
 1. **Stock Simt float2 + SoftLib LDS.32/64 rooftop SoT (2026-10-20)** — §§3–8 below. SoftLib handcraft best **A+B LDS.b32 T512 loadall_barrier = 7.42** el/cyc (~69.5% of serial **10.667**); SoftLib TILE8K MI-on fence1 **7.603**; stock TILE8192 peak T1024 **3.846**.
 2. **Clean-regress t813u SimtVF + handwritten SIMD twin (2026-10-31)** — §§10–13. SimtVF best **2.4059** (sv1_e8192_t512_frag); SIMD twin hub **29.362** (sv1dt_e8192_tile8192_vl64). Different tip/lowering (float4/LDS.128-class vs float2/LDS.64-class) — reference only across eras.
 
+**Policy (t821u):** full ANALYSIS rewrite OK; this restore re-ships SoftLib LDS.32/LDS64 + stock SoT so there is **no information loss** vs main tip, and keeps t815u PR9/SEMANTICS_GATE/ISA-mix with era labels (no silent contradict).
+
 **Restore note (t816u):** PR #15 tip 6cfd9b9 (t815u) **overwrote** main ANALYSIS.md (314 lines) with a thin 154-line template that marked SoftLib as N/A and dropped §§ SoftLib LDS.32/LDS.64 + stock CBT/shared narrative. This revision **restores** the main SoftLib / stock SoT spine and **keeps** the t815u PR9 *_running_ipc_pr9.png dual-pane overlays + ISA-mix / call_count / SEMANTICS_GATE that t815u asked for. Legacy IPC-only PNGs remain on disk (not deleted); they are historical narrative refs, **not** PR9 compliance.
 
 **Format note (PR9 / PRC-IPC-001):** fresh-era both-arm compare uses only plots/sv1_*_running_ipc_pr9.png + JSON sidecars (plot_style=opcode_lanes_ipc, non-empty lane_opcodes). IPC-only *_ex_ipc_30cyc.png / *_rolling20_ipc.png stay embedded where the 2026-10-20 narrative cites them.
