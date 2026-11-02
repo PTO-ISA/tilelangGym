@@ -1,0 +1,60 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "SV1 / SimtVF E8192 T512 frag \u2014 running IPC (W=20) \u00b7 all ISA groups",
+  "png": "benches/sv1/plots/sv1_simtvf_running_ipc_pr9.png",
+  "E": 8192.0,
+  "el_cyc": 2.443914081145585,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simt",
+    "vf_index": 0,
+    "vf_cyc": 3352,
+    "vf_cyc_sum": 3352,
+    "n_issues": 2128,
+    "n_issues_all": 2128,
+    "source": "popped_dump",
+    "popped_dump": "/mnt/fluxdata/happybot/glm53_sv1567_sf_mr2_t813u/out/sv1/opsim_sv1_e8192_t512_frag/OPPROF_20261031170813_FSOMFUCLTGZSTNFZ/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 3801,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 3351.0,
+    "peak_ipc": 2.85,
+    "mean_ipc_body": 0.6371698679471789,
+    "mid_med_ipc": 0.5,
+    "mid_mean_ipc": 0.6180306905370845,
+    "n_windows": 3332.0,
+    "n_issues": 2128.0,
+    "lane_opcodes": [
+      "S2R",
+      "IADD_I",
+      "LEA",
+      "SHFI",
+      "LDS",
+      "FADD",
+      "STS",
+      "END",
+      "LOP3",
+      "MOV"
+    ],
+    "lane_counts": {
+      "S2R": 32,
+      "IADD_I": 192,
+      "LEA": 16,
+      "SHFI": 656,
+      "LDS": 128,
+      "FADD": 256,
+      "STS": 64,
+      "END": 16,
+      "LOP3": 512,
+      "MOV": 256
+    },
+    "n_issues_all_named": 2128.0,
+    "lane_coverage": 1.0,
+    "lane_mode": "all_isa_groups",
+    "plot_style": "opcode_lanes_ipc"
+  }
+}

@@ -1,0 +1,449 @@
+{
+ "N": 32,
+ "pairs": {
+  "SV5_G16_SoftLibSIMT_vs_VMIinner": {
+   "A": {
+    "csv": "softlib_simt/out/opsim_wc_abs_back_loadall_absall_dual_drain_g16_t512_e8192/OPPROF_20261031163203_ENBXTUFCMTWIUHXF/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "simt",
+    "E": 8192,
+    "VF_cyc": 1727,
+    "body_calls": 4711,
+    "IPC": 2.7279,
+    "ops_per_N": 18.4023,
+    "fam_calls": {
+     "load": 256,
+     "abs+reduce": 1792,
+     "store": 512
+    },
+    "fam_ops_per_N": {
+     "load": 1.0,
+     "abs+reduce": 7.0,
+     "store": 2.0
+    },
+    "fam_counts": {
+     "load": {
+      "SIMT_LDS": 256
+     },
+     "abs+reduce": {
+      "SIMT_REDUX": 512,
+      "SIMT_SEL": 768,
+      "SIMT_FADD": 256,
+      "SIMT_FSETP_I": 256
+     },
+     "store": {
+      "SIMT_STS": 512
+     }
+    },
+    "control_calls": 73,
+    "other_data_calls": 2078,
+    "balance_ok": true,
+    "pred_el_per_cyc": 4.7435,
+    "meas_el_per_cyc": 4.7435
+   },
+   "B": {
+    "csv": "out/vmi/g16_vcg_vl512_ng32_vand/OPPROF_20261031161906_IZNZIYSOLLGAEVCM/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "vmi",
+    "E": 8192,
+    "VF_cyc": 239,
+    "body_calls": 466,
+    "IPC": 1.9498,
+    "ops_per_N": 1.8203,
+    "fam_calls": {
+     "load": 64,
+     "abs": 128,
+     "reduce": 128,
+     "store": 64
+    },
+    "fam_ops_per_N": {
+     "load": 0.25,
+     "abs": 0.5,
+     "reduce": 0.5,
+     "store": 0.25
+    },
+    "fam_counts": {
+     "load": {
+      "RV_VLD": 64
+     },
+     "abs": {
+      "RV_VAND": 128
+     },
+     "reduce": {
+      "RV_VCGMAX": 64,
+      "RV_VMAX": 64
+     },
+     "store": {
+      "RV_VST": 64
+     }
+    },
+    "control_calls": 60,
+    "other_data_calls": 22,
+    "balance_ok": true,
+    "pred_el_per_cyc": 34.2762,
+    "meas_el_per_cyc": 34.2762
+   },
+   "bridge": {
+    "pred_ratio": 0.1384,
+    "meas_ratio": 0.1384,
+    "pred_over_meas_per_arm": {
+     "A": 1.0,
+     "B": 1.0
+    },
+    "verdict": "OK"
+   }
+  },
+  "SV6_G32_SoftLibSIMT_vs_VMIinner": {
+   "A": {
+    "csv": "softlib_simt/out/opsim_wc_abs_back_loadall_absall_dual_drain_g32_t512_e8192/OPPROF_20261031163224_TLQISQDSUFDEQBFE/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "simt",
+    "E": 8192,
+    "VF_cyc": 996,
+    "body_calls": 2439,
+    "IPC": 2.4488,
+    "ops_per_N": 9.5273,
+    "fam_calls": {
+     "load": 256,
+     "abs+reduce": 1024,
+     "store": 256
+    },
+    "fam_ops_per_N": {
+     "load": 1.0,
+     "abs+reduce": 4.0,
+     "store": 1.0
+    },
+    "fam_counts": {
+     "load": {
+      "SIMT_LDS": 256
+     },
+     "abs+reduce": {
+      "SIMT_REDUX": 256,
+      "SIMT_FADD": 256,
+      "SIMT_SEL": 256,
+      "SIMT_FSETP_I": 256
+     },
+     "store": {
+      "SIMT_STS": 256
+     }
+    },
+    "control_calls": 73,
+    "other_data_calls": 830,
+    "balance_ok": true,
+    "pred_el_per_cyc": 8.2249,
+    "meas_el_per_cyc": 8.2249
+   },
+   "B": {
+    "csv": "out/vmi/g32_vcg_vl256_ng8_vabs/OPPROF_20261031161954_FQCKLFBGGDOWTDZC/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "vmi",
+    "E": 8192,
+    "VF_cyc": 372,
+    "body_calls": 483,
+    "IPC": 1.2984,
+    "ops_per_N": 1.8867,
+    "fam_calls": {
+     "load": 128,
+     "abs": 128,
+     "reduce": 128,
+     "store": 32
+    },
+    "fam_ops_per_N": {
+     "load": 0.5,
+     "abs": 0.5,
+     "reduce": 0.5,
+     "store": 0.125
+    },
+    "fam_counts": {
+     "load": {
+      "RV_VDINTLV": 64,
+      "RV_VLD": 64
+     },
+     "abs": {
+      "RV_VABS_FP": 128
+     },
+     "reduce": {
+      "RV_VCGMAX": 32,
+      "RV_VMAX": 96
+     },
+     "store": {
+      "RV_VST": 32
+     }
+    },
+    "control_calls": 46,
+    "other_data_calls": 21,
+    "balance_ok": true,
+    "pred_el_per_cyc": 22.0215,
+    "meas_el_per_cyc": 22.0215
+   },
+   "bridge": {
+    "pred_ratio": 0.3735,
+    "meas_ratio": 0.3735,
+    "pred_over_meas_per_arm": {
+     "A": 1.0,
+     "B": 1.0
+    },
+    "verdict": "OK"
+   }
+  },
+  "SV7_G64_SoftLibSIMT_vs_VMIinner": {
+   "A": {
+    "csv": "softlib_simt/out/opsim_wc_abs_back_loadall_absall_g64_t512_e8192/OPPROF_20261031163303_QVPTUDTXCYGYMCJG/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "simt",
+    "E": 8192,
+    "VF_cyc": 1059,
+    "body_calls": 2359,
+    "IPC": 2.2276,
+    "ops_per_N": 9.2148,
+    "fam_calls": {
+     "load": 256,
+     "abs+reduce": 1152,
+     "store": 128
+    },
+    "fam_ops_per_N": {
+     "load": 1.0,
+     "abs+reduce": 4.5,
+     "store": 0.5
+    },
+    "fam_counts": {
+     "load": {
+      "SIMT_LDS": 256
+     },
+     "abs+reduce": {
+      "SIMT_REDUX": 128,
+      "SIMT_FADD": 256,
+      "SIMT_SEL": 384,
+      "SIMT_FSETP_I": 256,
+      "SIMT_FSETP": 128
+     },
+     "store": {
+      "SIMT_STS": 128
+     }
+    },
+    "control_calls": 73,
+    "other_data_calls": 750,
+    "balance_ok": true,
+    "pred_el_per_cyc": 7.7356,
+    "meas_el_per_cyc": 7.7356
+   },
+   "B": {
+    "csv": "out/vmi/g64_vcg_vl256_ng4_vabs/OPPROF_20261031162133_DCLDFMMAIMPTRTTV/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "vmi",
+    "E": 8192,
+    "VF_cyc": 264,
+    "body_calls": 591,
+    "IPC": 2.2386,
+    "ops_per_N": 2.3086,
+    "fam_calls": {
+     "load": 128,
+     "abs": 128,
+     "reduce": 128,
+     "store": 128
+    },
+    "fam_ops_per_N": {
+     "load": 0.5,
+     "abs": 0.5,
+     "reduce": 0.5,
+     "store": 0.5
+    },
+    "fam_counts": {
+     "load": {
+      "RV_VLD": 128
+     },
+     "abs": {
+      "RV_VABS_FP": 128
+     },
+     "reduce": {
+      "RV_VCMAX": 128
+     },
+     "store": {
+      "RV_VST": 128
+     }
+    },
+    "control_calls": 58,
+    "other_data_calls": 21,
+    "balance_ok": true,
+    "pred_el_per_cyc": 31.0303,
+    "meas_el_per_cyc": 31.0303
+   },
+   "bridge": {
+    "pred_ratio": 0.2493,
+    "meas_ratio": 0.2493,
+    "pred_over_meas_per_arm": {
+     "A": 1.0,
+     "B": 1.0
+    },
+    "verdict": "OK"
+   }
+  },
+  "SV7_G128_SoftLibSIMT_vs_VMIinner": {
+   "A": {
+    "csv": "softlib_simt/out/opsim_wc_abs_back_loadall_absall_dual_drain_g128_t512_e8192/OPPROF_20261031163159_DZNUFBONYSOPGWUJ/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "simt",
+    "E": 8192,
+    "VF_cyc": 1431,
+    "body_calls": 2199,
+    "IPC": 1.5367,
+    "ops_per_N": 8.5898,
+    "fam_calls": {
+     "load": 256,
+     "abs+reduce": 1216,
+     "store": 64
+    },
+    "fam_ops_per_N": {
+     "load": 1.0,
+     "abs+reduce": 4.75,
+     "store": 0.25
+    },
+    "fam_counts": {
+     "load": {
+      "SIMT_LDS": 256
+     },
+     "abs+reduce": {
+      "SIMT_REDUX": 64,
+      "SIMT_FSETP": 192,
+      "SIMT_FADD": 256,
+      "SIMT_SEL": 448,
+      "SIMT_FSETP_I": 256
+     },
+     "store": {
+      "SIMT_STS": 64
+     }
+    },
+    "control_calls": 73,
+    "other_data_calls": 590,
+    "balance_ok": true,
+    "pred_el_per_cyc": 5.7247,
+    "meas_el_per_cyc": 5.7247
+   },
+   "B": {
+    "csv": "out/vmi/g128_vcmax_vl128_vand/OPPROF_20261031155425_SGKLUCRSJYBZHYEQ/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "vmi",
+    "E": 8192,
+    "VF_cyc": 254,
+    "body_calls": 520,
+    "IPC": 2.0472,
+    "ops_per_N": 2.0312,
+    "fam_calls": {
+     "load": 128,
+     "abs": 128,
+     "reduce": 128,
+     "store": 64
+    },
+    "fam_ops_per_N": {
+     "load": 0.5,
+     "abs": 0.5,
+     "reduce": 0.5,
+     "store": 0.25
+    },
+    "fam_counts": {
+     "load": {
+      "RV_VLD": 128
+     },
+     "abs": {
+      "RV_VAND": 128
+     },
+     "reduce": {
+      "RV_VCMAX": 64,
+      "RV_VMAX": 64
+     },
+     "store": {
+      "RV_VST": 64
+     }
+    },
+    "control_calls": 50,
+    "other_data_calls": 22,
+    "balance_ok": true,
+    "pred_el_per_cyc": 32.252,
+    "meas_el_per_cyc": 32.252
+   },
+   "bridge": {
+    "pred_ratio": 0.1775,
+    "meas_ratio": 0.1775,
+    "pred_over_meas_per_arm": {
+     "A": 1.0,
+     "B": 1.0
+    },
+    "verdict": "OK"
+   }
+  },
+  "SV1_SimtVF_vs_SIMDtwin": {
+   "A": {
+    "csv": "out/sv1/opsim_sv1_e8192_t512_frag/OPPROF_20261031170813_FSOMFUCLTGZSTNFZ/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "simt",
+    "E": 8192,
+    "VF_cyc": 3405,
+    "body_calls": 2212,
+    "IPC": 0.6496,
+    "ops_per_N": 8.6406,
+    "fam_calls": {
+     "load": 128,
+     "abs+reduce": 256,
+     "store": 64
+    },
+    "fam_ops_per_N": {
+     "load": 0.5,
+     "abs+reduce": 1.0,
+     "store": 0.25
+    },
+    "fam_counts": {
+     "load": {
+      "SIMT_LDS": 128
+     },
+     "abs+reduce": {
+      "SIMT_FADD": 256
+     },
+     "store": {
+      "SIMT_STS": 64
+     }
+    },
+    "control_calls": 63,
+    "other_data_calls": 1701,
+    "balance_ok": true,
+    "pred_el_per_cyc": 2.4059,
+    "meas_el_per_cyc": 2.4059
+   },
+   "B": {
+    "csv": "out/sv1/opsim_sv1dt_e8192_tile8192_vl64/OPPROF_20261031164454_RFRDZRUKZRTQKIED/simulator/core0.veccore0/core0.veccore0_instr_exe.csv",
+    "kind": "vmi",
+    "E": 8192,
+    "VF_cyc": 279,
+    "body_calls": 576,
+    "IPC": 2.0645,
+    "ops_per_N": 2.25,
+    "fam_calls": {
+     "load": 256,
+     "abs": 0,
+     "reduce": 0,
+     "store": 128
+    },
+    "fam_ops_per_N": {
+     "load": 1.0,
+     "abs": 0.0,
+     "reduce": 0.0,
+     "store": 0.5
+    },
+    "fam_counts": {
+     "load": {
+      "RV_VLD": 256
+     },
+     "abs": {},
+     "reduce": {},
+     "store": {
+      "RV_VST": 128
+     }
+    },
+    "control_calls": 45,
+    "other_data_calls": 147,
+    "balance_ok": true,
+    "pred_el_per_cyc": 29.362,
+    "meas_el_per_cyc": 29.362
+   },
+   "bridge": {
+    "pred_ratio": 0.0819,
+    "meas_ratio": 0.0819,
+    "pred_over_meas_per_arm": {
+     "A": 1.0,
+     "B": 1.0
+    },
+    "verdict": "OK"
+   }
+  }
+ }
+}

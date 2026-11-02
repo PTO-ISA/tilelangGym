@@ -74,6 +74,21 @@ def main() -> int:
     if style != "opcode_lanes_ipc":
         print("FAIL: need plot_style=opcode_lanes_ipc (IPC-only is not PR9 overlay)", file=sys.stderr)
         return 1
+    # t822u: each ISA group must be a lane — reject thin compute-only hides
+    cov = meta.get("lane_coverage")
+    mode = meta.get("lane_mode") or ""
+    lanes = meta.get("lane_opcodes") or []
+    if not lanes:
+        print("FAIL: lane_opcodes empty", file=sys.stderr)
+        return 1
+    if cov is not None and cov == cov and float(cov) < 0.95:
+        print(
+            f"FAIL: lane_coverage={cov} < 0.95 — ISA groups missing from lanes (t822u all_isa_groups)",
+            file=sys.stderr,
+        )
+        return 1
+    if mode and mode != "all_isa_groups":
+        print(f"WARN: lane_mode={mode} (expected all_isa_groups)", file=sys.stderr)
 
     frontend = (args.frontend or "").strip()
     staged_out = (args.staged_out or "").strip()

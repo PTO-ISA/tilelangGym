@@ -1,8 +1,22 @@
-# SV1 analysis — short-live stream eltwise (Simt + SIMD)
+# SV1 ANALYSIS — short-live stream eltwise (Simt + SIMD + SoftLib rooftop) — restore t816u
 
-**Date:** 2026-10-20 HKT · SoftLib fence×source / rooftop rewrite **2026-10-20** · float2 §5 fold **2026-10-20** · TILE8192 + TILE@T512 + real-asm MRF **2026-10-20** · CBT antifuse + SoftLib TILE ladder **2026-10-20** · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (`config.toml` pins) · **Primary stock Simt:** E=8192 **TILE8192** float2 (`max_vector_bits=64`, LDS.64-class; TILE=E) · §5.1 multi-TILE **E=16K** @ T512 (peak TILE4K **3.771**) · §5.2 TILE8192 T-dim peak T1024 **3.846** · **Aligned e700041f float4 E16K:** appendix-only
+**Date:** stock / SoftLib SoT **2026-10-20** HKT (main tip narrative) · clean-regress KPI **2026-10-31** HKT (pack glm53_sv1567_sf_mr2_t813u) · **PR9 overlays + SEMANTICS_GATE regen t815u / SoftLib restore t816u / all-ISA-group lanes t822u / SoftLib LDS.32 best PR9 t823u:** **2026-11-02** HKT · **SOC:** Ascend950PR_9599 opsim · **CANN / PTOAS:** cann_92b2 / PTOAS nightly (config.toml pins) · KPI **el/cyc = E / named VF_cyc**.
 
-This is the **only** SV1 analysis doc. Older NOTES / VERDICT / rooftop-32 writeups were removed.
+**SEMANTICS_GATE: PASS — S1 in-kernel / suite numeric check (C=A+B fp32); S2 SimtVF VF_SIMT body vs SIMD twin vf_real_execute_time body (era=fp32-stream-eltwise, reduce_axis=na-eltwise); S3 stream mix only (LDS/FADD/STS vs VLD/VADD/VST — no reduce family); S4 named counters (VF_SIMT / vf_real_execute_time) — A1 / A10.**
+
+**Era separation (no cross-era merge):** keep both measured eras in this file; do **not** fold numbers across them.
+1. **Stock Simt float2 + SoftLib LDS.32/64 rooftop SoT (2026-10-20)** — §§3–8 below. SoftLib handcraft best **A+B LDS.b32 T512 loadall_barrier = 7.42** el/cyc (~69.5% of serial **10.667**); SoftLib TILE8K MI-on fence1 **7.603**; stock TILE8192 peak T1024 **3.846**.
+2. **Clean-regress t813u SimtVF + handwritten SIMD twin (2026-10-31)** — §§10–13. SimtVF best **2.4059** (sv1_e8192_t512_frag); SIMD twin hub **29.362** (sv1dt_e8192_tile8192_vl64). Different tip/lowering (float4/LDS.128-class vs float2/LDS.64-class) — reference only across eras.
+
+**Policy (t821u):** full ANALYSIS rewrite OK; this restore re-ships SoftLib LDS.32/LDS64 + stock SoT so there is **no information loss** vs main tip, and keeps t815u PR9/SEMANTICS_GATE/ISA-mix with era labels (no silent contradict).
+
+**Restore note (t816u):** PR #15 tip 6cfd9b9 (t815u) **overwrote** main ANALYSIS.md (314 lines) with a thin 154-line template that marked SoftLib as N/A and dropped §§ SoftLib LDS.32/LDS.64 + stock CBT/shared narrative. This revision **restores** the main SoftLib / stock SoT spine and **keeps** the t815u PR9 *_running_ipc_pr9.png dual-pane overlays + ISA-mix / call_count / SEMANTICS_GATE that t815u asked for. Legacy IPC-only PNGs remain on disk (not deleted); they are historical narrative refs, **not** PR9 compliance.
+
+**Format note (PR9 / PRC-IPC-001 · t822u/t823u):** SoftLib **best** PR9 cites SoftLib A+B LDS.b32 T512 loadall_barrier dump → `plots/sv1_softlib_lds32_ab_t512_loadall_barrier_running_ipc_pr9.png` (+ `_staged`); stock/era-2 SimtVF frag keeps `plots/sv1_simtvf_running_ipc_pr9.png`; SIMD twin `plots/sv1_simdt_running_ipc_pr9.png`. All use `plot_style=opcode_lanes_ipc`, `lane_mode=all_isa_groups`, `lane_coverage≥0.95` (each body ISA group as a lane — incl. address-math IADD_I/LEA/SHFI + SoftLib LDS). Optional `*_pr9_staged.png` adds STAGE_TAXONOMY bands. IPC-only `*_ex_ipc_30cyc.png` / `*_rolling20_ipc.png` stay as historical narrative refs, **not** PR9 compliance.
+
+**Primary stock Simt (era 1):** E=8192 **TILE8192** float2 (max_vector_bits=64, LDS.64-class; TILE=E) · §5.1 multi-TILE **E=16K** @ T512 (peak TILE4K **3.771**) · §5.2 TILE8192 T-dim peak T1024 **3.846** · SoftLib §7. **Aligned e700041f float4 E16K:** appendix-only.
+
+This is the **only** SV1 analysis doc. Older NOTES / VERDICT / rooftop-32 writeups were removed from the tree; SoftLib content lives in §7 here.
 
 ---
 
@@ -14,6 +28,20 @@ This is the **only** SV1 analysis doc. Older NOTES / VERDICT / rooftop-32 writeu
 Kernel: one TileLang file `sv1_stream_eltwise.py` (`vf_region` + `ST_VF_MODE`); handwritten SIMD twin `sv1d_stream_eltwise.py` / tiled `sv1dt_*` via `scripts/gen_sv1dt_kernel.py` (VL=64). Aligned Simt tags `sv1tt_e{E}_tile{TILE}_t{T}` (`SUMMARY_sv1_aligned_e16k_tile8k.tsv`); aligned SIMD tags `sv1dt_e{E}_tile{TILE}_vl64` (`SUMMARY_sv1d_aligned_e16k_tile8k.tsv`).
 
 ---
+
+
+## How to run / reproduce
+
+In-repo kernels under benches/sv1/ (stock / twin scripts checked in on this tree). Opsim / CANN pins: config.toml. SoftLib handwritten CCE reports cited in §7 live under the dig paths listed in §9 Artifacts (provenance; not the in-repo run path). Clean-regress t813u dumps: pack /mnt/fluxdata/happybot/glm53_sv1567_sf_mr2_t813u/out/sv1/ — PR9 overlays re-emitted with scripts/make_pr9_running_ipc_overlay.py (see REGEN_NOTES_t815u.md / REGEN_NOTES_t816u.md / REGEN_NOTES_t822u.md / REGEN_NOTES_t823u.md). SoftLib best PR9 dump: `/tmp/st_out_cce_lds32_ab_20261019/.../core0.veccore0.instr_popped_log.dump`.
+
+Example (host with cann_92b2 + venv-ptoas-vmi-0.1.3; paths as in config.toml):
+
+```bash
+# stock SimtVF stream eltwise (era-1 / era-2 tip may differ — cite which)
+python benches/sv1/sv1_stream_eltwise.py
+# handwritten SIMD twin
+python benches/sv1/sv1dt_tiled_add.py
+`
 
 ## 2. Test-case design
 
@@ -312,3 +340,144 @@ SoftLib phase-sep A+B closes most of the Simt schedule gap vs stock; remaining S
 ### Appendix — aligned e700041f E16K TILE (not primary)
 
 Historic fair-matrix under tip **e700041f** (float4-class, 2026-10-17): TILE@T512 flat **~2.40–2.45** el/cyc; TILE8K×T peaks **T512 = 2.40**, flat T1024 **2.39**, drop T2048 **1.45**. Plots: `sv1_tile_vs_vf_el_instr.png`, `sv1_simt_e16k_tile8k_body4_ex_ipc_30cyc.png`. See `data/NOTES_sv1_aligned_e16k_tile8k.md` / `SUMMARY_sv1_aligned_e16k_tile8k.tsv`. **Do not** use these as current stock Simt SoT — primary is §5 float2.
+
+---
+
+## 10. Clean-regress t813u — SimtVF + handwritten SIMD twin (era=fp32-stream-eltwise, fresh)
+
+> Era-2 supplement. Numbers from pack glm53_sv1567_sf_mr2_t813u RESULT.tsv — **not** merged into SoftLib §7 / stock §4–§5 SoT.
+
+### 10.1 SIMD twin results — fresh
+
+| tag | E / TILE | VF_cyc | el/cyc | % of theory ~44 |
+|-----|----------|-------:|-------:|----------------:|
+| sv1dt_e8192_tile8192_vl64 (hub, same E as SimtVF) | 8192 / 8192 | **279** | **29.3620** | ~67% |
+| sv1dt_e16384_tile2048_vl64 | 16384 / 2048 | 816 | 20.0784 | ~46% |
+| sv1dt_e16384_tile4096_vl64 | 16384 / 4096 | 640 | 25.6000 | ~58% |
+| sv1dt_e16384_tile8192_vl64 | 16384 / 8192 | 558 | 29.3620 | ~67% |
+| sv1dt_e16384_tile16384_vl64 | 16384 / 16384 | 519 | **31.5684** | ~72% |
+
+TILE ladder: per-tile MTE fill/drain amortizes 2K→16K (20.1→31.6); per-tile el/cyc saturates at TILE8192 (29.36 both E). S3 hits (hub): VLD=256, VADD=128, VST=128 (+control) — pure stream mix, no reduce family (axis=na).
+
+### 10.2 SimtVF arm (fresh)
+
+| tag | T | temps | VF_SIMT cyc | el/cyc | % of ~8 |
+|-----|---|-------|------------:|-------:|---------:|
+| sv1_e8192_t128_frag | 128 | frag (RF) | 4680 | 1.7504 | ~22% |
+| **sv1_e8192_t512_frag** ★ | **512** | **frag (RF)** | **3405** | **2.4059** | ~30% |
+| sv1_e8192_t1024_frag | 1024 | frag (RF) | 3510 | 2.3339 | ~29% |
+| sv1_e8192_t512_shared | 512 | shared (UB temps) | 6840 | 1.1977 | ~15% |
+
+- **T ladder:** T512 peak fresh; T1024 turns down (3510 vs 3405 — address-math overhead grows with warps at this tip).
+- **RF vs UB-stream:** frag (RF) **2.00×** shared-temps (2.406 vs 1.198). The `shared` variant stages t1/t2/t3 in UB (temps tower): STS=256 vs 64 (4× store traffic) — the direct **add-in-shared no-temps** peer (ref §6 class) is **MISSING** + next-cmd: `ST_SV1_TEMPS=noshared_temps` variant or hand kernel adding `c_ub[i]=a_ub[i]+b_ub[i]` directly.
+- Lowering class (from counts): LDS=128 warp-issues move 2×E×4B=64KB → **16B/lane (float4/LDS.128-class)** on this tip, with heavy address/pred math (SHFI=656, LOP3=512, MOV=256). Era note: ref/sv1 v1 primary stock was **float2/LDS.64-class** at a different TileLang tip — different era; **no cross-era merge** (numbers kept separate; ref is reference only).
+
+## 11. Running IPC + PR9 overlay figures (FORCED, PRC-IPC-001) — SoftLib best + clean-regress arms
+
+**t823u supersede (proved):** SoftLib **best** PR9 was previously missing — §11 only had stock/era-2 SimtVF frag + SIMD twin from pack t813u. SoftLib A+B LDS.b32 T512 `loadall_barrier` KPI **7.42** el/cyc (§7) now has its own PR9 dual-pane from the SoT dump (plan A: keep stock `sv1_simtvf_*` as era-2; SoftLib best gets SoftLib-named files). Dump proves replace of plot choice for SoftLib best arm:
+
+`/tmp/st_out_cce_lds32_ab_20261019/opsim_ab_b32_loadall_barrier_e8192_t512/OPPROF_20261019162717_PYCDEDBJDNAKDSMF/dump/core0.veccore0.instr_popped_log.dump`
+
+(harvest `elems_per_cyc_vf=7.420…` · report `reports/LDS32_AB_TWO_SOURCE.md`). Plot footer el/cyc≈7.70 uses popped-dump VF≈1064 (first-issue silence vs harvest VF_cyc=1104) — **headline SoftLib KPI remains harvest/report 7.42**.
+
+| arm | png | plot_style | mid-med IPC | lane_opcodes | era / role |
+|-----|-----|------------|------------:|--------------|------------|
+| **SoftLib A+B LDS.b32 T512 loadall_barrier** ★ best | `plots/sv1_softlib_lds32_ab_t512_loadall_barrier_running_ipc_pr9.png` (+ `_staged`) | **opcode_lanes_ipc** / `all_isa_groups` cov=1.0 | 1.90 | S2R, IADD_I, LEA, SHFI, **LDS**, FADD, STS, END | era-1 SoftLib SoT (§7) |
+| SimtVF E8192 T512 frag (stock/era-2) | `plots/sv1_simtvf_running_ipc_pr9.png` (+ `_staged`) | **opcode_lanes_ipc** / `all_isa_groups` cov=1.0 | 0.50 | S2R, IADD_I, LEA, SHFI, LDS, FADD, STS, END, LOP3, MOV | era-2 clean-regress (kept) |
+| SIMD twin E8192 TILE8192 VL64 | `plots/sv1_simdt_running_ipc_pr9.png` (+ `_staged`) | **opcode_lanes_ipc** / `all_isa_groups` cov=0.9865 | 2.20 | VLD, VADD, VST | era-2 twin (caption refresh t823u) |
+
+JSON sidecars co-located: `plots/sv1_*_running_ipc_pr9.json` (top-level + `meta.lane_opcodes` non-empty). **REJECT** IPC-only `*_running_ipc.png` / `*_ex_ipc_30cyc.png` / `*_rolling20_ipc.png` as PR9 compliance.
+
+SIMD / SimtVF plot VF (3352 / 241) < official VF (3405 / 279) — first-issue silence gap; SoftLib plot VF≈1064 < harvest 1104 — same class. Headline KPIs from official/harvest counters (§7 SoftLib **7.42**; §10 SimtVF **2.4059** / SIMD **29.362**).
+
+## 12. Per-segment opcode mix + IPC + stage mid-IPC (clean-regress both arms)
+
+**SimtVF T512 frag** (fused body — windows span whole body):
+
+| stage | window | n | mid-med IPC |
+|-------|--------:|---:|------------:|
+| S_load (LDS) | 0..3186 | 160 | 0.55 |
+| S_eltwise (FADD) | 155..3330 | 256 | 0.50 |
+| S_store (STS) | 190..3347 | 64 | 0.50 |
+
+**SIMD twin E8192 TILE8192:**
+
+| stage | window | n | mid-med IPC |
+|-------|--------:|---:|------------:|
+| S_load (VLD) | 0..185 | 256 | 2.40 |
+| S_eltwise (VADD) | 7..191 | 128 | 2.30 |
+| S_store (VST) | 12..235 | 128 | 2.20 |
+
+SimtVF is **latency-bound** (mid IPC 0.5: per-thread serial 16-element chains; LDS issue→use latency not hidden by 16 warps), not issue-bound — consistent with the roof framing (§1) and ref §7.2 "need ≥256 threads / split stages" conclusion. Fused loop → every stage mid ≈ body mid (explicit).
+
+Source: `plots/sv1_stage_mid_ipc.json` keys `sv1_simtvf` / `sv1_simdt`.
+
+### 12.1 Balanced opcode call_count tables (from `core0.veccore0_instr_exe.csv`)
+
+**SimtVF E8192 T512 frag — body_calls = 2212:**
+
+| opcode | cc | | opcode | cc |
+|--------|--:|---|--------|--:|
+| SIMT_SHFI | 656 | | SIMT_S2R | 32 |
+| SIMT_LOP3 | 512 | | SIMT_LEA | 16 |
+| SIMT_FADD | 256 | | SIMT_END | 16 |
+| SIMT_MOV | 256 | | scalar math residual | 21 |
+| SIMT_IADD_I | 192 | | control group | **63** |
+| SIMT_LDS | 128 | | **Σ = 2212 = body_calls** | ✓ |
+| SIMT_STS | 64 | | | |
+
+**SIMD twin E8192 TILE8192 — body_calls = 576:**
+
+| opcode | cc | | opcode | cc |
+|--------|--:|---|--------|--:|
+| RV_VLD | 256 | | scalar math residual | 13 |
+| RV_VST | 128 | | RV_PSET | 2 |
+| RV_VADD | 128 | | RV_VLOOPv2 | 1 |
+| RV_SEND | 3 | | control group | **45** |
+| | | | **Σ = 576 = body_calls** | ✓ |
+
+Source: `plots/sv1_opcode_mix.json` keys `SV1_SimtVF_vs_SIMDtwin::A()` / `::B()`.
+
+## 13. ISA mix SimtVF vs SIMD twin (per N×4B → el/cyc) — FORCED
+
+Unit line: `N=32 · E=8192 · units=256 · IPC=body_calls/VF_cyc (body)`.
+
+| family | SimtVF ops/N | SIMD twin ops/N | Δ | note |
+|--------|-------------:|----------------:|---:|-------|
+| load (LDS / VLD) | 0.5000 | 1.0000 | **+100%** | float4 LDS.128 vs VL64 (only 2 warp-equivs/issue) |
+| eltwise (FADD / VADD) | 1.0000 | 0.5000 | −50% | |
+| store (STS / VST) | 0.2500 | 0.5000 | +100% | |
+| other data (SHFI/LOP3/MOV/LEA/IADD_I… + scalar) | 6.6445 | 0.5742 | −91% | SimtVF address/pred math dominates |
+| control | 0.2461 | 0.1758 | — | |
+| **total ops/N** | **8.6406** | **2.2500** | **−74%** | balanced ✓ |
+
+Bridge:
+- pred_el/cyc (SimtVF) = 0.6496 × 32 / 8.6406 = **2.4059**; measured **2.4059** (pred/meas = 1.0000)
+- pred_el/cyc (SIMD) = 2.0645 × 32 / 2.2500 = **29.3620**; measured **29.3620** (pred/meas = 1.0000)
+- pred_ratio = (0.6496/2.0645) × (2.2500/8.6406) = **0.0819**; measured ratio = 2.4059/29.3620 = **0.0819** → **verdict OK**
+
+**Attribution:** unlike the absmax pairs, the SIMD twin wins on **IPC (3.2×)** more than ops/N (3.8×) — the SimtVF arm is latency-bound (mid IPC 0.5, serial per-thread chains) while the VL64 vector twin streams at IPC ~2.06; the measured 12.2× el/cyc gap decomposes exactly into issue-economics × IPC.
+
+Source: `plots/sv1_isa_mix_perN.json` pair `SV1_SimtVF_vs_SIMDtwin`.
+
+## 14. Conclusion (both eras — no cross-era fold)
+
+### Era 1 — stock + SoftLib rooftop (2026-10-20)
+- **SIMD** simple VL=64 @ TILE8K E16K: **29.26** el/cyc (~66% of theory ~44; mid-body ~34 / ~78%).
+- **Stock Simt** float2 LDS.64-class: TILE8192 peak **T1024 = 3.846** (~48% of LD.64 A+B ~8); CBT E16K peak TILE2K **3.898** (schedule artifact).
+- **SoftLib handcraft best:** A+B **LDS.b32** T512 loadall_barrier **7.42** (~69.5% of serial **10.667**); TILE8K MI-on fence1 **7.603** (~71%). LDS.b32 ≫ LDS.b64 for Simt el/cyc ceiling (§7.1). Remaining SoftLib↔SIMD gap tracks UB BW (256R+256R vs 128R).
+
+### Era 2 — clean-regress t813u SimtVF vs SIMD twin (2026-10-31) + PR9 (t815u)
+- **SimtVF SoT (fresh, era=fp32-stream-eltwise, E=8192): 2.4059 el/cyc** — `sv1_e8192_t512_frag` (T512 peak; T1024 2.334; shared-temps 1.198 = RF/stream axis measured, tower variant).
+- **Handwritten SIMD twin SoT: 29.3620 el/cyc at E=8192 TILE8192 VL64** (31.5684 at E=16384 TILE16384; per-tile saturation at TILE8192). ~67% of theory rooftop ~44.
+- **Both-arm compare (same E=8192): SIMD twin ≻ SimtVF ≈ 12.2×** — PR9 both arms + balanced mixes + ISA-mix bridge shipped (§7–§9); attribution: latency-bound SimtVF vs streamed VL64 vector loop.
+- Honest gaps: direct add-in-shared no-temps peer **MISSING** (next-cmd in §5); T64/T2048 rungs not measured; sv1d_e256 fixed probe skipped (subsumed); ref/sv1 v1 numbers kept reference-only (different era/tip lowering).
+
+## 15. TRACE pointer + t816u restore
+
+Pack: `/mnt/fluxdata/happybot/glm53_sv1567_sf_mr2_t813u/EXPLORATION_TRACE.md` · artifacts: `RESULT.tsv` (SV1 rows), `out/sv1_harvest.json`, `out/opcode_mix.json`, `out/isa_mix_perN.json`, `out/stage_mid_ipc.json`. This regen mirrors SV1 slices under `plots/sv1_*.json`.
+
+**PRC cites:** PRC-IPC-001 (both-arm PR9). PRC-MEM-001/002 are Case-3/SV8-scoped — N/A here.
+
+**t816u/t823u checklist:** SoftLib §7.1–§7.4 present · LDS.32 best + LDS32/LDS64 matrix present · SoftLib best PR9 SoftLib-named PNGs + dump path in §11 (t823u) · stock `sv1_simtvf_*` kept as era-2 · stock CBT/shared §§5–6 present · SEMANTICS_GATE one-liner present · ISA-mix / call_count present (§12–§13) · legacy IPC-only PNGs not deleted.
+

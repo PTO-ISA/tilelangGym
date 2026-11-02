@@ -11,7 +11,8 @@ Window default W=20, left-open right-closed (t−W, t].
 Plot semantics (adopted from SV2 / PR #9):
   - Top panel: one lane per instruction *kind* (short mnemonic); a mark at every issue.
   - Bottom panel: rolling IPC over the same VF-local tick axis.
-  - Address-math opcodes (IADD / LEA / …) are counted in IPC but left off the lanes.
+  - Every named SIMT_/RV_ ISA group present in the dump gets a lane (incl. address-math IADD/LEA/SHFI when present — t822u).
+  - Only true scalar/pipe noise (MOV_XD_*, flags, NOP, …) is omitted from lanes.
   - The VF opcode itself is excluded from both.
 
 Never invents PNGs or numbers when inputs are missing.
@@ -53,17 +54,12 @@ OP_TOKEN_RE = re.compile(r"\b((?:SIMT_|RV_)[A-Z0-9_]+)\b")
 STRIP_PREFIXES = ("SIMT_", "RV_")
 STRIP_SUFFIXES = ("_THREAD_BLOCK",)
 
-# Address / index math: counted in IPC, omitted from lane rows (PR #9).
-LANE_HIDE = frozenset(
+# Lane omit set (t822u): ONLY true scalar/pipe noise — NOT body ISA groups.
+# Address-math (IADD / IADD_I / LEA / SHFI / IMAD / SHL / SHR) MUST appear as
+# lanes when present so each ISA group is visible in opcode_lanes_ipc plots.
+# Legacy compute-only hide is available as LANE_HIDE_COMPUTE_ONLY for A/B.
+LANE_HIDE_NOISE = frozenset(
     {
-        "IADD",
-        "IADD_I",
-        "LEA",
-        "IMAD",
-        "IMAD_I",
-        "SHFI",
-        "SHL",
-        "SHR",
         "AND",  # scalar AND, not VAND
         "OR",
         "NEG",
@@ -97,9 +93,36 @@ LANE_HIDE = frozenset(
     }
 )
 
+# Body ISA previously hidden (pre-t822u). Kept for optional compute-only mode.
+LANE_HIDE_ADDRESS_MATH = frozenset(
+    {
+        "IADD",
+        "IADD_I",
+        "LEA",
+        "IMAD",
+        "IMAD_I",
+        "SHFI",
+        "SHL",
+        "SHR",
+    }
+)
+
+# Default (t822u): show every ISA group — noise only.
+LANE_HIDE = LANE_HIDE_NOISE
+# Optional legacy: noise + address-math (old PR9 thin lanes).
+LANE_HIDE_COMPUTE_ONLY = frozenset(LANE_HIDE_NOISE | LANE_HIDE_ADDRESS_MATH)
+
 # Preferred lane order when present (PR #9 family); others follow by first-issue time.
 LANE_ORDER = [
     "S2R",
+    "IADD_I",
+    "IADD",
+    "LEA",
+    "SHFI",
+    "IMAD",
+    "IMAD_I",
+    "SHL",
+    "SHR",
     "LDS",
     "VLDI",
     "VLD",
@@ -126,6 +149,11 @@ LANE_ORDER = [
     "VSTI",
     "VST",
     "END",
+    "LOP3",
+    "MOV",
+    "MOVI",
+    "PLOP3",
+    "ISETP_I",
 ]
 
 
@@ -480,6 +508,13 @@ _COLOR_MAP = {
     "VDIV": "#548235",
     "VDUP": "#8a8f98",
     "S2R": "#8a8f98",
+    "IADD_I": "#7f6000",
+    "IADD": "#7f6000",
+    "LEA": "#7f6000",
+    "SHFI": "#b45f06",
+    "LOP3": "#a64d79",
+    "MOV": "#76a5af",
+    "MOVI": "#76a5af",
     "END": "#b0b6bd",
 }
 
@@ -562,7 +597,7 @@ def render_instr_issue_ipc(
     ax_lanes.text(
         0.0,
         1.02,
-        "One lane per opcode kind. Address math counted in IPC, left off lanes. Marks = issues.",
+        "One lane per body ISA group (all_isa_groups). Noise-only hide. Marks = issues.",
         transform=ax_lanes.transAxes,
         fontsize=8,
         color="#666666",
@@ -782,6 +817,10 @@ def build_from_artifacts(
         meta["lane_opcodes"] = groups
         meta["lane_counts"] = {g: sum(1 for _, op in events if op == g) for g in groups}
         meta["n_issues_all_named"] = float(len(events))
+        # t822u: fraction of named issues that appear on a lane (noise omitted)
+        _shown = float(sum(meta["lane_counts"].values())) if meta.get("lane_counts") else 0.0
+        meta["lane_coverage"] = (_shown / float(len(events))) if events else float("nan")
+        meta["lane_mode"] = "all_isa_groups"
         meta["plot_style"] = "opcode_lanes_ipc"
         if meta_stages is not None:
             meta["stages"] = meta_stages
