@@ -1,0 +1,121 @@
+CASE thread-n4096-k8
+COMPILE 0
+OK thread-n4096-k8 launches=1 VF=13143 el/cyc=0.31 mac/cyc=2.49 IPC=0.43 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k8/npusim/npusim_20261103143654_launch.py/npusim.log:PASS maxabs=2.384e-07
+CASE warp-n4096-k8
+COMPILE 0
+OK warp-n4096-k8 launches=1 VF=96089 el/cyc=0.04 mac/cyc=0.34 IPC=0.73 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n4096-k8/npusim/npusim_20261103143752_launch.py/npusim.log:PASS maxabs=0.000e+00
+CASE simd-n4096-k8
+COMPILE 0
+OK simd-n4096-k8 launches=1 VF=3669 el/cyc=1.12 mac/cyc=8.93 IPC=1.54 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n4096-k8/npusim/npusim_20261103144101_launch.py/npusim.log:PASS maxabs=0.000e+00
+CASE ub-n4096-k8
+COMPILE 0
+OK ub-n4096-k8 launches=1 VF=9189 el/cyc=0.45 mac/cyc=3.57 IPC=0.54 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n4096-k8/npusim/npusim_20261103144141_launch.py/npusim.log:PASS maxabs=2.384e-07
+CASE thread-n4096-k16
+COMPILE 0
+OK thread-n4096-k16 launches=1 VF=40304 el/cyc=0.10 mac/cyc=1.63 IPC=0.27 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k16/npusim/npusim_20261103144236_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE warp-n4096-k16
+COMPILE 0
+OK warp-n4096-k16 launches=1 VF=125354 el/cyc=0.03 mac/cyc=0.52 IPC=0.56 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n4096-k16/npusim/npusim_20261103144427_launch.py/npusim.log:PASS maxabs=4.768e-07
+CASE simd-n4096-k16
+COMPILE 0
+OK simd-n4096-k16 launches=1 VF=9313 el/cyc=0.44 mac/cyc=7.04 IPC=1.54 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n4096-k16/npusim/npusim_20261103144904_launch.py/npusim.log:PASS maxabs=4.768e-07
+CASE ub-n4096-k16
+COMPILE 0
+OK ub-n4096-k16 launches=1 VF=33802 el/cyc=0.12 mac/cyc=1.94 IPC=0.28 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n4096-k16/npusim/npusim_20261103144956_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE thread-n4096-k32
+COMPILE 0
+OK thread-n4096-k32 launches=1 VF=234340 el/cyc=0.02 mac/cyc=0.56 IPC=0.09 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k32/npusim/npusim_20261103145149_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE warp-n4096-k32
+COMPILE 0
+OK warp-n4096-k32 launches=1 VF=182059 el/cyc=0.02 mac/cyc=0.72 IPC=0.32 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n4096-k32/npusim/npusim_20261103150031_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE simd-n4096-k32
+COMPILE 0
+OK simd-n4096-k32 launches=2 VF=20688 el/cyc=0.20 mac/cyc=6.34 IPC=1.49 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n4096-k32/npusim/npusim_20261103150625_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE ub-n4096-k32
+COMPILE 0
+OK ub-n4096-k32 launches=2 VF=132303 el/cyc=0.03 mac/cyc=0.99 IPC=0.16 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n4096-k32/npusim/npusim_20261103150754_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE thread-n4096-k64
+COMPILE 0
+OK thread-n4096-k64 launches=1 VF=577735 el/cyc=0.01 mac/cyc=0.45 IPC=0.07 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k64/npusim/npusim_20261103151301_launch.py/npusim.log:PASS maxabs=2.384e-06
+CASE warp-n4096-k64
+COMPILE 0
+OK warp-n4096-k64 launches=1 VF=336183 el/cyc=0.01 mac/cyc=0.78 IPC=0.24 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n4096-k64/npusim/npusim_20261103153228_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE simd-n4096-k64
+COMPILE 0
+OK simd-n4096-k64 launches=4 VF=45528 el/cyc=0.09 mac/cyc=5.76 IPC=1.44 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n4096-k64/npusim/npusim_20261103154404_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE ub-n4096-k64
+COMPILE 0
+OK ub-n4096-k64 launches=4 VF=265690 el/cyc=0.02 mac/cyc=0.99 IPC=0.19 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n4096-k64/npusim/npusim_20261103154624_launch.py/npusim.log:PASS maxabs=2.384e-06
+CASE thread-n128-k128
+COMPILE 0
+OK thread-n128-k128 launches=1 VF=19308 el/cyc=0.01 mac/cyc=0.85 IPC=0.29 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n128-k128/npusim/npusim_20261103155701_launch.py/npusim.log:PASS maxabs=3.338e-06
+CASE warp-n128-k128
+COMPILE 0
+OK warp-n128-k128 launches=1 VF=12461 el/cyc=0.01 mac/cyc=1.31 IPC=0.33 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n128-k128/npusim/npusim_20261103155802_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE simd-n128-k128
+COMPILE 0
+OK simd-n128-k128 launches=1 VF=2553 el/cyc=0.05 mac/cyc=6.42 IPC=1.56 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n128-k128/npusim/npusim_20261103155853_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE ub-n128-k128
+COMPILE 0
+OK ub-n128-k128 launches=1 VF=17217 el/cyc=0.01 mac/cyc=0.95 IPC=0.33 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n128-k128/npusim/npusim_20261103155934_launch.py/npusim.log:PASS maxabs=3.338e-06
+CASE thread-n256-k128
+COMPILE 0
+OK thread-n256-k128 launches=1 VF=36210 el/cyc=0.01 mac/cyc=0.90 IPC=0.31 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n256-k128/npusim/npusim_20261103160049_launch.py/npusim.log:PASS maxabs=2.861e-06
+CASE warp-n256-k128
+COMPILE 0
+OK warp-n256-k128 launches=1 VF=23708 el/cyc=0.01 mac/cyc=1.38 IPC=0.33 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n256-k128/npusim/npusim_20261103160222_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE simd-n256-k128
+COMPILE 0
+OK simd-n256-k128 launches=1 VF=4984 el/cyc=0.05 mac/cyc=6.57 IPC=1.60 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n256-k128/npusim/npusim_20261103160343_launch.py/npusim.log:PASS maxabs=9.537e-07
+CASE ub-n256-k128
+COMPILE 0
+OK ub-n256-k128 launches=1 VF=33985 el/cyc=0.01 mac/cyc=0.96 IPC=0.33 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n256-k128/npusim/npusim_20261103160436_launch.py/npusim.log:PASS maxabs=2.861e-06
+CASE thread-n512-k128
+COMPILE 0
+OK thread-n512-k128 launches=1 VF=75455 el/cyc=0.01 mac/cyc=0.87 IPC=0.19 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n512-k128/npusim/npusim_20261103160600_launch.py/npusim.log:PASS maxabs=3.815e-06
+CASE warp-n512-k128
+COMPILE 0
+OK warp-n512-k128 launches=1 VF=46810 el/cyc=0.01 mac/cyc=1.40 IPC=0.33 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n512-k128/npusim/npusim_20261103160842_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE simd-n512-k128
+COMPILE 0
+OK simd-n512-k128 launches=1 VF=9859 el/cyc=0.05 mac/cyc=6.65 IPC=1.61 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n512-k128/npusim/npusim_20261103161033_launch.py/npusim.log:PASS maxabs=1.907e-06
+CASE ub-n512-k128
+COMPILE 0
+OK ub-n512-k128 launches=1 VF=66724 el/cyc=0.01 mac/cyc=0.98 IPC=0.23 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n512-k128/npusim/npusim_20261103161131_launch.py/npusim.log:PASS maxabs=3.815e-06
+CASE thread-n1024-k128
+COMPILE 0
+OK thread-n1024-k128 launches=1 VF=155646 el/cyc=0.01 mac/cyc=0.84 IPC=0.16 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n1024-k128/npusim/npusim_20261103161422_launch.py/npusim.log:PASS maxabs=5.722e-06
+CASE warp-n1024-k128
+COMPILE 0
+OK warp-n1024-k128 launches=1 VF=89806 el/cyc=0.01 mac/cyc=1.46 IPC=0.34 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n1024-k128/npusim/npusim_20261103161901_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE simd-n1024-k128
+COMPILE 0
+OK simd-n1024-k128 launches=2 VF=19718 el/cyc=0.05 mac/cyc=6.65 IPC=1.61 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n1024-k128/npusim/npusim_20261103162242_launch.py/npusim.log:PASS maxabs=1.073e-06
+CASE ub-n1024-k128
+COMPILE 0
+OK ub-n1024-k128 launches=2 VF=133802 el/cyc=0.01 mac/cyc=0.98 IPC=0.23 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n1024-k128/npusim/npusim_20261103162416_launch.py/npusim.log:PASS maxabs=5.722e-06
+CASE thread-n2048-k128
+COMPILE 0
+OK thread-n2048-k128 launches=1 VF=570802 el/cyc=0.00 mac/cyc=0.46 IPC=0.08 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n2048-k128/npusim/npusim_20261103162844_launch.py/npusim.log:PASS maxabs=5.722e-06
+CASE warp-n2048-k128
+COMPILE 0
+OK warp-n2048-k128 launches=1 VF=177125 el/cyc=0.01 mac/cyc=1.48 IPC=0.35 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/warp-n2048-k128/npusim/npusim_20261103164541_launch.py/npusim.log:PASS maxabs=1.192e-06
+CASE simd-n2048-k128
+COMPILE 0
+OK simd-n2048-k128 launches=4 VF=39436 el/cyc=0.05 mac/cyc=6.65 IPC=1.61 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/simd-n2048-k128/npusim/npusim_20261103165140_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE ub-n2048-k128
+COMPILE 0
+OK ub-n2048-k128 launches=4 VF=267071 el/cyc=0.01 mac/cyc=0.98 IPC=0.23 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/ub-n2048-k128/npusim/npusim_20261103165356_launch.py/npusim.log:PASS maxabs=5.722e-06
+CASE thread-n4096-k32-t128
+COMPILE 0
+OK thread-n4096-k32-t128 launches=1 VF=259636 el/cyc=0.02 mac/cyc=0.50 IPC=0.08 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k32-t128/npusim/npusim_20261103170300_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE thread-n4096-k32-t512
+COMPILE 0
+OK thread-n4096-k32-t512 launches=1 VF=232869 el/cyc=0.02 mac/cyc=0.56 IPC=0.10 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k32-t512/npusim/npusim_20261103172200_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE thread-n4096-k32-t1024
+COMPILE 0
+OK thread-n4096-k32-t1024 launches=1 VF=229851 el/cyc=0.02 mac/cyc=0.57 IPC=0.11 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k32-t1024/npusim/npusim_20261103173029_launch.py/npusim.log:PASS maxabs=1.431e-06
+CASE thread-n4096-k32-t2048
+COMPILE 0
+OK thread-n4096-k32-t2048 launches=1 VF=192329 el/cyc=0.02 mac/cyc=0.68 IPC=0.15 SIMT_LDK=0 SIMT_STK=0 RV_SLDI=0 RV_SSTI=0 RV_VMOV=0 | runs/thread-n4096-k32-t2048/npusim/npusim_20261103175414_launch.py/npusim.log:PASS maxabs=1.431e-06
+DONE

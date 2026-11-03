@@ -1,199 +1,205 @@
 # SV3 — GEMV
 
-`K` is the length of the sum. `k` runs from 0 to `K - 1`.
+## 1. Test-case design
+
+`N` is the number of outputs. `K` is the length of the sum. `k` runs from 0 to `K - 1`. `A` is `(N, K)`. `x` has length `K`. `Out` has length `N`.
 
 ```text
-Out[row, col] = sum_k A[k, row, col] * x[k]
+Out[n] = sum_k A[n, k] * x[k]
 ```
 
-`A` is `(K, row, col)`. `x` has length `K`. `N` is `rows × col`. el/cyc is `N / VF`. mac/cyc is `N × K / VF`.
+el/cyc is `N / VF`. mac/cyc is `N × K / VF`.
 
-## 1. Aims
-
-Measure SIMD and the two SIMT k-maps, thread and warp.
-
-## 2. Test-case design
-
-Table 3 holds `N` at 4096 and doubles `K`. The shape is 32×128. `K` is 8, 16, 32, and 64. Table 4 holds `K` at 128 and doubles `N`: `4×32`, `8×32`, `8×64`, `8×128`, `8×256`. The first step doubles rows. The rest double columns.
-
-`N = 128` and `N = 256` use 32 columns, which is not a multiple of 64, so they are not SIMD runs.
+Table 3 holds `N` at 4096 and doubles `K`. `K` is 8, 16, 32, and 64. Table 4 holds `K` at 128 and doubles `N`: 128, 256, 512, 1024, and 2048.
 
 The stock SIMT launch is 256 threads. The head-to-head search is 128, 256, 512, 1024, and 2048 threads, and it stops when the launch would pass `N`.
 
-## 3. Layout and schedule
+## 2. Layout and schedule
 
-### 3.1 SIMD
+`A[n, k]` is contiguous in `k`. One output is the `K` values on that row of `A`.
 
-One instruction is 64 columns. A row of 128 columns is two of those, one after the other. The partial stays across `K`. The buffer is 248 KB. `K = 32` and `64` are 256 KB and 512 KB, so each row is copied on its own, then one VF launch. That is 32 launches, and VF is their sum. `K = 8` and `16` fit, at 64 KB and 128 KB, and this kernel still launches once per row.
+### 2.1 SIMD
+
+One instruction is 64 float16 values along `K`. The buffer is 248 KB. A tile that fits is one launch. A tile that does not fit is split into slabs of outputs, and VF is the sum.
+
+`K` of 8, 16, 32, and 64 fit in one load, and that load covers `64 / K` outputs. `K = 128` is two loads of one output.
 
 ```text
-for row in 0 .. 31:
-    copy A[0 .. K-1, row, :]
-    for each 64 columns:
-        partial = 0
-        for k in 0 .. K-1:
-            partial += A[k, row, those columns] * x[k]
-        store partial
+load 64 values along K
+multiply by the matching x
+pairwise-add down to one sum per output
+store
 ```
 
-One output cell is one `(row, col)`. The base tile has 4096 cells.
+At `N = 4096`, `K = 8` and `16` are one launch. `K = 32` is two. `K = 64` is four. At `K = 128`, `N = 128`, `256`, and `512` are one launch. `N = 1024` is two. `N = 2048` is four.
 
-### 3.2 Thread
+### 2.2 Thread
 
-Each thread owns the whole `K` of its cells. The launch is 256 threads. On the base tile that is `(32 × 128) / 256 = 16` cells. A tile of 1024 cells is 4 per thread, and a tile of 2048 cells is 8.
-
-The 256 threads take two adjacent columns each, so one step covers 4 rows. Eight steps cover the 32 rows. A thread keeps those 8 rows, two columns each.
+Each thread owns `N / threads` outputs and walks the whole `K` of each one. The stock launch is 256 threads. On `N = 4096` that is 16 outputs. On `N = 1024` it is 4, and on `N = 2048` it is 8. Below 256 outputs the launch is one thread per output.
 
 ```text
-thread t owns 2 columns, 8 rows
-for each of those 16 cells:
+thread t owns its outputs
+for each owned n:
     partial = 0
     for k in 0 .. K-1:
-        partial += A[k, row, col] * x[k]
-    store partial
+        partial += A[n, k] * x[k]
+    Out[n] = partial
 ```
 
-### 3.3 Warp
+### 2.3 Warp
 
-A warp is 32 threads. The most threads in a launch is 2048, so the most warps is `2048 / 32 = 64`. This run uses 256 threads, which is 8 warps.
-
-Each warp owns `4096 / 8 = 512` cells on the base tile, which is 4 rows, and walks those cells one at a time. A tile of 1024 cells gives each warp 128, and a tile of 2048 cells gives each warp 256. The 32 lanes split `K`, then one warp sum. Lane 0 stores.
+A warp is 32 threads. The stock launch is 256 threads, which is 8 warps. Each warp owns `N / 8` outputs and walks them one at a time. On `N = 4096` that is 512 outputs. The 32 lanes split `K`, then one warp sum. Lane 0 stores.
 
 `K = 8` and `K = 16`. Only the first `K` lanes load. The other lanes add 0, and all 32 lanes enter the sum.
 
 ```text
-lane t, when t < K:  acc = A[t, row, col] * x[t]
+lane t, when t < K:  acc = A[n, t] * x[t]
                       redux across the 32 lanes
-lane 0 stores
+lane 0 stores Out[n]
 ```
 
 `K = 32`. One element per lane, then the sum.
 
 ```text
-lane t:  acc = A[t, row, col] * x[t]
+lane t:  acc = A[n, t] * x[t]
          redux across the 32 lanes
-lane 0 stores
+lane 0 stores Out[n]
 ```
 
-`K = 64`. Each lane adds two elements, which leaves 32 values, then the same sum.
+`K = 64` is two steps. `K = 128` is four. The step is 32.
 
 ```text
-lane t:  acc = A[t, row, col] * x[t]
-             + A[t + 32, row, col] * x[t + 32]
+lane t:  acc = 0
+         for step in 0 .. K/32 - 1:
+             acc += A[n, t + step * 32] * x[t + step * 32]
          redux across the 32 lanes
-lane 0 stores
+lane 0 stores Out[n]
 ```
 
-## 4. SIMD performance
+## 3. SIMD performance
 
 `RV_SLDI` and `RV_SSTI` are 0 on every run, so they are left out.
 
-**Table 1.** SIMD, doubling K. Shape 32×128. 32 launches.
+**Table 1.** SIMD, doubling K. `N = 4096`.
 
 <table align="center">
 <thead>
 <tr>
 <th align="center">K</th>
+<th align="center">Launches</th>
 <th align="center">VF</th>
 <th align="center">el/cyc</th>
 <th align="center">mac/cyc</th>
 <th align="center">IPC</th>
-<th align="center">RV_VMOV</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td align="center">8</td>
-<td align="center">3648</td>
+<td align="center">1</td>
+<td align="center">3669</td>
 <td align="center">1.12</td>
-<td align="center">8.98</td>
-<td align="center">0.96</td>
-<td align="center">32</td>
+<td align="center">8.93</td>
+<td align="center">1.54</td>
 </tr>
 <tr>
 <td align="center">16</td>
-<td align="center">5440</td>
-<td align="center">0.75</td>
-<td align="center">12.05</td>
-<td align="center">1.04</td>
-<td align="center">32</td>
+<td align="center">1</td>
+<td align="center">9313</td>
+<td align="center">0.44</td>
+<td align="center">7.04</td>
+<td align="center">1.54</td>
 </tr>
 <tr>
 <td align="center">32</td>
-<td align="center">9536</td>
-<td align="center">0.43</td>
-<td align="center">13.74</td>
-<td align="center">1.13</td>
-<td align="center">32</td>
+<td align="center">2</td>
+<td align="center">20688</td>
+<td align="center">0.20</td>
+<td align="center">6.34</td>
+<td align="center">1.49</td>
 </tr>
 <tr>
 <td align="center">64</td>
-<td align="center">19520</td>
-<td align="center">0.21</td>
-<td align="center">13.43</td>
-<td align="center">1.08</td>
-<td align="center">32</td>
+<td align="center">4</td>
+<td align="center">45528</td>
+<td align="center">0.09</td>
+<td align="center">5.76</td>
+<td align="center">1.44</td>
 </tr>
 </tbody>
 </table>
 
-`RV_VMOV` is the same PC, once per row.
+`K = 32` and `K = 64` do not fit in one buffer copy. The VF is the sum of the slabs.
 
-**Table 2.** SIMD, doubling N. `K = 128`. Eight launches. `N = 128` and `N = 256` use 32 columns, which is not a multiple of 64.
+**Table 2.** SIMD, doubling N. `K = 128`.
 
 <table align="center">
 <thead>
 <tr>
 <th align="center">N</th>
+<th align="center">Launches</th>
 <th align="center">VF</th>
 <th align="center">el/cyc</th>
 <th align="center">mac/cyc</th>
 <th align="center">IPC</th>
-<th align="center">RV_VMOV</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">512, 8×64</td>
-<td align="center">5560</td>
-<td align="center">0.09</td>
-<td align="center">11.79</td>
-<td align="center">0.94</td>
-<td align="center">0</td>
+<td align="center">128</td>
+<td align="center">1</td>
+<td align="center">2553</td>
+<td align="center">0.050</td>
+<td align="center">6.42</td>
+<td align="center">1.56</td>
 </tr>
 <tr>
-<td align="center">1024, 8×128</td>
-<td align="center">10000</td>
-<td align="center">0.10</td>
-<td align="center">13.11</td>
-<td align="center">1.04</td>
-<td align="center">8</td>
+<td align="center">256</td>
+<td align="center">1</td>
+<td align="center">4984</td>
+<td align="center">0.051</td>
+<td align="center">6.57</td>
+<td align="center">1.60</td>
 </tr>
 <tr>
-<td align="center">2048, 8×256</td>
-<td align="center">19112</td>
-<td align="center">0.11</td>
-<td align="center">13.72</td>
-<td align="center">1.31</td>
-<td align="center">32</td>
+<td align="center">512</td>
+<td align="center">1</td>
+<td align="center">9859</td>
+<td align="center">0.052</td>
+<td align="center">6.65</td>
+<td align="center">1.61</td>
+</tr>
+<tr>
+<td align="center">1024</td>
+<td align="center">2</td>
+<td align="center">19718</td>
+<td align="center">0.052</td>
+<td align="center">6.65</td>
+<td align="center">1.61</td>
+</tr>
+<tr>
+<td align="center">2048</td>
+<td align="center">4</td>
+<td align="center">39436</td>
+<td align="center">0.052</td>
+<td align="center">6.65</td>
+<td align="center">1.61</td>
 </tr>
 </tbody>
 </table>
 
-## 5. SIMT performance
+## 4. SIMT performance
 
-### 5.1 Thread and warp
+### 4.1 Thread and warp
 
 Δ VF is the warp VF minus the thread VF. A negative Δ VF means the warp finished first. The lower VF is bold. `LDK` and `STK` are 0 on every run, so they are left out.
 
-Doubling rows or doubling columns at the same `N` stayed within about a thousand cycles. Table 4 doubles `N`.
-
-**Table 3.** SIMT thread and warp, doubling K. Shape 32×128.
+**Table 3.** SIMT thread and warp, doubling K. `N = 4096`.
 
 <table align="center">
 <thead>
 <tr>
-<th align="center" rowspan="2">Shape</th>
+<th align="center" rowspan="2">K</th>
 <th align="center" colspan="4">Thread</th>
 <th align="center" colspan="4">Warp</th>
 <th align="center" rowspan="2">Δ VF</th>
@@ -205,23 +211,25 @@ Doubling rows or doubling columns at the same `N` stayed within about a thousand
 </thead>
 <tbody>
 <tr>
-<td align="center">32×128, K=8</td>
-<td align="center"><b>16938</b></td><td align="center">0.24</td><td align="center">1.93</td><td align="center">0.20</td><td align="center">80606</td><td align="center">0.05</td><td align="center">0.41</td><td align="center">0.92</td><td align="center">63668</td>
+<td align="center">8</td>
+<td align="center"><b>13143</b></td><td align="center">0.31</td><td align="center">2.49</td><td align="center">0.43</td><td align="center">96089</td><td align="center">0.04</td><td align="center">0.34</td><td align="center">0.73</td><td align="center">82946</td>
 </tr>
 <tr>
-<td align="center">32×128, K=16</td>
-<td align="center"><b>31966</b></td><td align="center">0.13</td><td align="center">2.05</td><td align="center">0.20</td><td align="center">107818</td><td align="center">0.04</td><td align="center">0.61</td><td align="center">0.69</td><td align="center">75852</td>
+<td align="center">16</td>
+<td align="center"><b>40304</b></td><td align="center">0.10</td><td align="center">1.63</td><td align="center">0.27</td><td align="center">125354</td><td align="center">0.03</td><td align="center">0.52</td><td align="center">0.56</td><td align="center">85050</td>
 </tr>
 <tr>
-<td align="center">32×128, K=32</td>
-<td align="center"><b>61876</b></td><td align="center">0.07</td><td align="center">2.12</td><td align="center">0.21</td><td align="center">165298</td><td align="center">0.02</td><td align="center">0.79</td><td align="center">0.35</td><td align="center">103422</td>
+<td align="center">32</td>
+<td align="center">234340</td><td align="center">0.02</td><td align="center">0.56</td><td align="center">0.09</td><td align="center"><b>182059</b></td><td align="center">0.02</td><td align="center">0.72</td><td align="center">0.32</td><td align="center">−52281</td>
 </tr>
 <tr>
-<td align="center">32×128, K=64</td>
-<td align="center"><b>121838</b></td><td align="center">0.03</td><td align="center">2.15</td><td align="center">0.21</td><td align="center">341235</td><td align="center">0.01</td><td align="center">0.77</td><td align="center">0.23</td><td align="center">219397</td>
+<td align="center">64</td>
+<td align="center">577735</td><td align="center">0.01</td><td align="center">0.45</td><td align="center">0.07</td><td align="center"><b>336183</b></td><td align="center">0.01</td><td align="center">0.78</td><td align="center">0.24</td><td align="center">−241552</td>
 </tr>
 </tbody>
 </table>
+
+The thread map is shorter at `K = 8` and `K = 16`. The warp map is shorter at `K = 32` and `K = 64`.
 
 **Table 4.** SIMT thread and warp, doubling N. `K = 128`.
 
@@ -240,45 +248,39 @@ Doubling rows or doubling columns at the same `N` stayed within about a thousand
 </thead>
 <tbody>
 <tr>
-<td align="center">128, 4×32</td>
-<td align="center">64873</td><td align="center">0.002</td><td align="center">0.25</td><td align="center">0.09</td><td align="center"><b>20460</b></td><td align="center">0.006</td><td align="center">0.80</td><td align="center">0.19</td><td align="center">−44413</td>
+<td align="center">128</td>
+<td align="center">19308</td><td align="center">0.007</td><td align="center">0.85</td><td align="center">0.29</td><td align="center"><b>12461</b></td><td align="center">0.010</td><td align="center">1.31</td><td align="center">0.33</td><td align="center">−6847</td>
 </tr>
 <tr>
-<td align="center">256, 8×32</td>
-<td align="center">69957</td><td align="center">0.004</td><td align="center">0.47</td><td align="center">0.18</td><td align="center"><b>38018</b></td><td align="center">0.007</td><td align="center">0.86</td><td align="center">0.20</td><td align="center">−31939</td>
+<td align="center">256</td>
+<td align="center">36210</td><td align="center">0.007</td><td align="center">0.90</td><td align="center">0.31</td><td align="center"><b>23708</b></td><td align="center">0.011</td><td align="center">1.38</td><td align="center">0.33</td><td align="center">−12502</td>
 </tr>
 <tr>
-<td align="center">512, 8×64</td>
-<td align="center"><b>81451</b></td><td align="center">0.006</td><td align="center">0.80</td><td align="center">0.16</td><td align="center">93811</td><td align="center">0.005</td><td align="center">0.70</td><td align="center">0.16</td><td align="center">12360</td>
+<td align="center">512</td>
+<td align="center">75455</td><td align="center">0.007</td><td align="center">0.87</td><td align="center">0.19</td><td align="center"><b>46810</b></td><td align="center">0.011</td><td align="center">1.40</td><td align="center">0.33</td><td align="center">−28645</td>
 </tr>
 <tr>
-<td align="center">1024, 8×128</td>
-<td align="center"><b>82925</b></td><td align="center">0.012</td><td align="center">1.58</td><td align="center">0.21</td><td align="center">186704</td><td align="center">0.005</td><td align="center">0.70</td><td align="center">0.16</td><td align="center">103779</td>
+<td align="center">1024</td>
+<td align="center">155646</td><td align="center">0.007</td><td align="center">0.84</td><td align="center">0.16</td><td align="center"><b>89806</b></td><td align="center">0.011</td><td align="center">1.46</td><td align="center">0.34</td><td align="center">−65840</td>
 </tr>
 <tr>
-<td align="center">2048, 8×256</td>
-<td align="center"><b>87489</b></td><td align="center">0.023</td><td align="center">3.00</td><td align="center">0.29</td><td align="center">448960</td><td align="center">0.005</td><td align="center">0.58</td><td align="center">0.13</td><td align="center">361471</td>
+<td align="center">2048</td>
+<td align="center">570802</td><td align="center">0.004</td><td align="center">0.46</td><td align="center">0.08</td><td align="center"><b>177125</b></td><td align="center">0.012</td><td align="center">1.48</td><td align="center">0.35</td><td align="center">−393677</td>
 </tr>
 </tbody>
 </table>
 
-Warp `8×256` has no `instr.bin` on disk. That VF is from the earlier record.
+The warp map is shorter at every `N` in this table. Below 256 cells the thread launch is one thread per cell. The warp launch stays 256 threads.
 
 **Figure 1.** VF as N doubles. `K = 128`. Thread and warp.
 
 ![VF as N doubles, K = 128](plots/n_vf.png)
 
-Warp is better only for a small `N`. Threads are better from 512 cells up.
+### 4.2 Thread sensitivity
 
-- `N = 128` and `N = 256`: warp
-- `N = 512`, `1024`, and `2048`: thread
-- Below 256 cells the thread launch is one thread per cell. The warp launch stays 256 threads.
+Shape `N = 4096`, `K = 32`. The launch is 128, 256, 512, 1024, and 2048 threads. Cells per thread is `4096 / threads`. The 256-thread row is the one in Table 3.
 
-### 5.2 Thread sensitivity
-
-Shape 32×128, `K = 32`. `N` is 4096. The launch is 128, 256, 512, 1024, and 2048 threads. Cells per thread is `4096 / threads`. The 256-thread row is the one in Table 3.
-
-**Table 5.** Thread sensitivity. 32×128, `K = 32`.
+**Table 5.** Thread sensitivity. `N = 4096`, `K = 32`.
 
 <table align="center">
 <thead>
@@ -295,51 +297,51 @@ Shape 32×128, `K = 32`. `N` is 4096. The launch is 128, 256, 512, 1024, and 204
 <tr>
 <td align="center">128</td>
 <td align="center">32</td>
-<td align="center">62796</td>
-<td align="center">0.07</td>
-<td align="center">2.09</td>
-<td align="center">0.19</td>
+<td align="center">259636</td>
+<td align="center">0.02</td>
+<td align="center">0.50</td>
+<td align="center">0.08</td>
 </tr>
 <tr>
 <td align="center">256</td>
 <td align="center">16</td>
-<td align="center">61876</td>
-<td align="center">0.07</td>
-<td align="center">2.12</td>
-<td align="center">0.21</td>
+<td align="center">234340</td>
+<td align="center">0.02</td>
+<td align="center">0.56</td>
+<td align="center">0.09</td>
 </tr>
 <tr>
 <td align="center">512</td>
 <td align="center">8</td>
-<td align="center">42024</td>
+<td align="center">232869</td>
+<td align="center">0.02</td>
+<td align="center">0.56</td>
 <td align="center">0.10</td>
-<td align="center">3.12</td>
-<td align="center">0.36</td>
 </tr>
 <tr>
 <td align="center">1024</td>
 <td align="center">4</td>
-<td align="center">25653</td>
-<td align="center">0.16</td>
-<td align="center">5.11</td>
-<td align="center">0.78</td>
+<td align="center">229851</td>
+<td align="center">0.02</td>
+<td align="center">0.57</td>
+<td align="center">0.11</td>
 </tr>
 <tr>
 <td align="center">2048</td>
 <td align="center">2</td>
-<td align="center"><b>24134</b></td>
-<td align="center">0.17</td>
-<td align="center">5.43</td>
-<td align="center">1.13</td>
+<td align="center"><b>192329</b></td>
+<td align="center">0.02</td>
+<td align="center">0.68</td>
+<td align="center">0.15</td>
 </tr>
 </tbody>
 </table>
 
-128 and 256 stay near 62000. The VF drops at 512 and again at 1024. 2048 is close to 1024. `LDK` and `STK` are 0.
+The window shortens as the launch grows. 2048 threads is the shortest. `LDK` and `STK` are 0.
 
-### 5.3 Operation breakdown
+### 4.3 Operation breakdown
 
-32×128, `K = 32`, 256 threads, the GM thread run. `N` is 4096. Each row is its own kernel.
+`N = 4096`, `K = 32`, 256 threads, the GM thread run. Each row is its own kernel.
 
 **Whole kernel.** el/cyc is `N / VF` over the entire VF window, including the loads an operator needs and the store that keeps the result.
 
@@ -347,7 +349,7 @@ Shape 32×128, `K = 32`. `N` is 4096. The launch is 128, 256, 512, 1024, and 204
 
 `load` sums `A` along `K`, so the loads stay. `ffma` is the gemv. `sts` stores the constant 1 and does not load. Address math is left out of the opcode column.
 
-**Table 6.** Operation breakdown, whole kernel. 32×128, `K = 32`, 256 threads.
+**Table 6.** Operation breakdown, whole kernel. `N = 4096`, `K = 32`, 256 threads.
 
 <table align="center">
 <thead>
@@ -362,29 +364,29 @@ Shape 32×128, `K = 32`. `N` is 4096. The launch is 128, 256, 512, 1024, and 204
 <tbody>
 <tr>
 <td align="center">load</td>
-<td align="center">44001</td>
+<td align="center">233381</td>
+<td align="center">0.02</td>
 <td align="center">0.09</td>
-<td align="center">0.27</td>
-<td align="center">4096 FADD, 2048 LDG, 2048 F2F, 64 STS</td>
+<td align="center">4096 FADD, 4096 LDG, 4096 F2F, 64 STS</td>
 </tr>
 <tr>
 <td align="center">ffma</td>
-<td align="center">61454</td>
-<td align="center">0.07</td>
-<td align="center">0.21</td>
-<td align="center">4096 FFMA, 2304 LDG, 2304 F2F, 64 STS</td>
+<td align="center">234238</td>
+<td align="center">0.02</td>
+<td align="center">0.09</td>
+<td align="center">4096 FFMA, 4352 LDG, 4352 F2F, 64 STS</td>
 </tr>
 <tr>
 <td align="center">sts</td>
-<td align="center">679</td>
-<td align="center"><b>6.03</b></td>
-<td align="center">0.28</td>
+<td align="center"><b>695</b></td>
+<td align="center">5.89</td>
+<td align="center">0.27</td>
 <td align="center">64 STS</td>
 </tr>
 </tbody>
 </table>
 
-**Table 7.** Operation breakdown, operator window. 32×128, `K = 32`, 256 threads.
+**Table 7.** Operation breakdown, operator window. `N = 4096`, `K = 32`, 256 threads.
 
 <table align="center">
 <thead>
@@ -399,50 +401,47 @@ Shape 32×128, `K = 32`. `N` is 4096. The launch is 128, 256, 512, 1024, and 204
 <tr>
 <td align="center">load</td>
 <td align="center">LDG</td>
-<td align="center">285–43459</td>
-<td align="center">3.04</td>
+<td align="center">375–233211</td>
+<td align="center">0.56</td>
 </tr>
 <tr>
 <td align="center">ffma</td>
 <td align="center">FFMA</td>
-<td align="center">2960–61305</td>
-<td align="center">2.25</td>
+<td align="center">6291–234157</td>
+<td align="center">0.58</td>
 </tr>
 <tr>
 <td align="center">sts</td>
 <td align="center">STS</td>
-<td align="center">206–524</td>
-<td align="center"><b>12.88</b></td>
+<td align="center">208–524</td>
+<td align="center"><b>12.96</b></td>
 </tr>
 </tbody>
 </table>
 
-`sts` is the fastest whole kernel and the fastest issue window. `load` and `ffma` stay near 0.07–0.09 el/cyc. The `ffma` VF is next to the stock thread run at 61876. The FFMA issues span most of the window after the loads.
+`sts` is the shortest kernel and the fastest issue window. `load` and `ffma` are almost the same window. The multiply does not add a separate pass. The loads already cover it.
 
-### 5.4 Buffer staging
+### 4.4 Buffer staging
 
-Same shapes as the head-to-head. `A` and `x` are copied into the buffer before the VF, and the VF loads them from the buffer. The copy sits outside the VF window. VF is the sum of the launches.
+Same shapes as the head-to-head. `A` and `x` are copied into the buffer before the VF, and the VF loads them from the buffer. The copy sits outside the VF window. VF is the sum of the launches. The launch is 256 threads.
 
-The buffer is 248 KB. A tile that fits is one launch. A tile that does not fit is split into row slabs, one launch each.
+The buffer is 248 KB. A tile that fits is one launch. A tile that does not fit is split into slabs of outputs.
 
-- `32×128`, `K = 8` and `K = 16`, and `8×64`, `K = 128`: one launch
-- `32×128`, `K = 32`, and `8×128`, `K = 128`: two launches
-- `32×128`, `K = 64`, and `8×256`, `K = 128`: four launches
+- `N = 4096`, `K = 8` and `K = 16`, and `N = 512`, `K = 128`: one launch
+- `N = 4096`, `K = 32`, and `N = 1024`, `K = 128`: two launches
+- `N = 4096`, `K = 64`, and `N = 2048`, `K = 128`: four launches
 
-The thread count is the head-to-head count when the slab has that many cells. `K = 64` is 1024 threads, because a slab is 8 rows. `8×128` and `8×256` are 512 threads, because a slab is 512 cells. The GM column on those two shapes is 1024. At `K = 8` and 2048 threads that GM run spills, 320 `LDK` and 320 `STK`. The other GM rows in that column stay at 0.
-
-**Table 8.** Buffer staging against the GM SIMT column. Δ VF is the buffer VF minus the GM VF.
+**Table 8.** Buffer staging against the GM thread column. Δ VF is the buffer VF minus the GM VF.
 
 <table align="center">
 <thead>
 <tr>
 <th align="center" rowspan="2">Shape</th>
-<th align="center" colspan="6">Buffer staging</th>
+<th align="center" colspan="5">Buffer staging</th>
 <th align="center" rowspan="2">GM VF</th>
 <th align="center" rowspan="2">Δ VF</th>
 </tr>
 <tr>
-<th align="center">Threads</th>
 <th align="center">Launches</th>
 <th align="center">VF</th>
 <th align="center">el/cyc</th>
@@ -452,116 +451,105 @@ The thread count is the head-to-head count when the slab has that many cells. `K
 </thead>
 <tbody>
 <tr>
-<td align="center">32×128, K=8</td>
-<td align="center">2048</td>
+<td align="center">N=4096, K=8</td>
 <td align="center">1</td>
-<td align="center"><b>4608</b></td>
-<td align="center">0.89</td>
-<td align="center">7.11</td>
-<td align="center">1.19</td>
-<td align="center">5885</td>
-<td align="center">−1277</td>
+<td align="center"><b>9189</b></td>
+<td align="center">0.45</td>
+<td align="center">3.57</td>
+<td align="center">0.54</td>
+<td align="center">13143</td>
+<td align="center">−3954</td>
 </tr>
 <tr>
-<td align="center">32×128, K=16</td>
-<td align="center">2048</td>
+<td align="center">N=4096, K=16</td>
 <td align="center">1</td>
-<td align="center"><b>5464</b></td>
-<td align="center">0.75</td>
-<td align="center">11.99</td>
-<td align="center">2.59</td>
-<td align="center">12639</td>
-<td align="center">−7175</td>
-</tr>
-<tr>
-<td align="center">32×128, K=32</td>
-<td align="center">2048</td>
-<td align="center">2</td>
-<td align="center"><b>17599</b></td>
-<td align="center">0.23</td>
-<td align="center">7.45</td>
-<td align="center">2.89</td>
-<td align="center">24134</td>
-<td align="center">−6535</td>
-</tr>
-<tr>
-<td align="center">32×128, K=64</td>
-<td align="center">1024</td>
-<td align="center">4</td>
-<td align="center"><b>35134</b></td>
+<td align="center"><b>33802</b></td>
 <td align="center">0.12</td>
-<td align="center">7.46</td>
-<td align="center">2.85</td>
-<td align="center">45829</td>
-<td align="center">−10695</td>
+<td align="center">1.94</td>
+<td align="center">0.28</td>
+<td align="center">40304</td>
+<td align="center">−6502</td>
 </tr>
 <tr>
-<td align="center">8×64, K=128</td>
-<td align="center">512</td>
-<td align="center">1</td>
-<td align="center"><b>11841</b></td>
-<td align="center">0.04</td>
-<td align="center">5.53</td>
-<td align="center">2.09</td>
-<td align="center">77535</td>
-<td align="center">−65694</td>
-</tr>
-<tr>
-<td align="center">8×128, K=128</td>
-<td align="center">512</td>
+<td align="center">N=4096, K=32</td>
 <td align="center">2</td>
-<td align="center"><b>22362</b></td>
-<td align="center">0.05</td>
-<td align="center">5.86</td>
-<td align="center">2.22</td>
-<td align="center">80559</td>
-<td align="center">−58197</td>
+<td align="center"><b>132303</b></td>
+<td align="center">0.03</td>
+<td align="center">0.99</td>
+<td align="center">0.16</td>
+<td align="center">234340</td>
+<td align="center">−102037</td>
 </tr>
 <tr>
-<td align="center">8×256, K=128</td>
-<td align="center">512</td>
+<td align="center">N=4096, K=64</td>
 <td align="center">4</td>
-<td align="center"><b>49221</b></td>
-<td align="center">0.04</td>
-<td align="center">5.33</td>
-<td align="center">2.02</td>
-<td align="center">83326</td>
-<td align="center">−34105</td>
+<td align="center"><b>265690</b></td>
+<td align="center">0.02</td>
+<td align="center">0.99</td>
+<td align="center">0.19</td>
+<td align="center">577735</td>
+<td align="center">−312045</td>
+</tr>
+<tr>
+<td align="center">N=512, K=128</td>
+<td align="center">1</td>
+<td align="center"><b>66724</b></td>
+<td align="center">0.008</td>
+<td align="center">0.98</td>
+<td align="center">0.23</td>
+<td align="center">75455</td>
+<td align="center">−8731</td>
+</tr>
+<tr>
+<td align="center">N=1024, K=128</td>
+<td align="center">2</td>
+<td align="center"><b>133802</b></td>
+<td align="center">0.008</td>
+<td align="center">0.98</td>
+<td align="center">0.23</td>
+<td align="center">155646</td>
+<td align="center">−21844</td>
+</tr>
+<tr>
+<td align="center">N=2048, K=128</td>
+<td align="center">4</td>
+<td align="center"><b>267071</b></td>
+<td align="center">0.008</td>
+<td align="center">0.98</td>
+<td align="center">0.23</td>
+<td align="center">570802</td>
+<td align="center">−303731</td>
 </tr>
 </tbody>
 </table>
 
-The buffer VF is lower than the GM VF on every row.
+The buffer VF is lower than the GM VF on every row. `LDK` and `STK` are 0.
 
-`K = 8` at 2048 threads spills, 448 `LDK` and 448 `STK`. The other rows stay at 0.
+## 5. Running IPC
 
-On `32×128`, 256 threads is lower than 2048. `K = 8` is one launch, VF 2232. `K = 32` is two launches, VF 9759.
+The charts are `N = 4096`, `K = 32`, the middle of the K sweep, except Figure 1, which is the `K = 128` length sweep. The line is IPC in bins of 20 ticks. Address math stays in the line and off the rows.
 
-## 6. Running IPC
+### 5.1 SIMD
 
-The charts are `32×128`, `K = 32`, the middle of the K sweep. SIMD is the row kernel. SIMT is the 256-thread buffer run, the lowest SIMT VF on this shape. The line is IPC in bins of 20 ticks.
+Two slabs, placed end to end. The sum is VF 20688. `VCPADD` issues 10240 times. `VLDI` and `VCVT_F2F` issue 2050 times. `VMUL`, `VADD`, and `VSTI` issue 2048 times. The line stays near 1.5 and drops once, between the slabs. The scalar IPC is 1.49.
 
-### 6.1 SIMD
+**Figure 2.** SIMD instructions. `N = 4096`, `K = 32`. VF 20688.
 
-The 32 launches are placed end to end. Each one is 298 ticks, and the sum is the VF of 9536. `VLDI`, `VCVT`, and `VMULA` issue together. Each launch ends with two `VSTI`. The line drops at the end of every launch. Scalar moves stay in the line and off the rows.
+![SIMD instructions, N = 4096, K = 32](plots/simd_instr.png)
 
-**Figure 2.** SIMD instructions. 32×128, `K = 32`. VF 9536.
+### 5.2 SIMT
 
-![SIMD instructions, 32×128, K=32](plots/simd_instr.png)
+The buffer run, 256 threads. Two launches, and the sum is VF 132303. `LDS` and `F2F` issue 4608 times. `FFMA` issues 4096 times. `STS` issues 64 times, at the end of each launch. The line stays under 1, with a short spike near 2 at the start of each launch. The scalar IPC is 0.16.
 
-### 6.2 SIMT
+**Figure 3.** Buffer SIMT instructions. `N = 4096`, `K = 32`, 256 threads. VF 132303.
 
-The case is two launches, and the sum is the VF of 9759. The figure is the first launch, and it stops at the last issue. `LDS`, `F2F`, and `FFMA` run together. `STS` is the stores at the end. Address math stays in the line and off the rows.
+![Buffer SIMT instructions, N = 4096, K = 32](plots/simt_first_launch.png)
 
-**Figure 3.** SIMT instructions, first launch, through the last issue. 32×128, `K = 32`, buffer, 256 threads.
+## 6. Conclusion
 
-![SIMT instructions, first launch, 32×128, K=32, buffer](plots/simt_first_launch.png)
+SIMD is the lower VF on every row. Bold is that VF.
 
-## 7. Conclusion
-
-SIMT is the lowest buffer VF on that shape. Bold is the lower VF.
-
-**Table 9.** Head-to-head. Best buffer SIMT against SIMD.
+**Table 9.** Head-to-head. Buffer SIMT, 256 threads, against SIMD.
 
 <table align="center">
 <thead>
@@ -575,101 +563,83 @@ SIMT is the lowest buffer VF on that shape. Bold is the lower VF.
 </thead>
 <tbody>
 <tr>
-<td align="center">32×128, K=8</td>
-<td align="center"><b>2232</b></td>
-<td align="center">3648</td>
-<td align="center">−1416</td>
-<td align="center">0.61</td>
+<td align="center">N=4096, K=8</td>
+<td align="center">9189</td>
+<td align="center"><b>3669</b></td>
+<td align="center">5520</td>
+<td align="center">2.50</td>
 </tr>
 <tr>
-<td align="center">32×128, K=16</td>
-<td align="center">5464</td>
-<td align="center"><b>5440</b></td>
-<td align="center">24</td>
-<td align="center">1.00</td>
+<td align="center">N=4096, K=16</td>
+<td align="center">33802</td>
+<td align="center"><b>9313</b></td>
+<td align="center">24489</td>
+<td align="center">3.63</td>
 </tr>
 <tr>
-<td align="center">32×128, K=32</td>
-<td align="center">9759</td>
-<td align="center"><b>9536</b></td>
-<td align="center">223</td>
-<td align="center">1.02</td>
+<td align="center">N=4096, K=32</td>
+<td align="center">132303</td>
+<td align="center"><b>20688</b></td>
+<td align="center">111615</td>
+<td align="center">6.40</td>
 </tr>
 <tr>
-<td align="center">32×128, K=64</td>
-<td align="center">35134</td>
-<td align="center"><b>19520</b></td>
-<td align="center">15614</td>
-<td align="center">1.80</td>
+<td align="center">N=4096, K=64</td>
+<td align="center">265690</td>
+<td align="center"><b>45528</b></td>
+<td align="center">220162</td>
+<td align="center">5.84</td>
 </tr>
 <tr>
-<td align="center">8×64, K=128</td>
-<td align="center">11841</td>
-<td align="center"><b>5560</b></td>
-<td align="center">6281</td>
-<td align="center">2.13</td>
+<td align="center">N=512, K=128</td>
+<td align="center">66724</td>
+<td align="center"><b>9859</b></td>
+<td align="center">56865</td>
+<td align="center">6.77</td>
 </tr>
 <tr>
-<td align="center">8×128, K=128</td>
-<td align="center">22362</td>
-<td align="center"><b>10000</b></td>
-<td align="center">12362</td>
-<td align="center">2.24</td>
+<td align="center">N=1024, K=128</td>
+<td align="center">133802</td>
+<td align="center"><b>19718</b></td>
+<td align="center">114084</td>
+<td align="center">6.79</td>
 </tr>
 <tr>
-<td align="center">8×256, K=128</td>
-<td align="center">49221</td>
-<td align="center"><b>19112</b></td>
-<td align="center">30109</td>
-<td align="center">2.58</td>
+<td align="center">N=2048, K=128</td>
+<td align="center">267071</td>
+<td align="center"><b>39436</b></td>
+<td align="center">227635</td>
+<td align="center">6.77</td>
 </tr>
 </tbody>
 </table>
 
-Δ VF is the SIMT VF minus the SIMD VF. SIMT/SIMD is the VF ratio. Buffer SIMT is lower at `K = 8`. From `K = 16` on, SIMD is lower, and the gap widens as the tile takes more launches.
+Δ VF is the SIMT VF minus the SIMD VF. SIMT/SIMD is the VF ratio. SIMD is shorter on every row.
 
 ## Appendix
 
 ### Recreating the cases
 
-Run these from `benches/sv3/kmap`. The default case directory is `<kind>-r<rows>c<cols>-k<K>`. A thread launch other than 256 is `<kind>-r<rows>c<cols>-k<K>-t<threads>`.
+Run these from `benches/sv3/nk`. The case directory is `runs/<kind>-n<N>-k<K>`. A thread launch other than 256 is `runs/thread-n<N>-k<K>-t<threads>`.
 
 ```bash
-python compile.py thread|warp|simd rows cols K [threads]
-npusim record -s Ascend950 -o <case>/npusim -g -n 0 "python launch.py <case>/kernel.so rows cols K"
-python decode.py <instr.bin> rows cols K thread|warp|simd
+python compile.py thread|ub|warp|simd N K [threads]
+npusim record -s Ascend950 -o runs/<case>/npusim -g -n 0 "python launch.py runs/<case>/kernel.so N K"
+python decode.py <instr.bin> N K thread|simd
 ```
 
-`instr.bin` is the newest file under `<case>/npusim`. Decode reads veccore 0. It prints VF, el/cyc, mac/cyc, IPC, and the spill counts. Δ VF is the warp VF minus the thread VF.
+`instr.bin` is the newest file under `runs/<case>/npusim`. Decode reads veccore 0. It prints VF, el/cyc, mac/cyc, IPC, and the spill counts. Pass `thread` for the thread, warp, and buffer traces, and `simd` for the SIMD trace.
 
-**Table 3.** 32×128. `K` is 8, 16, 32, 64. Thread and warp.
+**Tables 1 and 3.** `N = 4096`. `K` is 8, 16, 32, 64. SIMD, thread, and warp.
 
-**Table 4.** `K = 128`. `4×32`, `8×32`, `8×64`, `8×128`, `8×256`. Thread and warp. `N` doubles. The first step doubles rows. The rest double columns. Warp `8×256` has no `instr.bin` here; that VF is from the earlier record.
+**Table 2 and 4.** `K = 128`. `N` is 128, 256, 512, 1024, 2048.
 
-**SIMD.** 32×128. `K` is 8, 16, 32, 64. At `K = 128`, `8×64`, `8×128`, `8×256`.
+**Table 5.** `N = 4096`, `K = 32`. Threads 128, 512, 1024, and 2048 are `thread-n4096-k32-t<threads>`. The 256-thread case is `thread-n4096-k32`.
 
-**Thread sensitivity.** 32×128, `K = 32`. Threads 128, 512, 1024, and 2048 are `thread-r32c128-k32-t<threads>`. The 256-thread case is `thread-r32c128-k32`.
+**Table 8.** Buffer cases are `ub-n<N>-k<K>`. The GM column is the matching `thread-n<N>-k<K>`.
 
-```bash
-python compile.py thread 32 128 32 <threads>
-```
+**Table 9.** Buffer VF from Table 8 against the SIMD VF from Tables 1 and 2.
 
-**Head-to-head SIMT.** Best thread count per shape. Extra launches are `thread-r32c128-k{K}-t2048`, `thread-r8c64-k128-t512`, `thread-r8c128-k128-t1024`, and `thread-r8c256-k128-t1024`.
+**Tables 6 and 7.** `runs/ops/load`, `runs/ops/ffma`, and `runs/ops/sts`. `python ops.py compile`, then `ops_launch.py runs/ops/<name>/kernel.so load|ffma|sts`.
 
-**Buffer staging.** Same shapes as the head-to-head. `ub-r32c128-k8-t2048`, `ub-r32c128-k16-t2048`, `ub-r32c128-k32-t2048`, `ub-r32c128-k64-t1024`, `ub-r8c64-k128-t512`, `ub-r8c128-k128-t512`, `ub-r8c256-k128-t512`. The 256-thread checks are `ub-r32c128-k8-t256` and `ub-r32c128-k32-t256`.
-
-```bash
-python compile.py ub rows cols K threads
-```
-
-**Running IPC.** `32×128`, `K = 32`. SIMD is `simd-r32c128-k32`. SIMT is the buffer run `ub-r32c128-k32-t256`.
-
-**Operation breakdown.** 32×128, `K = 32`, 256 threads, the GM thread run. `ops.py` writes `load`, `ffma`, and `sts` under `ops/<name>/`.
-
-```bash
-python ops.py compile
-npusim record -s Ascend950 -o ops/<name>/npusim -g -n 0 "python ops_launch.py ops/<name>/kernel.so <name>"
-python ops_decode.py <instr.bin> load|ffma|sts
-```
-
-`<name>` is `load`, `ffma`, or `sts`.
+**Figures.** Figure 1 is Table 4. Figure 2 reads `runs/simd-n4096-k32`. Figure 3 reads `runs/ub-n4096-k32`. `python plot_charts.py` writes all three under `../plots/`.
