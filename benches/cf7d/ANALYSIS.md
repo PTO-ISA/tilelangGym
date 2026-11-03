@@ -87,6 +87,98 @@ Tag scheme: `cf7d_e{E}_b{B}_g{G}_vl{VL}_pgate{P}_arm{A\|B\|C}`.
 
 ---
 
+## 2b. Key code slices — G / p_gate × arm lowering
+
+Source: `benches/cf7d/cf7d_outer_inner_if.py` (module-level `@pto.jit` per `(arm, G, n_trips)`).  
+Line numbers match that file on tip. Gold host `reference()` is true outer `if`; *d arms differ in how that outer gate is lowered.
+
+| Knob | How it enters the kernel |
+|------|--------------------------|
+| **`G`** | Unrolled fat inner `for _t in range(G): vmul(…, SCALE)` under each outer trip (A/B always; C only for true trips). `G=0` → no scale loop. |
+| **`p_gate`** | Host `n_true = round(B·p_gate/100)` → gate vector prefix true. **A/B:** still compile `for b in range(8)` (B). **C:** pick `kernel_C_g{G}_n{n_true}` so outer trip count **is** `n_true`. |
+
+### Design intent vs as-landed (arm B)
+
+Design wanted **AND-merge** (`p_inner &= p_outer` / PAND into kill mask). As-landed *d B is **post-kill outer `vsel(p_outer, …)`** — same issue shape as A → measured **A≡B** (no distinct PAND opcode).
+
+```text
+# Design intent (ST_CF7 §2.3) — NOT what *d B emits today
+p_outer = (gate > gate_thr)
+p_kill  = (scores > thr) AND p_outer   # ← PAND / mask merge
+out = select(p_kill, -inf, scores)
+```
+
+### Arm A — pure_slack (always enter; outer NOT AND'd into kill)
+
+Thin `G=0` (`kernel_A_g0_n8`, L77–94): kill always issues, then outer `vsel` publishes.
+
+```python
+for b in range(8):                          # B=8 always — p_gate only shapes gate[] data
+    ...
+    p_outer = pto.vmi.vcmp(gate_b, gate_thr_v, mask, "gt")
+    k0 = pto.vmi.vsel(pto.vmi.vcmp(k0, thr_b, mask, "gt"), neg_inf, k0)  # kill always
+    ...
+    s0 = pto.vmi.vsel(p_outer, k0, s0)      # outer gate AFTER kill — not AND into kill
+```
+
+Fat `G=16` (`kernel_A_g16_n8`, L874–896): same outer shape; **`G` = serial scale trips** before kill.
+
+```python
+for b in range(8):
+    p_outer = pto.vmi.vcmp(gate_b, gate_thr_v, mask, "gt")
+    for _t in range(16):                    # G=16 fat — also under false outer (slack pay)
+        k0 = pto.vmi.vmul(k0, scale_v, mask)
+        ...
+    k0 = pto.vmi.vsel(pto.vmi.vcmp(k0, thr_b, mask, "gt"), neg_inf, k0)
+    s0 = pto.vmi.vsel(p_outer, k0, s0)
+```
+
+### Arm B — slack+AND **as-landed** (no PAND; A≡B)
+
+`kernel_B_g0_n8` L140–157 — kill then outer `vsel` (rename only). **No** `vand`/`pand` of `p_outer` into kill mask.
+
+```python
+for b in range(8):
+    p_outer = pto.vmi.vcmp(gate_b, gate_thr_v, mask, "gt")
+    kill0 = pto.vmi.vsel(pto.vmi.vcmp(k0, thr_b, mask, "gt"), neg_inf, k0)  # still always
+    s0 = pto.vmi.vsel(p_outer, kill0, s0)   # same publish tax as A → opcode Counter A≡B
+```
+
+### Arm C — host/compile outer trip skip (`p_gate` → `n_trips`)
+
+Dispatch (L2189–2194): `n_trips = n_true if arm == "C" else B` with `n_true = round(B·p_gate/100)`.
+
+```python
+# run_acl / main
+n_true = n_true_for(pgate)           # e.g. p_gate=25 → n_true=2
+n_trips = n_true if arm == "C" else B
+kernel = build_kernel(arm, G, n_trips)  # → kernel_C_g{G}_n{n_trips}
+```
+
+Example `p_gate=25` → `kernel_C_g0_n2` (L253–259): **no** `p_outer` / gate `vcmp`; outer false trips omitted from the body.
+
+```python
+for b in range(2):                   # n_trips=2 only — true outer if/else at host/compile
+    thr_b = pto.vmi.vbrc(pto.vmi.vload(thr_ub, b, size=1), size=VL)
+    s0 = pto.vmi.vsel(pto.vmi.vcmp(s0, thr_b, mask, "gt"), neg_inf, s0)  # kill only
+    # no gate load / no p_outer / no outer vsel
+```
+
+Fat C mirrors A’s `for _t in range(G)` **inside** the shortened `for b in range(n_trips)` only.
+
+### Gold (host scalar if/else) — what C approximates
+
+```python
+# reference() L2138–2142
+for b in range(len(gate)):
+    if float(gate[b]) > float(gate_thr):   # real outer if
+        for _ in range(G):                 # G fat only on true
+            out = (out * scale).astype(np.float32)
+        out = np.where(out > thr[b], -inf, out)
+```
+
+**Read-out:** A/B encode outer as **predicated publish** (always pay kill±G); C encodes outer as **trip-count specialization** from `p_gate`. Until B gets a real mask AND/PAND into kill, expect A≡B on VF/opcodes (RESULT).
+
 ## 3. Layout and schedule (SIMT and SIMD)
 
 ### 3.1 SIMD PTO-DSL (*d) — measured
@@ -339,6 +431,7 @@ Unit: **N=32 · E=256 · units=8 · IPC=body_calls/VF_cyc**.
 - [x] Aims `A1…` cited
 - [x] **How to run / reproduce** (t628u) + `report/arms.yaml` (`script:` for *d; MISSING for SIMT/SoftLib)
 - [x] Primary path `benches/cf7d/ANALYSIS.md` (skill naming; was `ST_CF7D_ANALYSIS.md`)
+- [x] Key code slices §2b (A pure_slack / B as-landed vs design PAND / C n_trips from p_gate; G fat loop)
 - [x] SEMANTICS_GATE one-liner per arm (**PASS** *d; suite still PARTIAL)
 - [x] No SoftLib≻SIMD / no Case-3 pack claim
 - [x] After RESULT: KPI COMPARE N/A + motif Coverage COMPARE
