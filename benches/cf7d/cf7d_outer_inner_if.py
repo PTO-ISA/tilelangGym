@@ -78,7 +78,7 @@ def kernel_B_g0(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -89,7 +89,7 @@ def kernel_B_g0(
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
     # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     thr_sum_v = pto.vmi.vbrc(pto.f32(GATE_SUM_THR), size=VL)
@@ -137,7 +137,7 @@ def kernel_C_g0(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -148,7 +148,7 @@ def kernel_C_g0(
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
     # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     gs_sc = pto.load_scalar(scratch_ub, 0)
@@ -203,7 +203,7 @@ def kernel_B_g8(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -214,7 +214,7 @@ def kernel_B_g8(
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
     # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     thr_sum_v = pto.vmi.vbrc(pto.f32(GATE_SUM_THR), size=VL)
@@ -274,29 +274,35 @@ def kernel_C_g8(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)  # VL-resident; size=B hits ensure_layout (sv5)
     mask1 = pto.vmi.create_mask(1, size=1)
-    neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
-    scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
 
-    s0 = pto.vmi.vload(scores_ub, 0 * VL, size=VL)
-    s1 = pto.vmi.vload(scores_ub, 1 * VL, size=VL)
-    s2 = pto.vmi.vload(scores_ub, 2 * VL, size=VL)
-    s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
-
-    # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    # global gate: reduce_sum(gate) > GATE_SUM_THR (hoisted once)
+    # Use vload size=1 + load_scalar after V visibility (load_scalar alone races V store)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
+    pto.set_flag("V", "S", event_id=2)
+    pto.wait_flag("V", "S", event_id=2)
     gs_sc = pto.load_scalar(scratch_ub, 0)
     gate_on = gs_sc > pto.f32(GATE_SUM_THR)
 
-    for b in range(8):  # B fixed — stable overhead
-        thr_s = pto.vmi.vload(thr_ub, b, size=1)
-        thr_b = pto.vmi.vbrc(thr_s, size=VL)
-        with pto.if_(gate_on) as br:  # real VF scalar if — NO host n_trips
+    # Identity seed via MTE (no vreg SSA that mem2reg can forward into scf.if)
+    pto.mte_load(scores_gm, out_ub, 0, SCORES_BYTES, nburst=(1, SCORES_BYTES, SCORES_BYTES))
+    pto.set_flag("MTE2", "V", event_id=1)
+    pto.wait_flag("MTE2", "V", event_id=1)
+
+    for b in range(8):  # B fixed — stable overhead; accumulate across b
+        with pto.if_(gate_on) as br:  # side-effect-only: real VF skip, no vreg phi
             with br.then_:
-                t0, t1, t2, t3 = s0, s1, s2, s3
+                neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
+                scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
+                thr_s = pto.vmi.vload(thr_ub, b, size=1)
+                thr_b = pto.vmi.vbrc(thr_s, size=VL)
+                t0 = pto.vmi.vload(out_ub, 0 * VL, size=VL)
+                t1 = pto.vmi.vload(out_ub, 1 * VL, size=VL)
+                t2 = pto.vmi.vload(out_ub, 2 * VL, size=VL)
+                t3 = pto.vmi.vload(out_ub, 3 * VL, size=VL)
                 for _t in range(8):
                     t0 = pto.vmi.vmul(t0, scale_v, mask)
                     t1 = pto.vmi.vmul(t1, scale_v, mask)
@@ -306,21 +312,15 @@ def kernel_C_g8(
                     t1 = pto.vmi.vsel(pto.vmi.vcmp(t1, thr_b, mask, "gt"), neg_inf, t1)
                     t2 = pto.vmi.vsel(pto.vmi.vcmp(t2, thr_b, mask, "gt"), neg_inf, t2)
                     t3 = pto.vmi.vsel(pto.vmi.vcmp(t3, thr_b, mask, "gt"), neg_inf, t3)
-                br.assign(s0=t0, s1=t1, s2=t2, s3=t3)
-            with br.else_:
-                br.assign(s0=s0, s1=s1, s2=s2, s3=s3)
-        s0 = br.s0
-        s1 = br.s1
-        s2 = br.s2
-        s3 = br.s3
+                pto.vmi.vstore(t0, out_ub, 0 * VL, mask)
+                pto.vmi.vstore(t1, out_ub, 1 * VL, mask)
+                pto.vmi.vstore(t2, out_ub, 2 * VL, mask)
+                pto.vmi.vstore(t3, out_ub, 3 * VL, mask)
 
-    pto.vmi.vstore(s0, out_ub, 0 * VL, mask)
-    pto.vmi.vstore(s1, out_ub, 1 * VL, mask)
-    pto.vmi.vstore(s2, out_ub, 2 * VL, mask)
-    pto.vmi.vstore(s3, out_ub, 3 * VL, mask)
     pto.set_flag("V", "MTE3", event_id=0)
     pto.wait_flag("V", "MTE3", event_id=0)
     pto.mte_store(out_ub, out_gm, OUT_BYTES, nburst=(1, OUT_BYTES, OUT_BYTES))
+
 
 @pto.jit(
     name="CF7d_armB_g16",
@@ -350,7 +350,7 @@ def kernel_B_g16(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -361,7 +361,7 @@ def kernel_B_g16(
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
     # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     thr_sum_v = pto.vmi.vbrc(pto.f32(GATE_SUM_THR), size=VL)
@@ -421,29 +421,35 @@ def kernel_C_g16(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)  # VL-resident; size=B hits ensure_layout (sv5)
     mask1 = pto.vmi.create_mask(1, size=1)
-    neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
-    scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
 
-    s0 = pto.vmi.vload(scores_ub, 0 * VL, size=VL)
-    s1 = pto.vmi.vload(scores_ub, 1 * VL, size=VL)
-    s2 = pto.vmi.vload(scores_ub, 2 * VL, size=VL)
-    s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
-
-    # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    # global gate: reduce_sum(gate) > GATE_SUM_THR (hoisted once)
+    # Use vload size=1 + load_scalar after V visibility (load_scalar alone races V store)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
+    pto.set_flag("V", "S", event_id=2)
+    pto.wait_flag("V", "S", event_id=2)
     gs_sc = pto.load_scalar(scratch_ub, 0)
     gate_on = gs_sc > pto.f32(GATE_SUM_THR)
 
-    for b in range(8):  # B fixed — stable overhead
-        thr_s = pto.vmi.vload(thr_ub, b, size=1)
-        thr_b = pto.vmi.vbrc(thr_s, size=VL)
-        with pto.if_(gate_on) as br:  # real VF scalar if — NO host n_trips
+    # Identity seed via MTE (no vreg SSA that mem2reg can forward into scf.if)
+    pto.mte_load(scores_gm, out_ub, 0, SCORES_BYTES, nburst=(1, SCORES_BYTES, SCORES_BYTES))
+    pto.set_flag("MTE2", "V", event_id=1)
+    pto.wait_flag("MTE2", "V", event_id=1)
+
+    for b in range(8):  # B fixed — stable overhead; accumulate across b
+        with pto.if_(gate_on) as br:  # side-effect-only: real VF skip, no vreg phi
             with br.then_:
-                t0, t1, t2, t3 = s0, s1, s2, s3
+                neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
+                scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
+                thr_s = pto.vmi.vload(thr_ub, b, size=1)
+                thr_b = pto.vmi.vbrc(thr_s, size=VL)
+                t0 = pto.vmi.vload(out_ub, 0 * VL, size=VL)
+                t1 = pto.vmi.vload(out_ub, 1 * VL, size=VL)
+                t2 = pto.vmi.vload(out_ub, 2 * VL, size=VL)
+                t3 = pto.vmi.vload(out_ub, 3 * VL, size=VL)
                 for _t in range(16):
                     t0 = pto.vmi.vmul(t0, scale_v, mask)
                     t1 = pto.vmi.vmul(t1, scale_v, mask)
@@ -453,21 +459,15 @@ def kernel_C_g16(
                     t1 = pto.vmi.vsel(pto.vmi.vcmp(t1, thr_b, mask, "gt"), neg_inf, t1)
                     t2 = pto.vmi.vsel(pto.vmi.vcmp(t2, thr_b, mask, "gt"), neg_inf, t2)
                     t3 = pto.vmi.vsel(pto.vmi.vcmp(t3, thr_b, mask, "gt"), neg_inf, t3)
-                br.assign(s0=t0, s1=t1, s2=t2, s3=t3)
-            with br.else_:
-                br.assign(s0=s0, s1=s1, s2=s2, s3=s3)
-        s0 = br.s0
-        s1 = br.s1
-        s2 = br.s2
-        s3 = br.s3
+                pto.vmi.vstore(t0, out_ub, 0 * VL, mask)
+                pto.vmi.vstore(t1, out_ub, 1 * VL, mask)
+                pto.vmi.vstore(t2, out_ub, 2 * VL, mask)
+                pto.vmi.vstore(t3, out_ub, 3 * VL, mask)
 
-    pto.vmi.vstore(s0, out_ub, 0 * VL, mask)
-    pto.vmi.vstore(s1, out_ub, 1 * VL, mask)
-    pto.vmi.vstore(s2, out_ub, 2 * VL, mask)
-    pto.vmi.vstore(s3, out_ub, 3 * VL, mask)
     pto.set_flag("V", "MTE3", event_id=0)
     pto.wait_flag("V", "MTE3", event_id=0)
     pto.mte_store(out_ub, out_gm, OUT_BYTES, nburst=(1, OUT_BYTES, OUT_BYTES))
+
 
 @pto.jit(
     name="CF7d_armB_g32",
@@ -497,7 +497,7 @@ def kernel_B_g32(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -508,7 +508,7 @@ def kernel_B_g32(
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
     # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     thr_sum_v = pto.vmi.vbrc(pto.f32(GATE_SUM_THR), size=VL)
@@ -568,29 +568,35 @@ def kernel_C_g32(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)  # VL-resident; size=B hits ensure_layout (sv5)
     mask1 = pto.vmi.create_mask(1, size=1)
-    neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
-    scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
 
-    s0 = pto.vmi.vload(scores_ub, 0 * VL, size=VL)
-    s1 = pto.vmi.vload(scores_ub, 1 * VL, size=VL)
-    s2 = pto.vmi.vload(scores_ub, 2 * VL, size=VL)
-    s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
-
-    # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    # global gate: reduce_sum(gate) > GATE_SUM_THR (hoisted once)
+    # Use vload size=1 + load_scalar after V visibility (load_scalar alone races V store)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
+    pto.set_flag("V", "S", event_id=2)
+    pto.wait_flag("V", "S", event_id=2)
     gs_sc = pto.load_scalar(scratch_ub, 0)
     gate_on = gs_sc > pto.f32(GATE_SUM_THR)
 
-    for b in range(8):  # B fixed — stable overhead
-        thr_s = pto.vmi.vload(thr_ub, b, size=1)
-        thr_b = pto.vmi.vbrc(thr_s, size=VL)
-        with pto.if_(gate_on) as br:  # real VF scalar if — NO host n_trips
+    # Identity seed via MTE (no vreg SSA that mem2reg can forward into scf.if)
+    pto.mte_load(scores_gm, out_ub, 0, SCORES_BYTES, nburst=(1, SCORES_BYTES, SCORES_BYTES))
+    pto.set_flag("MTE2", "V", event_id=1)
+    pto.wait_flag("MTE2", "V", event_id=1)
+
+    for b in range(8):  # B fixed — stable overhead; accumulate across b
+        with pto.if_(gate_on) as br:  # side-effect-only: real VF skip, no vreg phi
             with br.then_:
-                t0, t1, t2, t3 = s0, s1, s2, s3
+                neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
+                scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
+                thr_s = pto.vmi.vload(thr_ub, b, size=1)
+                thr_b = pto.vmi.vbrc(thr_s, size=VL)
+                t0 = pto.vmi.vload(out_ub, 0 * VL, size=VL)
+                t1 = pto.vmi.vload(out_ub, 1 * VL, size=VL)
+                t2 = pto.vmi.vload(out_ub, 2 * VL, size=VL)
+                t3 = pto.vmi.vload(out_ub, 3 * VL, size=VL)
                 for _t in range(32):
                     t0 = pto.vmi.vmul(t0, scale_v, mask)
                     t1 = pto.vmi.vmul(t1, scale_v, mask)
@@ -600,21 +606,15 @@ def kernel_C_g32(
                     t1 = pto.vmi.vsel(pto.vmi.vcmp(t1, thr_b, mask, "gt"), neg_inf, t1)
                     t2 = pto.vmi.vsel(pto.vmi.vcmp(t2, thr_b, mask, "gt"), neg_inf, t2)
                     t3 = pto.vmi.vsel(pto.vmi.vcmp(t3, thr_b, mask, "gt"), neg_inf, t3)
-                br.assign(s0=t0, s1=t1, s2=t2, s3=t3)
-            with br.else_:
-                br.assign(s0=s0, s1=s1, s2=s2, s3=s3)
-        s0 = br.s0
-        s1 = br.s1
-        s2 = br.s2
-        s3 = br.s3
+                pto.vmi.vstore(t0, out_ub, 0 * VL, mask)
+                pto.vmi.vstore(t1, out_ub, 1 * VL, mask)
+                pto.vmi.vstore(t2, out_ub, 2 * VL, mask)
+                pto.vmi.vstore(t3, out_ub, 3 * VL, mask)
 
-    pto.vmi.vstore(s0, out_ub, 0 * VL, mask)
-    pto.vmi.vstore(s1, out_ub, 1 * VL, mask)
-    pto.vmi.vstore(s2, out_ub, 2 * VL, mask)
-    pto.vmi.vstore(s3, out_ub, 3 * VL, mask)
     pto.set_flag("V", "MTE3", event_id=0)
     pto.wait_flag("V", "MTE3", event_id=0)
     pto.mte_store(out_ub, out_gm, OUT_BYTES, nburst=(1, OUT_BYTES, OUT_BYTES))
+
 
 @pto.jit(
     name="CF7d_armB_g64",
@@ -644,7 +644,7 @@ def kernel_B_g64(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -655,7 +655,7 @@ def kernel_B_g64(
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
     # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     thr_sum_v = pto.vmi.vbrc(pto.f32(GATE_SUM_THR), size=VL)
@@ -715,29 +715,35 @@ def kernel_C_g64(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)  # VL-resident; size=B hits ensure_layout (sv5)
     mask1 = pto.vmi.create_mask(1, size=1)
-    neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
-    scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
 
-    s0 = pto.vmi.vload(scores_ub, 0 * VL, size=VL)
-    s1 = pto.vmi.vload(scores_ub, 1 * VL, size=VL)
-    s2 = pto.vmi.vload(scores_ub, 2 * VL, size=VL)
-    s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
-
-    # global gate: reduce_sum(gate) > GATE_SUM_THR
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    # global gate: reduce_sum(gate) > GATE_SUM_THR (hoisted once)
+    # Use vload size=1 + load_scalar after V visibility (load_scalar alone races V store)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
+    pto.set_flag("V", "S", event_id=2)
+    pto.wait_flag("V", "S", event_id=2)
     gs_sc = pto.load_scalar(scratch_ub, 0)
     gate_on = gs_sc > pto.f32(GATE_SUM_THR)
 
-    for b in range(8):  # B fixed — stable overhead
-        thr_s = pto.vmi.vload(thr_ub, b, size=1)
-        thr_b = pto.vmi.vbrc(thr_s, size=VL)
-        with pto.if_(gate_on) as br:  # real VF scalar if — NO host n_trips
+    # Identity seed via MTE (no vreg SSA that mem2reg can forward into scf.if)
+    pto.mte_load(scores_gm, out_ub, 0, SCORES_BYTES, nburst=(1, SCORES_BYTES, SCORES_BYTES))
+    pto.set_flag("MTE2", "V", event_id=1)
+    pto.wait_flag("MTE2", "V", event_id=1)
+
+    for b in range(8):  # B fixed — stable overhead; accumulate across b
+        with pto.if_(gate_on) as br:  # side-effect-only: real VF skip, no vreg phi
             with br.then_:
-                t0, t1, t2, t3 = s0, s1, s2, s3
+                neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
+                scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
+                thr_s = pto.vmi.vload(thr_ub, b, size=1)
+                thr_b = pto.vmi.vbrc(thr_s, size=VL)
+                t0 = pto.vmi.vload(out_ub, 0 * VL, size=VL)
+                t1 = pto.vmi.vload(out_ub, 1 * VL, size=VL)
+                t2 = pto.vmi.vload(out_ub, 2 * VL, size=VL)
+                t3 = pto.vmi.vload(out_ub, 3 * VL, size=VL)
                 for _t in range(64):
                     t0 = pto.vmi.vmul(t0, scale_v, mask)
                     t1 = pto.vmi.vmul(t1, scale_v, mask)
@@ -747,21 +753,15 @@ def kernel_C_g64(
                     t1 = pto.vmi.vsel(pto.vmi.vcmp(t1, thr_b, mask, "gt"), neg_inf, t1)
                     t2 = pto.vmi.vsel(pto.vmi.vcmp(t2, thr_b, mask, "gt"), neg_inf, t2)
                     t3 = pto.vmi.vsel(pto.vmi.vcmp(t3, thr_b, mask, "gt"), neg_inf, t3)
-                br.assign(s0=t0, s1=t1, s2=t2, s3=t3)
-            with br.else_:
-                br.assign(s0=s0, s1=s1, s2=s2, s3=s3)
-        s0 = br.s0
-        s1 = br.s1
-        s2 = br.s2
-        s3 = br.s3
+                pto.vmi.vstore(t0, out_ub, 0 * VL, mask)
+                pto.vmi.vstore(t1, out_ub, 1 * VL, mask)
+                pto.vmi.vstore(t2, out_ub, 2 * VL, mask)
+                pto.vmi.vstore(t3, out_ub, 3 * VL, mask)
 
-    pto.vmi.vstore(s0, out_ub, 0 * VL, mask)
-    pto.vmi.vstore(s1, out_ub, 1 * VL, mask)
-    pto.vmi.vstore(s2, out_ub, 2 * VL, mask)
-    pto.vmi.vstore(s3, out_ub, 3 * VL, mask)
     pto.set_flag("V", "MTE3", event_id=0)
     pto.wait_flag("V", "MTE3", event_id=0)
     pto.mte_store(out_ub, out_gm, OUT_BYTES, nburst=(1, OUT_BYTES, OUT_BYTES))
+
 
 KERNELS = {
     ("B", 0): kernel_B_g0,

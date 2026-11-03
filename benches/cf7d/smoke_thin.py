@@ -46,7 +46,7 @@ def kernel_B(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)  # VL-resident; size=B hits ensure_layout (sv5)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -57,7 +57,7 @@ def kernel_B(
     s2 = pto.vmi.vload(scores_ub, 2 * VL, size=VL)
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)  # pad lanes masked out of vcadd
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     gs_s = pto.vmi.vload(scratch_ub, 0, size=1)
@@ -117,7 +117,7 @@ def kernel_C(
     pto.wait_flag("MTE2", "V", event_id=0)
 
     mask = pto.vmi.create_mask(VL, size=VL)
-    mask_B = pto.vmi.create_mask(B, size=B)
+    mask_B = pto.vmi.create_mask(B, size=VL)  # VL-resident; size=B hits ensure_layout (sv5)
     mask1 = pto.vmi.create_mask(1, size=1)
     neg_inf = pto.vmi.vbrc(pto.f32(NEG_INF_F32), size=VL)
     scale_v = pto.vmi.vbrc(pto.f32(SCALE), size=VL)
@@ -127,7 +127,7 @@ def kernel_C(
     s2 = pto.vmi.vload(scores_ub, 2 * VL, size=VL)
     s3 = pto.vmi.vload(scores_ub, 3 * VL, size=VL)
 
-    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gate_v = pto.vmi.vload(gate_ub, 0, size=VL)  # pad lanes masked out of vcadd
     gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
     pto.vmi.vstore(gs, scratch_ub, 0, mask1)
     gs_sc = pto.load_scalar(scratch_ub, 0)
