@@ -1,48 +1,36 @@
 # benches/cf7d/report/arms.yaml
-# Seeded from ST_CF7D_FIRSTCUT_RESULT / ANALYSIS — no invented KPI beyond RESULT tables.
+# Global-gate rev 2026-11-03 — arms B/C only; prior A/per-b KPI STALE (see ANALYSIS Appendix H).
 st: cf7d
 aims: >-
-  A1 crossover VF(C)≤0.90×min(A,B) on R*×p_gate; A2 whether B(AND) closes A→C;
-  A3 A flat vs p_gate / C tracks p_gate; A4 first-cut *d grid before SimtVF (*v).
+  A1 crossover VF(C)≤0.90×VF(B) on G×{gate_on,gate_off}; A2 B real vand/PAND;
+  A3 C in-VF pto.if_ (no host n_trips); A4 land 2-arm *d + smoke before SimtVF (*v).
 
 design: >-
-  Nested outer×inner if; arms A=pure_slack B=slack+AND C=scalar_if;
-  E=256 B=8 VL=64 G∈{0,16,64} p_gate∈{25,50,95}; PTO-DSL *d only this cut.
+  Global gate_sum>GATE_SUM_THR; B outer / G inner / kill inside G;
+  arms B=preg+PAND C=pto.if_; E=256 B=8 VL=64 G∈{0,8,16,32,64};
+  pgate labels on/off proxies; PTO-DSL *d only this cut.
 
 spine:
-  - id: dsl_armA_pure_slack
-    label: SIMD PTO-DSL A pure_slack
+  - id: dsl_armB_preg_pand
+    label: SIMD PTO-DSL B preg+PAND (vand)
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "VF flat vs p_gate; G0/16/64 VF=125/643/2161 (RESULT). A≡B."
+    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; vcadd→vbrc→vcmp→vand; prior A≡B STALE era=per-b-outer"
     script: cf7d_outer_inner_if.py
     artifacts:
       E: 256
       frontend: simd
-      running_ipc_png: plots/cf7d_e256_b8_g0_vl64_pgate25_armA_running_ipc_pr9.png
-  - id: dsl_armB_slack_and
-    label: SIMD PTO-DSL B slack+AND
+  - id: dsl_armC_pto_if
+    label: SIMD PTO-DSL C pto.if_ (best *d intent)
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "Measured A≡B on VF + opcode Counter every first-cut cell."
+    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; in-VF if_(gate_on); NO host n_trips"
     script: cf7d_outer_inner_if.py
     artifacts:
       E: 256
       frontend: simd
-      running_ipc_png: plots/cf7d_e256_b8_g0_vl64_pgate25_armB_running_ipc_pr9.png
-  - id: dsl_armC_scalar_if
-    label: SIMD PTO-DSL C scalar_if (best *d)
-    path: dsl
-    role: simd_best
-    el_cyc: null
-    notes: "Host/compile n_trips=n_true; crossover G=0; G0 p25 VF=69 el/cyc≈3.71."
-    script: cf7d_outer_inner_if.py
-    artifacts:
-      E: 256
-      frontend: simd
-      running_ipc_png: plots/cf7d_e256_b8_g0_vl64_pgate25_armC_running_ipc_pr9.png
   - id: simt_asc_default
     label: SIMT Ascend default
     path: simt_asc
@@ -56,12 +44,14 @@ spine:
     path: softlib_simt
     role: simt_hand
     el_cyc: null
-    notes: Not in Aims for first-cut *d rooftop.
+    notes: Not in Aims for global-gate *d land.
     script_status: MISSING
     script_missing_reason: SoftLib not Aims this cut; see ANALYSIS §3.3
 
 trail:
-  - id: fillin_g8_g32_p5_p75
-    reason: RESULT Not done — fill-in grid beyond first-cut
+  - id: remeasure_global_gate
+    reason: Live VF/µs UNMEASURED — oneshot must drop A/n_trips and re-opsim B/C
+  - id: historical_per_b_outer_stale
+    reason: Appendix H era=per-b-outer first-cut retained for t821u; not live SoT
   - id: simtvf_cf7_v
     reason: SimtVF / *v twin deferred (Aims A4)
