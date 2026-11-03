@@ -1,34 +1,30 @@
-# VERDICT — CF7d: global-gate outer×inner if (PTO-DSL)
+# VERDICT — CF7d: global-gate + reduce-in-b (PTO-DSL)
 
 **Focus paths:** handwritten SIMD DSL (`*d`). **Deferred:** simt-asc, simd-pto (*v), SoftLib SIMT.
 
-**Pins:** Ascend950PR_9599 opsim · tip redesign 2026-11-03 · issue [#10](https://github.com/PTO-ISA/tilelangGym/issues/10).
+**Pins:** Ascend950PR_9599 opsim · tip 2026-11-03 · issue [#10](https://github.com/PTO-ISA/tilelangGym/issues/10).
 
-## Status (NEW era=`cf7d-global-gate-ptodsl`)
+## Status
 
-| Path | Status |
+| Case | Status |
 |------|--------|
-| **Handwritten SIMD DSL** (`cf7d`) | **PARTIAL** — kernel redesigned to **2 arms** (B vand/PAND, C `pto.if_`) + **global** `sum(gate)>GATE_SUM_THR`. Compile smoke OK on pto-b10. Live VF KPI **UNMEASURED** (oneshot remeasure pending). `st_report check --st cf7d` OK. |
-| **simt-asc / simd-pto (*v) / SoftLib** | **Not in this PR** — *d-only land; `report/arms.yaml` marks them MISSING |
+| **Hoisted global-gate** (`cf7d_outer_inner_if.py`) | **PARTIAL** — 2 arms B=vand/PAND, C=`pto.if_`; reduce once then reuse ×B. Compile smoke OK. Live VF **UNMEASURED** (`era=cf7d-global-gate-ptodsl`). |
+| **Reduce-in-b sibling** (`cf7d_reduce_in_b.py`) | **PARTIAL** — same gold `sum(gate)>THR` but **recomputed inside each `b`** so C cannot fake win by hoisting. Arms B/C mirror. Compile smoke this land. Live VF **UNMEASURED** (`era=cf7d-rib-ptodsl`). |
+| **simt / SoftLib** | Not in this PR (`arms.yaml` MISSING) |
 
-## Gold shape (review this)
+## Gold (both cases)
 
-- Gate is **global** over B lanes: `gate_on = (sum(gate) > GATE_SUM_THR)` — **not** per-b outer, **no** host `n_trips`.
-- When `gate_on`: run outer B × inner G nest (scale + kill). When false: skip whole nest (gold).
-- **Arm B:** `vcadd(reassoc=True)` → `vbrc` → `vcmp` → **`vand`/PAND** (+ `vsel` publish).
-- **Arm C:** in-VF scalar compare + **`pto.if_(gate_on)`** around the nest.
-- G sweep intended: `G ∈ {0,8,16,32,64}` (B=8). Dropped arm A.
+- `gate_on = sum(gate) > GATE_SUM_THR` (global over B lanes) — **not** per-b outer host `n_trips`.
+- When on: B×G nest (scale+kill). When false: skip nest (gold).
+- **Hoisted:** reduce once outside `b`. **Rib:** reduce inside each `b` (Aims A5).
 
-## STALE first-cut (do not treat as live KPI)
+## STALE first-cut
 
-Prior 3-arm / per-b-outer / `p_gate`×`n_trips` RESULT + PR9 plots remain under `benches/cf7d/` and ANALYSIS **Appendix H** as **STALE** `era=per-b-outer` (t821u keep). Do **not** invent VF numbers for the new era.
-
-- See [`ANALYSIS.md`](ANALYSIS.md) (Aims A1–A4, How-to-run, SEMANTICS_GATE INCONCLUSIVE until remeasure)
-- Rev note: [`ST_CF7_GLOBAL_GATE_REV.md`](ST_CF7_GLOBAL_GATE_REV.md)
-- Design: [`ST_CF7_OUTER_INNER_IF_DESIGN.md`](ST_CF7_OUTER_INNER_IF_DESIGN.md)
+Prior 3-arm / per-b-outer RESULT + PR9 plots + Appendix H remain **STALE** `era=per-b-outer` (t821u). Do **not** invent VF for either new era.
 
 ## Files
 
-- Kernel: `cf7d_outer_inner_if.py` · smoke: `smoke_thin.py`
-- Arms: `report/arms.yaml` · spine: `report/SUMMARY.tsv` (TODO until remeasure)
-- Oneshot: `oneshot_ptodsl_cf7d.sh` — **still first-cut A/B/C grid**; needs refresh for global-gate B/C before live KPI
+- Hoisted: `cf7d_outer_inner_if.py` · `smoke_thin.py`
+- Rib: `cf7d_reduce_in_b.py` · `smoke_thin_rib.py` · `ST_CF7_REDUCE_IN_B.md`
+- Arms: `report/arms.yaml` (4 *d spine rows) · `SUMMARY.tsv` TODO
+- ANALYSIS Aims A1–A5 + How-to-run + SEMANTICS_GATE INCONCLUSIVE

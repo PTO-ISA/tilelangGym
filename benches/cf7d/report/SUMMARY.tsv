@@ -1,5 +1,5 @@
 arm	path	VF	el_cyc	mid_ipc_W	mid_in_el_cyc	mid_out_el_cyc	roof_name	roof_value	pct_overall	pct_mid	LDS_width	status	source
 dsl_armB_preg_pand	dsl											TODO	global-gate land; VF UNMEASURED
 dsl_armC_pto_if	dsl											TODO	global-gate land; VF UNMEASURED
-simt_asc_default	simt_asc											TODO	MISSING *v
-softlib_simt	softlib_simt											TODO	not Aims
+dsl_rib_armB_preg_pand	dsl											TODO	reduce-in-b land; VF UNMEASURED
+dsl_rib_armC_pto_if	dsl											TODO	reduce-in-b land; VF UNMEASURED

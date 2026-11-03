@@ -1,16 +1,17 @@
 # ST ANALYSIS — CF7d Outer-Inner-If (PTO-DSL *d) — global-gate rev
 
 **ST id:** `cf7d`  
-**Date:** 2026-11-03 ~15:40 HKT (Asia/Hong_Kong) · global-gate 2-arm redesign land  
+**Date:** 2026-11-03 ~16:00 HKT (Asia/Hong_Kong) · global-gate 2-arm + **reduce-in-b** sibling  
 **Frontend primary:** PTO-DSL / VMI Layer-D (`*d`) — arms **B / C** only (arm A dropped)  
 **Sources:**
 - Design: `benches/cf7d/ST_CF7_OUTER_INNER_IF_DESIGN.md` (+ `reports/ST_CF7_GLOBAL_GATE_REV.md` / pack)
-- Kernel: `benches/cf7d/cf7d_outer_inner_if.py` (rev2 global gate)
+- Kernel (hoisted): `benches/cf7d/cf7d_outer_inner_if.py` (rev2 global gate)
+- Kernel (reduce-in-b): `benches/cf7d/cf7d_reduce_in_b.py` (+ `ST_CF7_REDUCE_IN_B.md`)
 - Prior RESULT (STALE era): `benches/cf7d/ST_CF7D_FIRSTCUT_RESULT.md` · `cf7d_SUMMARY_firstcut.tsv`
 - Trace: `benches/cf7d/EXPLORATION_TRACE.md`
 - Machine target: pto-b10 · Ascend950PR_9599 opsim · `venv-ptoas-vmi-0.1.3`
 
-**Status:** **PARTIAL** — kernel + docs land for **global** `gate_sum > GATE_SUM_THR`; compile smoke recorded in TRACE. **No new opsim VF / µs** this cut — prior first-cut numbers are **STALE** (`era=per-b-outer`). Remeasure required before A1 crossover call.
+**Status:** **PARTIAL** — (1) hoisted global-gate B/C land + smoke; (2) **NEW** reduce-in-b sibling (`cf7d_reduce_in_b.py`) so C cannot fake a win by hoisting `gate_on` once. Live VF/µs **UNMEASURED** for both eras. Prior first-cut numbers **STALE** (`era=per-b-outer`, Appendix H).
 
 **Clean-run:** Do **not** invent el/cyc / VF / IPC. New-grid RESULT = UNMEASURED until oneshot re-run.
 
@@ -24,6 +25,7 @@
 | **A2** | Confirm **B** lowers a **real** `vcadd → vbrc → vcmp → vand` (PAND) path into kill — distinct opcode mix from always-enter slack; false outer still schedules G×B body but publish/squash via `vsel(p_outer)`. |
 | **A3** | Confirm **C** uses **in-VF** `pto.if_(gate_on)` around the G nest (real scalar skip) — **no** host `n_trips = n_true` specialization. Gold: when `gate_sum ≤ GATE_SUM_THR`, neither scale nor kill applies. |
 | **A4** | Land 2-arm *d kernels + ANALYSIS spine + `arms.yaml` under `benches/cf7d/`; compile smoke PASS; remeasure first-cut before suite DONE. SimtVF (*v) / SoftLib not Aims this cut. |
+| **A5** | Land **reduce-in-b** sibling (`cf7d_reduce_in_b.py`): same `sum(gate)>GATE_SUM_THR` gold **recomputed inside each outer `b`** (no hoist) so arm C pays reduce dep every trip; arms B=vand / C=`pto.if_` mirror hoisted lowering. Compare B vs C under `era=cf7d-rib-ptodsl` (G primary). Compile smoke PASS; live KPI UNMEASURED until oneshot. |
 
 Lineage: CF1–CF6 Parallel-only / nested predicates — **none** cover **one global outer gate** × inner kill with B=PAND vs C=Sreg `if_` (see design §1). Prior per-b outer CF7d first-cut is historical only (`era=per-b-outer`).
 
@@ -42,13 +44,21 @@ Lineage: CF1–CF6 Parallel-only / nested predicates — **none** cover **one gl
 # Thin compile smoke (patterns only; no ACL):
 python3 benches/cf7d/smoke_thin.py B
 python3 benches/cf7d/smoke_thin.py C
+# Reduce-in-b sibling smoke (Aims A5):
+python3 benches/cf7d/smoke_thin_rib.py B
+python3 benches/cf7d/smoke_thin_rib.py C
 
-# Single cell (kernel CLI: E B G pgate arm) — arms B|C only; pgate≥50 → gate_on:
-#   pgate 25 → gate_off (sum(gate)<0); pgate 50/95 → gate_on
+# Single cell — HOISTED (gate reduce once):
+#   pgate 25 → gate_off; pgate 50/95 → gate_on
 python3 benches/cf7d/cf7d_outer_inner_if.py 256 8 0 25 B
 python3 benches/cf7d/cf7d_outer_inner_if.py 256 8 0 50 C
 python3 benches/cf7d/cf7d_outer_inner_if.py 256 8 8 50 B
 python3 benches/cf7d/cf7d_outer_inner_if.py 256 8 16 95 C
+
+# Single cell — REDUCE-IN-B (same gold; reduce inside each b; tag cf7d_rib_*):
+python3 benches/cf7d/cf7d_reduce_in_b.py 256 8 0 25 B
+python3 benches/cf7d/cf7d_reduce_in_b.py 256 8 8 50 C
+python3 benches/cf7d/cf7d_reduce_in_b.py 256 8 16 95 B
 
 # Full first-cut oneshot (UPDATE after global-gate land — STALE until re-run):
 # bash benches/cf7d/oneshot_ptodsl_cf7d.sh   # must drop arm A + n_trips path
@@ -151,6 +161,51 @@ for b in range(8):
 
 ---
 
+
+## 2c. Sibling case — reduce-in-b (Aims A5 · `era=cf7d-rib-ptodsl`)
+
+**Why:** Hoisted C computes `gate_on` once then reuses across B trips → reduce tax paid once; can fake C win vs B. Lok: need a case where reduce runs **inside** the `b` loop.
+
+**Gold (numerically = hoisted):** for each `b`: recompute `gate_on_b = sum(gate) > GATE_SUM_THR`; if on, run G×(scale+kill). Kernel **must not hoist** the reduce.
+
+**Arm B (rib):** inside `for b`: `vcadd→vstore→vload→vbrc→vcmp` → `p_outer`; then G×(vmul + `vand` kill + `vsel` publish).
+
+**Arm C (rib):** inside `for b`: same reduce → `load_scalar` → `with pto.if_(gate_on)` wraps G nest.
+
+Source: `benches/cf7d/cf7d_reduce_in_b.py` · design note `ST_CF7_REDUCE_IN_B.md` · smoke `smoke_thin_rib.py`.  
+Tag: `cf7d_rib_e{E}_b{B}_g{G}_vl{VL}_pgate{P}_arm{B|C}`.
+
+### Key slice (arm B g8 — reduce inside b)
+
+```python
+for b in range(8):  # NO hoist
+    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
+    pto.vmi.vstore(gs, scratch_ub, 0, mask1)
+    gs_s = pto.vmi.vload(scratch_ub, 0, size=1)
+    p_outer = pto.vmi.vcmp(pto.vmi.vbrc(gs_s, size=VL), thr_sum_v, mask, "gt")
+    # ... thr_b; for _t in range(G): vmul + vand(kill,p_outer) + vsel publish
+```
+
+### Key slice (arm C g8 — reduce + if_ inside b)
+
+```python
+for b in range(8):  # NO hoist
+    gate_v = pto.vmi.vload(gate_ub, 0, size=B)
+    gs = pto.vmi.vcadd(gate_v, mask_B, reassoc=True)
+    # ... store; load_scalar
+    gate_on = gs_sc > pto.f32(GATE_SUM_THR)
+    with pto.if_(gate_on) as br:
+        with br.then_:
+            # G×(scale+kill)
+            br.assign(...)
+        with br.else_:
+            br.assign(s0=s0, s1=s1, s2=s2, s3=s3)
+```
+
+**Live KPI:** UNMEASURED (`era=cf7d-rib-ptodsl`). Do not invent VF. Hoisted case remains the A1 primary until both measured.
+
+---
 ## 3. Layout and schedule (SIMT and SIMD)
 
 ### 3.1 SIMD PTO-DSL (*d) — landed, KPI UNMEASURED this era
@@ -197,6 +252,8 @@ CF7d is **outer/inner if control-flow**, not SoftLib≻SIMD reduce. No SoftLib�
 ```
 SEMANTICS_GATE: INCONCLUSIVE — armB preg+PAND — S1 gold code matches global Aims; S2 body has vcadd/vand path as designed; S3/S4 OPPROF+VF UNMEASURED this era (compile smoke only) — not DONE
 SEMANTICS_GATE: INCONCLUSIVE — armC pto.if_ — S1 gold matches; S2 uses in-VF if_ (no n_trips); S3/S4 need dumps proving skip on gate_off + VF vs B — UNMEASURED — not DONE
+SEMANTICS_GATE: INCONCLUSIVE — rib armB preg+PAND — S1/S2 reduce-in-b gold+code match Aims A5; S3/S4 OPPROF+VF UNMEASURED (era=cf7d-rib-ptodsl) — not DONE
+SEMANTICS_GATE: INCONCLUSIVE — rib armC pto.if_ — S1/S2 per-b reduce then if_ (no hoist); S3/S4 need dumps proving reduce×B + skip — UNMEASURED — not DONE
 ```
 
 ---
@@ -255,7 +312,7 @@ Expect (design, not measured): B shows `VCADD`/`VAND`/`VCMP`/`VSEL`/`VMUL`; C sh
 
 **Do not claim:** SoftLib≻SIMD; suite / MB DONE; live crossover; reuse of per-b VF as global-gate SoT.
 
-**Still open:** oneshot remeasure global-gate grid; fill-in G∈{8,32} if not in first pass; Simt CF7 (*v); SoftLib only if Aims add A5; PR merge needs Lok yes.
+**Still open:** oneshot remeasure **hoisted** global-gate grid + **reduce-in-b** G sweep; fill-in G∈{8,32} if not in first pass; Simt CF7 (*v); SoftLib only if Aims add A5; PR merge needs Lok yes.
 
 ---
 
@@ -295,7 +352,8 @@ Expect (design, not measured): B shows `VCADD`/`VAND`/`VCMP`/`VSEL`/`VMUL`; C sh
 
 ## TODO / open clarification
 
-1. **Remeasure** global-gate B/C on pto-b10; replace UNMEASURED §4; refresh SEMANTICS_GATE to PASS|PARTIAL only with dumps.
+1. **Remeasure** global-gate B/C (hoisted) on pto-b10; replace UNMEASURED §4; refresh SEMANTICS_GATE to PASS|PARTIAL only with dumps.
+1b. **Remeasure** reduce-in-b B/C (`cf7d_reduce_in_b.py`) G sweep; fill `dsl_rib_*` SUMMARY rows; do not fold rib VF into hoisted A1 without era= label.
 2. **Update oneshot** to drop arm A / `n_trips` and emit `gate_on` column.
 3. **t821u:** Appendix H retains all prior 3-arm / per-b / first-cut VF + el/cyc + crossover + opcode A≡B tables — do not delete. Marked **STALE** pending prove-by-remeasure that global-gate supersedes them for A1.
 4. Prior ANALYSIS claimed arm-C = host `n_trips` and OPPROF zero `SIMT_BRANCH` — **contradicts** new C intent (`pto.if_`). Until dumps prove branch/skip, keep both claims: historical OPPROF under Appendix H; live C expected-instr = if_/scalar branch family (S3 pending).
@@ -363,7 +421,7 @@ At G0 p25, `VF(A)/VF(C) = 125/69 ≈ 1.81`; G64 p25 `2161/573 ≈ 3.77`; G64 p95
 
 ## Checklist (st-report)
 
-- [x] Aims `A1…` cited (global-gate 2-arm)
+- [x] Aims `A1…A5` cited (hoisted global-gate + reduce-in-b sibling)
 - [x] **How to run / reproduce** (t628u) + `report/arms.yaml` (`script:` for B/C; MISSING for SIMT/SoftLib)
 - [x] Primary path `benches/cf7d/ANALYSIS.md`
 - [x] Key code slices §2b (B vand/PAND / C `pto.if_`; G kill-inside)

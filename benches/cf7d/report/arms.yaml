@@ -1,56 +1,73 @@
 # benches/cf7d/report/arms.yaml
-# Global-gate rev 2026-11-03 — arms B/C only; prior A/per-b KPI STALE (see ANALYSIS Appendix H).
+# Global-gate rev + reduce-in-b sibling (Lok 2026-11-03).
+# Spine = 4 *d arms (hoisted B/C + rib B/C). SimtVF/SoftLib deferred ? trail (check allows 3|4).
 st: cf7d
 aims: >-
-  A1 crossover VF(C)≤0.90×VF(B) on G×{gate_on,gate_off}; A2 B real vand/PAND;
-  A3 C in-VF pto.if_ (no host n_trips); A4 land 2-arm *d + smoke before SimtVF (*v).
+  A1 crossover VF(C)?0.90?VF(B) on hoisted G?{gate_on,gate_off}; A2 B real vand/PAND;
+  A3 C in-VF pto.if_ (no host n_trips); A4 land 2-arm *d + smoke before SimtVF (*v);
+  A5 reduce-in-b sibling: same sum(gate)>THR recomputed inside each b (no hoist) so C
+  cannot fake win by paying reduce once; compare B/C under era=cf7d-rib-ptodsl.
 
 design: >-
-  Global gate_sum>GATE_SUM_THR; B outer / G inner / kill inside G;
-  arms B=preg+PAND C=pto.if_; E=256 B=8 VL=64 G∈{0,8,16,32,64};
-  pgate labels on/off proxies; PTO-DSL *d only this cut.
+  Case1 hoisted: gate_sum>GATE_SUM_THR once then B outer / G inner / kill inside G;
+  Case2 rib: same gold value but vcadd/compare inside each b; arms B=preg+PAND C=pto.if_;
+  E=256 B=8 VL=64 G?{0,8,16,32,64}; PTO-DSL *d only this cut.
 
 spine:
   - id: dsl_armB_preg_pand
-    label: SIMD PTO-DSL B preg+PAND (vand)
+    label: SIMD PTO-DSL B preg+PAND (vand) ? hoisted reduce
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; vcadd→vbrc→vcmp→vand; prior A≡B STALE era=per-b-outer"
+    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; vcadd once then reuse; prior A?B STALE era=per-b-outer"
     script: cf7d_outer_inner_if.py
     artifacts:
       E: 256
       frontend: simd
+      case: hoisted
   - id: dsl_armC_pto_if
-    label: SIMD PTO-DSL C pto.if_ (best *d intent)
+    label: SIMD PTO-DSL C pto.if_ ? hoisted reduce
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; in-VF if_(gate_on); NO host n_trips"
+    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; gate_on once then if_ ? B; NO host n_trips"
     script: cf7d_outer_inner_if.py
     artifacts:
       E: 256
       frontend: simd
-  - id: simt_asc_default
-    label: SIMT Ascend default
-    path: simt_asc
-    role: simt_asc
+      case: hoisted
+  - id: dsl_rib_armB_preg_pand
+    label: SIMD PTO-DSL B preg+PAND ? reduce-in-b (no hoist)
+    path: dsl
+    role: simd_best
     el_cyc: null
-    notes: Not landed this cut (Aims A4 before *v).
-    script_status: MISSING
-    script_missing_reason: SimtVF CF7 (*v) not in PR; see ANALYSIS §3.2 next-cmd
-  - id: softlib_simt
-    label: SIMT SoftLib hand-craft
-    path: softlib_simt
-    role: simt_hand
+    notes: "era=cf7d-rib-ptodsl UNMEASURED; vcadd?vbrc?vcmp?vand inside each b (Aims A5)"
+    script: cf7d_reduce_in_b.py
+    artifacts:
+      E: 256
+      frontend: simd
+      case: reduce_in_b
+  - id: dsl_rib_armC_pto_if
+    label: SIMD PTO-DSL C pto.if_ ? reduce-in-b (no hoist)
+    path: dsl
+    role: simd_best
     el_cyc: null
-    notes: Not in Aims for global-gate *d land.
-    script_status: MISSING
-    script_missing_reason: SoftLib not Aims this cut; see ANALYSIS §3.3
+    notes: "era=cf7d-rib-ptodsl UNMEASURED; per-b reduce then pto.if_ inside b (Aims A5)"
+    script: cf7d_reduce_in_b.py
+    artifacts:
+      E: 256
+      frontend: simd
+      case: reduce_in_b
 
 trail:
+  - id: simt_asc_default
+    reason: SimtVF CF7 (*v) not in PR; Aims A4 before *v ? MISSING script
+  - id: softlib_simt
+    reason: SoftLib not Aims this cut ? MISSING script
   - id: remeasure_global_gate
-    reason: Live VF/µs UNMEASURED — oneshot must drop A/n_trips and re-opsim B/C
+    reason: Live VF/?s UNMEASURED ? oneshot must drop A/n_trips and re-opsim B/C (hoisted)
+  - id: remeasure_reduce_in_b
+    reason: Live VF/?s UNMEASURED for rib B/C ? need oneshot G sweep under era=cf7d-rib-ptodsl
   - id: historical_per_b_outer_stale
     reason: Appendix H era=per-b-outer first-cut retained for t821u; not live SoT
   - id: simtvf_cf7_v

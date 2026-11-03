@@ -23,6 +23,7 @@
 | 16. Docs spine | ANALYSIS / DESIGN / arms.yaml / this TRACE | Aims A1–A4 global; Appendix H STALE; SEMANTICS_GATE INCONCLUSIVE |
 | 17. Compile smoke | `smoke_thin.py` B then C on pto-b10 (DEPS vmi018 + MLIR) | **COMPILE_OK B** + **COMPILE_OK C** (2026-11-03 ~15:45 HKT); vcadd needs `reassoc=True`, `create_mask(B,size=B)` + `mask1` for gs store |
 | 18. Remeasure | oneshot update | **OPEN** — live VF UNMEASURED |
+| 19. Reduce-in-b sibling (Lok pt44u) | `cf7d_reduce_in_b.py` + `smoke_thin_rib.py` + Aims A5 | Same `sum(gate)>THR` **inside each b**; B=vand C=`pto.if_`; **smoke_thin_rib COMPILE_OK B+C** (venv-ptoas-vmi-0.1.3); KPI UNMEASURED `era=cf7d-rib-ptodsl` |
 
 ---
 
@@ -38,6 +39,6 @@
 
 ## Stop / open
 
-- Global-gate kernel+docs **landed**; KPI **UNMEASURED**.
-- Remeasure + PR9 + opcode mix + SEMANTICS_GATE refresh = open.
+- Global-gate (hoisted) + **reduce-in-b** sibling kernels+docs **landed**; KPI **UNMEASURED** both eras.
+- Remeasure both cases + PR9 + opcode mix + SEMANTICS_GATE refresh = open.
 - Fill-in / Simt CF7 / SoftLib / merge = open (Lok yes for merge).
