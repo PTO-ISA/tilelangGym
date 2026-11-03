@@ -1,7 +1,7 @@
 # ST ANALYSIS — CF7d Outer-Inner-If (PTO-DSL *d) — global-gate rev
 
 **ST id:** `cf7d`  
-**Date:** 2026-11-03 ~16:00 HKT (Asia/Hong_Kong) · global-gate 2-arm + **reduce-in-b** sibling  
+**Date:** 2026-11-03 ~18:30 HKT (Asia/Hong_Kong) · dual-era oneshot RESULT + conclusion  
 **Frontend primary:** PTO-DSL / VMI Layer-D (`*d`) — arms **B / C** only (arm A dropped)  
 **Sources:**
 - Design: `benches/cf7d/ST_CF7_OUTER_INNER_IF_DESIGN.md` (+ `reports/ST_CF7_GLOBAL_GATE_REV.md` / pack)
@@ -11,9 +11,9 @@
 - Trace: `benches/cf7d/EXPLORATION_TRACE.md`
 - Machine target: pto-b10 · Ascend950PR_9599 opsim · `venv-ptoas-vmi-0.1.3`
 
-**Status:** **PARTIAL** — (1) hoisted global-gate B/C land + smoke; (2) **NEW** reduce-in-b sibling (`cf7d_reduce_in_b.py`) so C cannot fake a win by hoisting `gate_on` once. Live VF/µs **UNMEASURED** for both eras. Prior first-cut numbers **STALE** (`era=per-b-outer`, Appendix H).
+**Status:** **PARTIAL** (measured) — dual-era oneshot `oneshot_ptodsl_cf7d_rev.sh` on pto-b10 **2026-11-03 17:44–18:26 HKT (Asia/Hong_Kong)** · tip kernel `0e5f603` · OUT `/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/` · TSV `benches/cf7d/report/SUMMARY_dual_era_oneshot.tsv` · **24/24 PASS**. Live VF/µs filled for `era=cf7d-global-gate-ptodsl` (hoisted) and `era=cf7d-rib-ptodsl` (reduce-in-b). Prior first-cut **STALE** (`era=per-b-outer`, Appendix H). PR9 overlays **MISSING** (dumps on disk; not harvested into `plots/*_running_ipc_pr9.png`).
 
-**Clean-run:** Do **not** invent el/cyc / VF / IPC. New-grid RESULT = UNMEASURED until oneshot re-run.
+**Clean-run:** Numbers below are from SUMMARY only — do **not** invent IPC / opcode counts. Suite / MB DONE still forbidden until PR9 + S3 mix tabulated.
 
 ---
 
@@ -60,11 +60,13 @@ python3 benches/cf7d/cf7d_reduce_in_b.py 256 8 0 25 B
 python3 benches/cf7d/cf7d_reduce_in_b.py 256 8 8 50 C
 python3 benches/cf7d/cf7d_reduce_in_b.py 256 8 16 95 B
 
-# Full first-cut oneshot (UPDATE after global-gate land — STALE until re-run):
-# bash benches/cf7d/oneshot_ptodsl_cf7d.sh   # must drop arm A + n_trips path
+# Dual-era oneshot (hoisted + rib; G in {0,16,64} x pgate in {25,50} x B,C):
+bash benches/cf7d/oneshot_ptodsl_cf7d_rev.sh
+# OUT default: /tmp/st_simtvf_parallel/ptodsl_cf7d_rev/SUMMARY.tsv
+# Checked-in copy: benches/cf7d/report/SUMMARY_dual_era_oneshot.tsv
 ```
 
-**Expected PASS (functional):** gold `allclose(..., equal_nan=True)` with global `gate_on`. **VF/µs:** UNMEASURED this rev — do not copy `era=per-b-outer` tables into live §4.
+**Expected PASS (functional):** gold `allclose(..., equal_nan=True)` with global `gate_on`. Note: `gate_on` + G>0 cells report `maxabs=NA` in TSV (kill to -inf / NaN path) but status **PASS** via `equal_nan=True`. **VF/µs:** §4 tables from 2026-11-03 rev oneshot.
 
 **SIMT Ascend / SoftLib:** MISSING in-repo — next-cmd in §3.2 / §3.3.
 
@@ -213,7 +215,7 @@ for b in range(8):  # NO hoist
 - **Layout:** GM→UB MTE2 load scores/thr/gate; 4× VL=64 RF chunks; global `vcadd` gate reduce; per `b`: thr `vbrc`; inner `G` scale+kill; store MTE3.
 - **Arm B:** always `for b in range(8)` + `for G`; `p_outer` preg AND'd into kill; `vsel(p_outer)` publish.
 - **Arm C:** same B loop; `pto.if_(gate_on)` wraps G nest — **in-VF** scalar if (not host `n_trips`).
-- **Era (live):** `era=cf7d-global-gate-ptodsl` — **UNMEASURED** VF until oneshot re-run.
+- **Era (live):** `era=cf7d-global-gate-ptodsl` + `era=cf7d-rib-ptodsl` — **MEASURED** §4 (2026-11-03 oneshot_rev).
 - **Era (historical appendix):** `era=per-b-outer` — see Appendix H.
 
 ### 3.2 SIMT Ascend default — **MISSING**
@@ -231,29 +233,81 @@ Not in Aims for this cut.
 ## 4. SIMD PTO-DSL performance (primary)
 
 **Primary KPI:** opsim `VF_cycles`. Secondary: wall µs, `body_instr`.  
-**el/cyc** = `E / VF_cycles` = `256 / VF`.
+**el/cyc** = `E / VF_cycles` = `256 / VF`.  
+**Source:** `benches/cf7d/report/SUMMARY_dual_era_oneshot.tsv` (pto-b10 · Ascend950PR_9599 · 2026-11-03 17:44–18:26 HKT). Grid: G∈{0,16,64} × pgate∈{25,50} × arms B,C × eras hoisted+rib = **24/24 PASS**.
 
-### 4.1 Live grid (`era=cf7d-global-gate-ptodsl`) — **UNMEASURED**
+`pgate=25` → `gate_off` (`gate_on=False`); `pgate=50` → `gate_on=True`.
 
-| G | gate | B VF / µs / body | C VF / µs / body | C ≤ 0.90·B? |
-|--:|------|------------------|------------------|:-----------:|
-| * | on/off | **UNMEASURED** | **UNMEASURED** | — |
+### 4.1 Hoisted (`era=cf7d-global-gate-ptodsl`)
 
-**Next-cmd:** update `oneshot_ptodsl_cf7d.sh` for arms `{B,C}` + global gold; run on pto-b10; fill TSV + RESULT; then refresh §4 / SEMANTICS_GATE / PR9.
+| G | gate | B VF / µs / body | C VF / µs / body | C/B | C ≤ 0.90·B? |
+|--:|------|------------------|------------------|----:|:-----------:|
+| 0 | off | **68** / 0.89 / 77 | **68** / 0.89 / 77 | 1.000 | NO (tie) |
+| 0 | on | **68** / 0.89 / 77 | **68** / 0.89 / 77 | 1.000 | NO (tie) |
+| 16 | off | **2237** / 2.03 / 2665 | **821** / 1.58 / 111 | 0.367 | **YES** |
+| 16 | on | **2237** / 2.03 / 2665 | **1283** / 1.84 / 1674 | 0.574 | **YES** |
+| 64 | off | **8827** / 5.69 / 10345 | **830** / 1.62 / 111 | 0.094 | **YES** |
+| 64 | on | **8827** / 5.69 / 10345 | **5800** / 4.35 / 6282 | 0.657 | **YES** |
 
-### 4.2–4.4 Prior first-cut numbers — **STALE**
+**A1 crossover (hoisted, gate_on):** smallest measured G with `VF(C) ≤ 0.90×VF(B)` is **G=16** (G=0 is tie). At gate_off, C already wins at G=16 (and G=64); body stays **111** while B body scales with G → C **skips** the G nest.
 
-See **Appendix H** (`era=per-b-outer`). Do **not** use those VF values as live A1 crossover for global-gate arms.
+**B gate sensitivity:** B VF **flat vs gate** at fixed G (always-enter + vand squash) — matches A2 intent.
 
-### 4.5 SEMANTICS_GATE (per arm · before any DONE/SoT)
+### 4.2 Reduce-in-b (`era=cf7d-rib-ptodsl`)
 
-CF7d is **outer/inner if control-flow**, not SoftLib≻SIMD reduce. No SoftLib≻SIMD claim. No suite DONE.
+| G | gate | B VF / µs / body | C VF / µs / body | C/B | C ≤ 0.90·B? |
+|--:|------|------------------|------------------|----:|:-----------:|
+| 0 | off | **75** / 0.89 / 84 | **75** / 0.89 / 84 | 1.000 | NO (tie) |
+| 0 | on | **75** / 0.89 / 84 | **75** / 0.89 / 84 | 1.000 | NO (tie) |
+| 16 | off | **2118** / 1.96 / 2693 | **1386** / 1.92 / 152 | 0.654 | **YES** |
+| 16 | on | **2118** / 1.96 / 2693 | **1609** / 1.91 / 1786 | 0.760 | **YES** |
+| 64 | off | **8865** / 5.71 / 10373 | **3234** / 2.89 / 152 | 0.365 | **YES** |
+| 64 | on | **8865** / 5.71 / 10373 | **5471** / 4.20 / 6348 | 0.617 | **YES** |
+
+**A1 crossover (rib, gate_on):** likewise **G=16** first measured win (G=0 tie). C still ≤0.90·B at G=16/64 on and off.
+
+**Rib tax vs hoisted (same G/gate):** B G0 75 vs 68 (+7 VF); C gate_off G16 1386 vs 821; C gate_off G64 3234 vs 830 — rib pays clear extra when C would otherwise hoist `gate_on` once. C body on gate_off stays small (152) vs B thousands.
+
+### 4.3 el/cyc (E=256) — both eras
+
+| Era | G | gate | B el/cyc | C el/cyc |
+|-----|--:|------|---------:|---------:|
+| hoisted | 0 | off/on | 3.765 | 3.765 |
+| hoisted | 16 | off | 0.114 | **0.312** |
+| hoisted | 16 | on | 0.114 | **0.199** |
+| hoisted | 64 | off | 0.029 | **0.308** |
+| hoisted | 64 | on | 0.029 | **0.044** |
+| rib | 0 | off/on | 3.413 | 3.413 |
+| rib | 16 | off | 0.121 | **0.185** |
+| rib | 16 | on | 0.121 | **0.159** |
+| rib | 64 | off | 0.029 | **0.079** |
+| rib | 64 | on | 0.029 | **0.047** |
+
+### 4.4 Does rib remove the hoist artifact? (A5)
+
+| Evidence | Hoisted C | Rib C | Read |
+|----------|-----------|-------|------|
+| gate_off body @G16/G64 | 111 / 111 | 152 / 152 | both skip fat body |
+| gate_off VF @G16→G64 | 821 → 830 (~flat) | 1386 → 3234 (**grows**) | hoisted C win partly from **once** reduce + flat skip; rib still skips body but VF grows (S3/PR9 open — do not invent cause) |
+| C/B @G64 gate_off | 0.094 | 0.365 | rib **shrinks** C's relative win vs B |
+| C/B @G16 gate_on | 0.574 | 0.760 | rib still C≻B but closer |
+| C/B @G64 gate_on | 0.657 | 0.617 | both C≻B under 0.90 bar |
+
+**Call:** rib **reduces** the hoist artifact (C no longer nearly free on gate_off as G grows) but **does not remove** C≻B — scalar `pto.if_` skip of G×(scale+kill) still beats always-enter B+vand on this grid. Do **not** fold rib VF into hoisted A1 without `era=`.
+
+### 4.5 Prior first-cut — **STALE**
+
+See **Appendix H** (`era=per-b-outer`). Not live SoT.
+
+### 4.6 SEMANTICS_GATE (per arm · measured S4; S3 mix not yet in ANALYSIS)
+
+CF7d is **outer/inner if control-flow**, not SoftLib≻SIMD reduce. No SoftLib≻SIMD claim. No suite DONE (PR9 MISSING).
 
 ```
-SEMANTICS_GATE: INCONCLUSIVE — armB preg+PAND — S1 gold code matches global Aims; S2 body has vcadd/vand path as designed; S3/S4 OPPROF+VF UNMEASURED this era (compile smoke only) — not DONE
-SEMANTICS_GATE: INCONCLUSIVE — armC pto.if_ — S1 gold matches; S2 uses in-VF if_ (no n_trips); S3/S4 need dumps proving skip on gate_off + VF vs B — UNMEASURED — not DONE
-SEMANTICS_GATE: INCONCLUSIVE — rib armB preg+PAND — S1/S2 reduce-in-b gold+code match Aims A5; S3/S4 OPPROF+VF UNMEASURED (era=cf7d-rib-ptodsl) — not DONE
-SEMANTICS_GATE: INCONCLUSIVE — rib armC pto.if_ — S1/S2 per-b reduce then if_ (no hoist); S3/S4 need dumps proving reduce×B + skip — UNMEASURED — not DONE
+SEMANTICS_GATE: PARTIAL — armB preg+PAND hoisted — S1 gold PASS; S2 vcadd→vbrc→vand path; S4 VF flat vs gate, scales with G (68/2237/8827); S3 opcode table not yet harvested into ANALYSIS — not DONE
+SEMANTICS_GATE: PARTIAL — armC pto.if_ hoisted — S1 gold PASS; S2 in-VF if_ (no n_trips); S4 gate_off body=111 + VF~flat vs G; gate_on VF tracks G; S3 branch/if mix not tabulated — not DONE
+SEMANTICS_GATE: PARTIAL — rib armB preg+PAND — S1/S2 reduce-in-b; S4 VF≈B-hoisted at G≥16 (+rib tax at G0); S3 pending harvest — not DONE
+SEMANTICS_GATE: PARTIAL — rib armC pto.if_ — S1/S2 per-b reduce+if_; S4 still C≤0.90·B at G≥16; gate_off body=152 but VF grows G16→G64 (open); S3 pending — not DONE
 ```
 
 ---
@@ -274,47 +328,53 @@ SEMANTICS_GATE: INCONCLUSIVE — rib armC pto.if_ — S1/S2 per-b reduce then if
 
 ## 7. Running IPC + PR9 overlay figures
 
-**Trigger note:** SoftLib≻SIMD / both-frontend bar = **N/A** (no Simt/SoftLib). Intra-*d B vs C PR9 **required after** dumps exist.
+**Trigger note:** SoftLib≻SIMD / both-frontend bar = **N/A** (no Simt/SoftLib). Intra-*d B vs C PR9 **required** now that dumps exist (both-arm VF compare landed).
 
-**Status (live era):** **MISSING** — no global-gate dumps yet.  
-**Next-cmd:** after oneshot, `make_pr9_running_ipc_overlay.py` per cell → `benches/cf7d/plots/*_running_ipc_pr9.png` with `plot_style=opcode_lanes_ipc`.
+**Status (live eras):** **MISSING** — opsim dumps under `/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/opsim_*` (incl. `core0.veccore0_instr_exe.csv`) but **no** new `benches/cf7d/plots/*_running_ipc_pr9.png` harvested this tip.
 
-**Historical:** 27/27 PR9 under `reports/cf7d_plots/` / `benches/cf7d/plots/` for `era=per-b-outer` first-cut — retained on disk; **not** evidence for global-gate KPI.
+**Next-cmd:**
+```bash
+# Example cell (repeat for each B/C × era pin you cite in §4):
+python3 REGRESSION_salvage_2026-09-17/scripts/make_pr9_running_ipc_overlay.py \
+  --dump-dir /tmp/st_simtvf_parallel/ptodsl_cf7d_rev/opsim_cf7d_e256_b8_g16_vl64_pgate50_armB \
+  --out benches/cf7d/plots/cf7d_hoisted_g16_pgate50_armB_running_ipc_pr9.png
+# Require plot_style=opcode_lanes_ipc (reject IPC-only). Then embed/link in ANALYSIS.
+```
 
----
+**Historical:** 27/27 PR9 under `benches/cf7d/plots/` for `era=per-b-outer` — retained; **not** evidence for global-gate / rib KPI.
 
 ## 8. Per-segment opcode mix + stage mid-IPC
 
 **SoftLib≻SIMD / STAGE_TAXONOMY reduce map:** **N/A** (CF policy).  
-**Live mix:** **MISSING** until `instr_exe.csv` for B/C global-gate cells.  
-Expect (design, not measured): B shows `VCADD`/`VAND`/`VCMP`/`VSEL`/`VMUL`; C shows branch / if lowering + fewer body ops on `gate_off`.
+**Live mix (both eras):** **MISSING** — dumps exist; not aggregated into ANALYSIS tables this tip.  
+**Expect (design, qualitatively consistent with body_instr):** B shows large body scaling with G (`VMUL`/`VAND`/`VCMP`/`VSEL`); C gate_off body stays ~111 (hoisted) / ~152 (rib).  
+
+**Next-cmd:** harvest `instr_exe.csv` → balanced call_count tables (t550u) for at least G16/G64 × gate_on/off × B/C × both eras; then stage mid-IPC if mix splits.
 
 **Historical A≡B mix** (`era=per-b-outer`): Appendix H / `cf7d_OPCODE_MIX.md`.
-
----
 
 ## 9. ISA mix SIMT vs SIMD (per N×4B → el/cyc bridge)
 
 **SIMT vs SIMD both-frontend:** **MISSING / N/A**.  
-**Intra-*d B vs C:** **MISSING** until remeasure.  
-**Historical A vs C bridge** (`era=per-b-outer`): Appendix H — |pred/meas−1|=0 on first-cut cells.
-
----
+**Intra-*d B vs C:** **MISSING** until opcode harvest (same next-cmd as §8). Headline VF ratios in §4 / §10 stand without inventing ops/N.  
+**Historical A vs C bridge** (`era=per-b-outer`): Appendix H.
 
 ## 10. Conclusion
 
-| Arm | Role | This cut |
-|-----|------|----------|
-| **SIMD PTO-DSL B preg+PAND** | always-enter + vand into kill | Kernel landed; compile smoke; **VF UNMEASURED** |
-| **SIMD PTO-DSL C pto.if_** | in-VF scalar skip of G nest | Kernel landed; compile smoke; **VF UNMEASURED** |
+| Arm | Role | This cut (measured) |
+|-----|------|---------------------|
+| **SIMD PTO-DSL B preg+PAND (hoisted)** | always-enter + vand | VF flat vs gate; scales with G (68→2237→8827) |
+| **SIMD PTO-DSL C pto.if_ (hoisted)** | in-VF scalar skip | **C≻B** for all G∈{16,64} on/off; G=0 tie; A1 crossover **G=16** (gate_on) |
+| **SIMD PTO-DSL B (rib)** | reduce inside each b | ≈B-hoisted at G≥16; +7 VF at G0 |
+| **SIMD PTO-DSL C (rib)** | per-b reduce + if_ | **Still C≻B** at G≥16; C/B worse than hoisted on gate_off → hoist artifact **reduced not removed** |
 | **SIMT Ascend default** | — | **MISSING** |
 | **SIMT SoftLib** | — | **MISSING** |
 
-**Do not claim:** SoftLib≻SIMD; suite / MB DONE; live crossover; reuse of per-b VF as global-gate SoT.
+**Headline (do claim):** On this dual-era grid, **C (`pto.if_`) beats B (vand/PAND)** once G>0 under A1's 0.90 bar for **both** hoisted and reduce-in-b eras; B pays G-fat regardless of gate; C gate_off keeps tiny body_instr.
 
-**Still open:** oneshot remeasure **hoisted** global-gate grid + **reduce-in-b** G sweep; fill-in G∈{8,32} if not in first pass; Simt CF7 (*v); SoftLib only if Aims add A5; PR merge needs Lok yes.
+**Do not claim:** SoftLib≻SIMD; suite / MB DONE; PR9/IPC causation; that rib **eliminates** C's win; reuse of Appendix H per-b VF as live SoT.
 
----
+**Still open:** PR9 `opcode_lanes_ipc` harvest; S3 mix tables; optional G∈{8,32}/pgate95 fill-in; Simt CF7 (*v); merge needs Lok yes.
 
 ## 11. Trace pointer
 
@@ -330,7 +390,8 @@ Expect (design, not measured): B shows `VCADD`/`VAND`/`VCMP`/`VSEL`/`VMUL`; C sh
 |----|--------|
 | Prior dig / SoftLib≻SIMD el/cyc | **KPI N/A** — CF policy ST |
 | `era=per-b-outer` first-cut VF tables | **STALE** — different gold (per-b outer + host n_trips C); kept in Appendix H; **not** folded into live §4 |
-| Live global-gate B vs C | **UNMEASURED** — next oneshot |
+| Live hoisted B vs C | **MEASURED** — §4.1; C≻B for G∈{16,64}; crossover G=16 (gate_on) |
+| Live rib B vs C | **MEASURED** — §4.2; C≻B remains; hoist artifact reduced (§4.4) |
 
 ### Motif-seed Coverage COMPARE
 
@@ -338,12 +399,13 @@ Expect (design, not measured): B shows `VCADD`/`VAND`/`VCMP`/`VSEL`/`VMUL`; C sh
 |--------------------|:--------:|------|
 | `outer_inner_if` nest | ✓ | design + kernel |
 | `global_gate_sum` | ✓ | gold + B/C reduce |
-| `armB_preg_pand` / vand | ✓ code | KPI UNMEASURED |
-| `armC_pto_if_` in-VF | ✓ code | KPI UNMEASURED; **no** n_trips |
+| `armB_preg_pand` / vand | ✓ | KPI measured both eras |
+| `armC_pto_if_` in-VF | ✓ | KPI measured; **no** n_trips; gate_off body skip |
+| `reduce_in_b` / Aims A5 | ✓ | rib oneshot 12/12 PASS |
 | `armA_pure_slack` | ✗ dropped | Lok 2026-11-03; historical only |
 | `R*_x_pgate` per-b first-cut | ✓ historical | Appendix H STALE |
-| `crossover_VF_0.90` live | ✗ / stop | needs remeasure |
-| PR9 `opcode_lanes_ipc` live | ✗ / MISSING | next-cmd after dumps |
+| `crossover_VF_0.90` live | ✓ | G=16 both eras (gate_on); G=0 tie |
+| PR9 `opcode_lanes_ipc` live | ✗ / MISSING | dumps on disk; next-cmd §7 |
 | SimtVF CF7 (*v) | ✗ / stop | Aims A4 before *v |
 | SoftLib SIMT CF7 | ✗ / stop | not Aims |
 | SoftLib≻SIMD both-frontend | N/A | no both-frontend claim |
@@ -352,11 +414,11 @@ Expect (design, not measured): B shows `VCADD`/`VAND`/`VCMP`/`VSEL`/`VMUL`; C sh
 
 ## TODO / open clarification
 
-1. **Remeasure** global-gate B/C (hoisted) on pto-b10; replace UNMEASURED §4; refresh SEMANTICS_GATE to PASS|PARTIAL only with dumps.
-1b. **Remeasure** reduce-in-b B/C (`cf7d_reduce_in_b.py`) G sweep; fill `dsl_rib_*` SUMMARY rows; do not fold rib VF into hoisted A1 without era= label.
-2. **Update oneshot** to drop arm A / `n_trips` and emit `gate_on` column.
-3. **t821u:** Appendix H retains all prior 3-arm / per-b / first-cut VF + el/cyc + crossover + opcode A≡B tables — do not delete. Marked **STALE** pending prove-by-remeasure that global-gate supersedes them for A1.
-4. Prior ANALYSIS claimed arm-C = host `n_trips` and OPPROF zero `SIMT_BRANCH` — **contradicts** new C intent (`pto.if_`). Until dumps prove branch/skip, keep both claims: historical OPPROF under Appendix H; live C expected-instr = if_/scalar branch family (S3 pending).
+1. **PR9 + S3 mix:** harvest `instr_exe.csv` → `*_running_ipc_pr9.png` (`opcode_lanes_ipc`) + balanced opcode tables for pin cells (esp. rib C gate_off G16 vs G64 where VF grows but body flat).
+2. Optional denser grid: G∈{8,32}, pgate95 — not required for current A1 call.
+3. **t821u:** Appendix H retains all prior 3-arm / per-b / first-cut VF + el/cyc + crossover + opcode A≡B tables — do not delete. Marked **STALE**; live SoT is §4 dual-era global-gate / rib (proved by SUMMARY_dual_era_oneshot.tsv).
+4. Prior ANALYSIS claimed arm-C = host `n_trips` and OPPROF zero `SIMT_BRANCH` — **contradicts** new C intent (`pto.if_`). Live body_instr gate_off skip supports if_; full S3 branch family still pending harvest (Appendix H keeps historical OPPROF).
+5. Rib C gate_off VF growth G16→G64 with flat body=152 — open (needs PR9/IQ); do not invent pipe cause.
 
 ---
 
@@ -425,11 +487,12 @@ At G0 p25, `VF(A)/VF(C) = 125/69 ≈ 1.81`; G64 p25 `2161/573 ≈ 3.77`; G64 p95
 - [x] **How to run / reproduce** (t628u) + `report/arms.yaml` (`script:` for B/C; MISSING for SIMT/SoftLib)
 - [x] Primary path `benches/cf7d/ANALYSIS.md`
 - [x] Key code slices §2b (B vand/PAND / C `pto.if_`; G kill-inside)
-- [x] SEMANTICS_GATE one-liner per **new** arm (**INCONCLUSIVE** pending remeasure)
+- [x] SEMANTICS_GATE one-liner per arm (**PARTIAL** — S4 measured; S3/PR9 open)
 - [x] t821u: prior 3-arm / per-b / crossover tables retained in Appendix H as **STALE**
 - [x] No SoftLib≻SIMD / no invented live VF
 - [x] TRACE linked
 - [x] Kernel check-in `benches/cf7d/cf7d_outer_inner_if.py` (+ `smoke_thin.py`)
-- [ ] Live RESULT / PR9 / opcode mix — **MISSING** next oneshot
+- [x] Live RESULT dual-era SUMMARY — **24/24 PASS** (§4)
+- [ ] PR9 / opcode mix — **MISSING** next-cmd §7
 - [ ] Suite / MB DONE — **forbidden** (**PARTIAL**)
 - [ ] Merge — **needs Lok yes**

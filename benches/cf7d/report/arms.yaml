@@ -19,7 +19,7 @@ spine:
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; vcadd once then reuse; prior A?B STALE era=per-b-outer"
+    notes: "era=cf7d-global-gate-ptodsl MEASURED; pin G16 gate_on VF=2237 el/cyc=0.114; flat vs gate"
     script: cf7d_outer_inner_if.py
     artifacts:
       E: 256
@@ -30,7 +30,7 @@ spine:
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "era=cf7d-global-gate-ptodsl UNMEASURED; gate_on once then if_ ? B; NO host n_trips"
+    notes: "era=cf7d-global-gate-ptodsl MEASURED; pin G16 gate_on VF=1283 el/cyc=0.199; C≻B; NO host n_trips"
     script: cf7d_outer_inner_if.py
     artifacts:
       E: 256
@@ -41,7 +41,7 @@ spine:
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "era=cf7d-rib-ptodsl UNMEASURED; vcadd?vbrc?vcmp?vand inside each b (Aims A5)"
+    notes: "era=cf7d-rib-ptodsl MEASURED; pin G16 gate_on VF=2118; reduce-in-b Aims A5"
     script: cf7d_reduce_in_b.py
     artifacts:
       E: 256
@@ -52,7 +52,7 @@ spine:
     path: dsl
     role: simd_best
     el_cyc: null
-    notes: "era=cf7d-rib-ptodsl UNMEASURED; per-b reduce then pto.if_ inside b (Aims A5)"
+    notes: "era=cf7d-rib-ptodsl MEASURED; pin G16 gate_on VF=1609; C≻B remains; hoist artifact reduced"
     script: cf7d_reduce_in_b.py
     artifacts:
       E: 256

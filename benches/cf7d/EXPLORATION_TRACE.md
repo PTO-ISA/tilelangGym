@@ -42,3 +42,11 @@
 - Global-gate (hoisted) + **reduce-in-b** sibling kernels+docs **landed**; KPI **UNMEASURED** both eras.
 - Remeasure both cases + PR9 + opcode mix + SEMANTICS_GATE refresh = open.
 - Fill-in / Simt CF7 / SoftLib / merge = open (Lok yes for merge).
+
+## 2026-11-03 ~18:26 HKT — dual-era oneshot RESULT
+
+- Script: `oneshot_ptodsl_cf7d_rev.sh` · OUT `/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/`
+- Grid 24/24 PASS · TSV `report/SUMMARY_dual_era_oneshot.tsv`
+- Hoisted: C≻B G∈{16,64}; crossover G=16 gate_on; G=0 tie
+- Rib: C≻B remains; gate_off C/B 0.094→0.365 at G64 (hoist artifact reduced not removed)
+- PR9: MISSING (dumps present; not harvested into plots)
