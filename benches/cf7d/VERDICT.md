@@ -16,7 +16,7 @@
 - Arms: A=pure_slack · B=slack+AND · C=scalar_if
 - Grid: `G∈{0,16,64}` × `p_gate∈{25,50,95}` × A/B/C
 - **A ≡ B** everywhere; **C** wins at thin G (crossover **G=0**); at `p_gate=95` bar fails for G=16/64
-- See [`ST_CF7D_FIRSTCUT_RESULT.md`](../../reports/ST_CF7D_FIRSTCUT_RESULT.md) and [`ST_CF7D_ANALYSIS.md`](../../reports/ST_CF7D_ANALYSIS.md)
+- See [`ST_CF7D_FIRSTCUT_RESULT.md`](../../reports/ST_CF7D_FIRSTCUT_RESULT.md) and [`ANALYSIS.md`](ANALYSIS.md)
 
 ## Files
 

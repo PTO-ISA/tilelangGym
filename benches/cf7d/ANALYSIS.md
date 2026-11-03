@@ -7,8 +7,8 @@
 - Design: `reports/ST_CF7_OUTER_INNER_IF_DESIGN.md`
 - RESULT: `reports/ST_CF7D_FIRSTCUT_RESULT.md`
 - TSV: `reports/cf7d_SUMMARY_firstcut.tsv`
-- Kernel: `kernels_ptodsl/cf7d_outer_inner_if.py`
-- Oneshot: `oneshot_ptodsl_cf7d.sh`
+- Kernel: `benches/cf7d/cf7d_outer_inner_if.py`
+- Oneshot: `scripts/oneshot/oneshot_ptodsl_cf7d.sh` / `benches/cf7d/oneshot_ptodsl_cf7d.sh`
 - **Lean dumps (box):** `opsim_cf7d_lean/opsim_cf7d_*` ← sync from peanut `/tmp/st_simtvf_parallel/ptodsl_cf7d/` (27 cells: `instr_exe.csv` + `trace.json` + `core0.veccore0.instr_{log,popped}_log.dump`)
 - Opcode mix: `reports/cf7d_OPCODE_MIX.md` · `reports/cf7d_opcode_family_firstcut.tsv` · `reports/cf7d_plots/cf7d_isa_mix_perN.json`
 - PR9 plots: `reports/cf7d_plots/*_running_ipc_pr9.png` (**27/27**, `plot_style=opcode_lanes_ipc`)
@@ -32,6 +32,34 @@
 Lineage (motif tags only; **do not** copy CF1–CF6 KPI into CF7d cells): CF1–CF3 Parallel-only `if`; CF4 nested predicates same loop; CF5/CF6 divergence / Newton — **none** cover outer-loop dynamic `if` × inner-loop dynamic `if` with AND-merge of outer gate into inner mask (`ST_CF7_OUTER_INNER_IF_DESIGN.md` §1).
 
 ---
+
+## How to run / reproduce
+
+**Contract (t628u):** spine *d arms A/B/C share one checked-in kernel (`script:` in `report/arms.yaml`). SIMT Ascend default + SoftLib SIMT are `script_status: MISSING` this cut (Aims A4 before *v; SoftLib not Aims).
+
+```bash
+# From repo root on pto-b10 (Ascend950PR_9599 opsim). Do NOT source ~/projects/env.sh.
+# Match Oct-8 PASS: ASC/set_env.sh + PYTHONPATH=DEPS:MLIR_PY only.
+# Optional harness gate (when scripts.st_report is on PYTHONPATH):
+#   python -m scripts.st_report check --st cf7d
+
+# Full first-cut grid (27 cells: G∈{0,16,64} × p_gate∈{25,50,95} × A/B/C):
+bash scripts/oneshot/oneshot_ptodsl_cf7d.sh
+# or from the bench folder:
+bash benches/cf7d/oneshot_ptodsl_cf7d.sh
+
+# Single cell (kernel CLI: E B G pgate arm):
+#   "$SIM_DSL" --soc-version Ascend950PR_9599 --output /tmp/cf7d_one \
+#     benches/cf7d/cf7d_outer_inner_if.py -- 256 8 0 25 A
+python3 benches/cf7d/cf7d_outer_inner_if.py 256 8 0 25 A   # arm A
+python3 benches/cf7d/cf7d_outer_inner_if.py 256 8 0 25 B   # arm B
+python3 benches/cf7d/cf7d_outer_inner_if.py 256 8 0 25 C   # arm C
+```
+
+**Expected PASS:** gold `allclose(..., equal_nan=True)`; VF/µs in `reports/ST_CF7D_FIRSTCUT_RESULT.md` / `cf7d_SUMMARY_firstcut.tsv`. Do not invent el/cyc here.
+
+**SIMT Ascend / SoftLib:** MISSING in-repo — next-cmd in §3.2 / §3.3.
+
 
 ## 2. Test-case design
 
@@ -272,7 +300,7 @@ Unit: **N=32 · E=256 · units=8 · IPC=body_calls/VF_cyc**.
 
 ## 11. Trace pointer
 
-`reports/ST_CF7D_EXPLORATION_TRACE.md` — reconstruct + dump-sync / PR9 / gate refresh (2026-10-31).
+`benches/cf7d/EXPLORATION_TRACE.md` (also `reports/ST_CF7D_EXPLORATION_TRACE.md`) — reconstruct + dump-sync / PR9 / gate refresh (2026-10-31).
 
 ---
 
@@ -309,12 +337,14 @@ Unit: **N=32 · E=256 · units=8 · IPC=body_calls/VF_cyc**.
 ## Checklist (st-report)
 
 - [x] Aims `A1…` cited
+- [x] **How to run / reproduce** (t628u) + `report/arms.yaml` (`script:` for *d; MISSING for SIMT/SoftLib)
+- [x] Primary path `benches/cf7d/ANALYSIS.md` (skill naming; was `ST_CF7D_ANALYSIS.md`)
 - [x] SEMANTICS_GATE one-liner per arm (**PASS** *d; suite still PARTIAL)
 - [x] No SoftLib≻SIMD / no Case-3 pack claim
 - [x] After RESULT: KPI COMPARE N/A + motif Coverage COMPARE
 - [x] PR9 `opcode_lanes_ipc` for all 27 measured *d cells (not IPC-only)
 - [x] Per-opcode mix balanced + A≡B + CF signature (no Sreg branch)
 - [x] Intra-*d ISA-mix → el/cyc bridge (SIMT≻SIMD bar N/A + next-cmd)
-- [x] TRACE linked
+- [x] TRACE linked (`benches/cf7d/EXPLORATION_TRACE.md`)
 - [ ] Suite / MB DONE — **forbidden** this cut (**PARTIAL** — fill-in + SimtVF open)
-- [ ] Merge / PR — **needs Lok yes** (not done here)
+- [ ] Merge — **needs Lok yes**

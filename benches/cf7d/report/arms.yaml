@@ -1,0 +1,67 @@
+# benches/cf7d/report/arms.yaml
+# Seeded from ST_CF7D_FIRSTCUT_RESULT / ANALYSIS — no invented KPI beyond RESULT tables.
+st: cf7d
+aims: >-
+  A1 crossover VF(C)≤0.90×min(A,B) on R*×p_gate; A2 whether B(AND) closes A→C;
+  A3 A flat vs p_gate / C tracks p_gate; A4 first-cut *d grid before SimtVF (*v).
+
+design: >-
+  Nested outer×inner if; arms A=pure_slack B=slack+AND C=scalar_if;
+  E=256 B=8 VL=64 G∈{0,16,64} p_gate∈{25,50,95}; PTO-DSL *d only this cut.
+
+spine:
+  - id: dsl_armA_pure_slack
+    label: SIMD PTO-DSL A pure_slack
+    path: dsl
+    role: simd_best
+    el_cyc: null
+    notes: "VF flat vs p_gate; G0/16/64 VF=125/643/2161 (RESULT). A≡B."
+    script: cf7d_outer_inner_if.py
+    artifacts:
+      E: 256
+      frontend: simd
+      running_ipc_png: plots/cf7d_e256_b8_g0_vl64_pgate25_armA_running_ipc_pr9.png
+  - id: dsl_armB_slack_and
+    label: SIMD PTO-DSL B slack+AND
+    path: dsl
+    role: simd_best
+    el_cyc: null
+    notes: "Measured A≡B on VF + opcode Counter every first-cut cell."
+    script: cf7d_outer_inner_if.py
+    artifacts:
+      E: 256
+      frontend: simd
+      running_ipc_png: plots/cf7d_e256_b8_g0_vl64_pgate25_armB_running_ipc_pr9.png
+  - id: dsl_armC_scalar_if
+    label: SIMD PTO-DSL C scalar_if (best *d)
+    path: dsl
+    role: simd_best
+    el_cyc: null
+    notes: "Host/compile n_trips=n_true; crossover G=0; G0 p25 VF=69 el/cyc≈3.71."
+    script: cf7d_outer_inner_if.py
+    artifacts:
+      E: 256
+      frontend: simd
+      running_ipc_png: plots/cf7d_e256_b8_g0_vl64_pgate25_armC_running_ipc_pr9.png
+  - id: simt_asc_default
+    label: SIMT Ascend default
+    path: simt_asc
+    role: simt_asc
+    el_cyc: null
+    notes: Not landed this cut (Aims A4 before *v).
+    script_status: MISSING
+    script_missing_reason: SimtVF CF7 (*v) not in PR; see ANALYSIS §3.2 next-cmd
+  - id: softlib_simt
+    label: SIMT SoftLib hand-craft
+    path: softlib_simt
+    role: simt_hand
+    el_cyc: null
+    notes: Not in Aims for first-cut *d rooftop.
+    script_status: MISSING
+    script_missing_reason: SoftLib not Aims this cut; see ANALYSIS §3.3
+
+trail:
+  - id: fillin_g8_g32_p5_p75
+    reason: RESULT Not done — fill-in grid beyond first-cut
+  - id: simtvf_cf7_v
+    reason: SimtVF / *v twin deferred (Aims A4)
