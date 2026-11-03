@@ -2,7 +2,7 @@
   "W": 20.0,
   "window": "(t-W,t]",
   "title": "SV1 / SimtVF E8192 T512 frag \u2014 running IPC (W=20) \u00b7 all ISA groups \u2014 staged",
-  "png": "/mnt/fluxdata/happybot/tilelangGym-sv1-t815u/benches/sv1/plots/sv1_simtvf_running_ipc_pr9_staged.png",
+  "png": "benches/sv1/plots/sv1_simtvf_running_ipc_pr9_staged.png",
   "E": 8192.0,
   "el_cyc": 2.443914081145585,
   "plot_style": "opcode_lanes_ipc",
