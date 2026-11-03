@@ -12,7 +12,7 @@
 
 **Restore note (t816u):** PR #15 tip 6cfd9b9 (t815u) **overwrote** main ANALYSIS.md (314 lines) with a thin 154-line template that marked SoftLib as N/A and dropped §§ SoftLib LDS.32/LDS.64 + stock CBT/shared narrative. This revision **restores** the main SoftLib / stock SoT spine and **keeps** the t815u PR9 *_running_ipc_pr9.png dual-pane overlays + ISA-mix / call_count / SEMANTICS_GATE that t815u asked for. Legacy IPC-only PNGs remain on disk (not deleted); they are historical narrative refs, **not** PR9 compliance.
 
-**Format note (PR9 / PRC-IPC-001 · t822u/t823u):** SoftLib **best** PR9 cites SoftLib A+B LDS.b32 T512 loadall_barrier dump → `plots/sv1_softlib_lds32_ab_t512_loadall_barrier_running_ipc_pr9.png` (+ `_staged`); stock/era-2 SimtVF frag keeps `plots/sv1_simtvf_running_ipc_pr9.png`; SIMD twin `plots/sv1_simdt_running_ipc_pr9.png`. All use `plot_style=opcode_lanes_ipc`, `lane_mode=all_isa_groups`, `lane_coverage≥0.95` (each body ISA group as a lane — incl. address-math IADD_I/LEA/SHFI + SoftLib LDS). Optional `*_pr9_staged.png` adds STAGE_TAXONOMY bands. IPC-only `*_ex_ipc_30cyc.png` / `*_rolling20_ipc.png` stay as historical narrative refs, **not** PR9 compliance.
+**Format note (PR9 / PRC-IPC-001 · t822u/t823u / embed fix t633u):** SoftLib **best** PR9 cites SoftLib A+B LDS.b32 T512 loadall_barrier dump → `plots/sv1_softlib_lds32_ab_t512_loadall_barrier_running_ipc_pr9.png` (+ `_staged`); stock/era-2 SimtVF frag keeps `plots/sv1_simtvf_running_ipc_pr9.png`; SIMD twin `plots/sv1_simdt_running_ipc_pr9.png`. All use `plot_style=opcode_lanes_ipc`, `lane_mode=all_isa_groups`, `lane_coverage≥0.95` (each body ISA group as a lane — incl. address-math IADD_I/LEA/SHFI + SoftLib LDS). Optional `*_pr9_staged.png` adds STAGE_TAXONOMY bands. IPC-only `*_ex_ipc_30cyc.png` / `*_rolling20_ipc.png` stay as historical narrative refs, **not** PR9 compliance.
 
 **Primary stock Simt (era 1):** E=8192 **TILE8192** float2 (max_vector_bits=64, LDS.64-class; TILE=E) · §5.1 multi-TILE **E=16K** @ T512 (peak TILE4K **3.771**) · §5.2 TILE8192 T-dim peak T1024 **3.846** · SoftLib §7. **Aligned e700041f float4 E16K:** appendix-only.
 
@@ -93,7 +93,9 @@ From that same plot footer (authoritative mid-body IPC @ **E=16K TILE=8K**):
 | Early fill IPC | 3.27 | — |
 | Overall VF (TILE8K) | **29.26 el/cyc** | **≈66%** of theory rooftop (~44) · **≈69%** of 42.67 |
 
-![SIMD E16K TILE8K IPC](plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png)
+![SIMD E16K TILE8K IPC — historical non-PR9 sidecar](plots/sv1d_e16k_tile8k_ex_ipc_30cyc.png)
+
+> **Non-PR9 sidecar** (IPC/el/cyc only). Latest PR9 dual-pane for the era-2 SIMD twin arm is `plots/sv1_simdt_running_ipc_pr9.png` (`opcode_lanes_ipc` / `all_isa_groups`) — see §11 embeds.
 
 **Takeaway (SIMD alone):** at **TILE=8K E=16K**, SIMD DSL lands **29.26 el/cyc** overall VF (~66% of theory rooftop ~44); mid-body ~**34.1** el/cyc (~78% of ~44). Larger TILE amortizes per-tile MTE fill/drain (2K→16K: 19.9→31.5 el/cyc). Prior whole-E E-ladder is appendix-only — not the §4 compare SoT. Head-to-head vs Simt is after §5.
 
@@ -127,7 +129,9 @@ Aligned e700041f E16K TILE ladder (~2.40 @ TILE8K T512, float4-class LDS:FADD:ST
 
 **Fused baseline (prior one-VF ladder):** one `VF_SIMT` wrapping all serial trips (`call_count=1`, VF≈4350, peak TILE4K **3.771**). CBT antifuse splits the same total LDS/FADD/STS work across N VFs (LDS:FADD:STS stay 512:512:256); el/cyc only moves ~3.90→3.70 — kickstart/wait+MTE shows on the rolling plot, not in ΣVF_cyc. Fused table kept in `data/SUMMARY_sv1_float2_tile_t512.tsv` / prior NOTES — not the §5.1 SoT.
 
-![CBT vs fused rolling IPC](plots/sv1_cbt_vs_fused_rolling20_ipc.png)
+![CBT vs fused rolling IPC — historical non-PR9 sidecar](plots/sv1_cbt_vs_fused_rolling20_ipc.png)
+
+> **Non-PR9 sidecar** (rolling IPC-only overlay). Not a substitute for `*_running_ipc_pr9.png` (`opcode_lanes_ipc`) — see §11.
 
 ### 5.2 Thread-dim performance (E=8192 TILE8192 float2)
 
@@ -142,7 +146,7 @@ Aligned e700041f E16K TILE ladder (~2.40 @ TILE8K T512, float4-class LDS:FADD:ST
 | **TILE8192 T1024** | **2130** | **3.846** | **48%** | **1.18** | **44.0 / 34.4%** |
 | TILE8192 T2048 | 2163 | 3.787 | 47% | 1.20 | **88.0 / 68.8%** |
 
-![Thread vs el/cyc](plots/sv1_thread_vs_ipc_el.png)
+![Thread vs el/cyc — summary chart, not PR9](plots/sv1_thread_vs_ipc_el.png)
 
 **Point:** el/cyc **rises through T1024**; peak is **T1024 = 3.846**. T2048 = **3.787** (still above T512 3.715, below T1024). Turning point ≈ **T1024** on this TILE8192 float2 schedule. Unique Rn stays **11** across T; MRF live scales with T (2.75→88 KB). SoftLib T512 is **52 regs → 104 KB / 81.2%** — stock loop schedule is light on RF vs SoftLib full unroll.
 
@@ -389,6 +393,24 @@ TILE ladder: per-tile MTE fill/drain amortizes 2K→16K (20.1→31.6); per-tile 
 JSON sidecars co-located: `plots/sv1_*_running_ipc_pr9.json` (top-level + `meta.lane_opcodes` non-empty). **REJECT** IPC-only `*_running_ipc.png` / `*_ex_ipc_30cyc.png` / `*_rolling20_ipc.png` as PR9 compliance.
 
 SIMD / SimtVF plot VF (3352 / 241) < official VF (3405 / 279) — first-issue silence gap; SoftLib plot VF≈1064 < harvest 1104 — same class. Headline KPIs from official/harvest counters (§7 SoftLib **7.42**; §10 SimtVF **2.4059** / SIMD **29.362**).
+
+
+### PR9 embeds (t633u — rendered dual-pane; not table-only)
+
+SoftLib best (`axis=1xG` loadall_barrier; PRC-IPC-001):
+
+![SoftLib A+B LDS.b32 T512 loadall_barrier — PR9 opcode_lanes_ipc / all_isa_groups](plots/sv1_softlib_lds32_ab_t512_loadall_barrier_running_ipc_pr9.png)
+
+Stock/era-2 SimtVF frag:
+
+![SimtVF E8192 T512 frag — PR9 opcode_lanes_ipc / all_isa_groups](plots/sv1_simtvf_running_ipc_pr9.png)
+
+SIMD twin E8192 TILE8192 VL64:
+
+![SIMD twin E8192 TILE8192 VL64 — PR9 opcode_lanes_ipc / all_isa_groups](plots/sv1_simdt_running_ipc_pr9.png)
+
+Optional STAGE_TAXONOMY bands: same stems with `_pr9_staged.png` (sidecar JSON co-located). **t633u:** prior tip listed these paths in a table only — GitHub rendered the older IPC-only §4/§5 embeds instead; this subsection makes the latest PR9 dual-pane visible.
+
 
 ## 12. Per-segment opcode mix + IPC + stage mid-IPC (clean-regress both arms)
 
