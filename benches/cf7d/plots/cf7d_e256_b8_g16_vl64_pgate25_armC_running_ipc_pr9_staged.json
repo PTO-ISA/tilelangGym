@@ -1,0 +1,96 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "cf7d hoisted G=16 gate_off armC \u2014 running IPC W=20 + opcode lanes \u2014 staged",
+  "png": "/tmp/tilelangGym-cf7d/benches/cf7d/plots/cf7d_e256_b8_g16_vl64_pgate25_armC_running_ipc_pr9_staged.png",
+  "E": 256.0,
+  "el_cyc": 8.0,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 32,
+    "vf_cyc_sum": 32,
+    "n_issues": 9,
+    "n_issues_all": 19,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/opsim_cf7d_e256_b8_g16_vl64_pgate25_armC/OPPROF_20261103175638_SVJJAWNIXDLAFNJW/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 2236,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 31.0,
+    "peak_ipc": 0.2,
+    "mean_ipc_body": 0.075,
+    "mid_med_ipc": 0.05,
+    "mid_mean_ipc": 0.075,
+    "n_windows": 12.0,
+    "n_issues": 9.0,
+    "lane_opcodes": [
+      "VLDI",
+      "VSTI",
+      "VCADD"
+    ],
+    "lane_counts": {
+      "VLDI": 1,
+      "VSTI": 1,
+      "VCADD": 1
+    },
+    "n_issues_all_named": 9.0,
+    "plot_style": "opcode_lanes_ipc",
+    "stages": [
+      {
+        "seg": "S_load",
+        "t0": 0.0,
+        "t1": 0.0,
+        "defining": [
+          "VLDI"
+        ],
+        "n_defining": 1
+      },
+      {
+        "seg": "S_reduce",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VCMAX",
+          "VMAX",
+          "VAND"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_scale",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VSEL",
+          "VDIV",
+          "VDUP"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_eltwise",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VMUL"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_store",
+        "t0": 26.0,
+        "t1": 26.0,
+        "defining": [
+          "VSTI"
+        ],
+        "n_defining": 1
+      }
+    ],
+    "stage_taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
+  }
+}

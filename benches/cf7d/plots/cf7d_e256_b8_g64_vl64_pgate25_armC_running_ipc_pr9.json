@@ -1,50 +1,44 @@
 {
   "W": 20.0,
   "window": "(t-W,t]",
-  "title": "cf7d / cf7d_e256_b8_g64_vl64_pgate25_armC \u2014 running IPC (W=20)",
-  "png": "reports/cf7d_plots/cf7d_e256_b8_g64_vl64_pgate25_armC_running_ipc_pr9.png",
+  "title": "cf7d hoisted G=64 gate_off armC \u2014 running IPC W=20 + opcode lanes",
+  "png": "/tmp/tilelangGym-cf7d/benches/cf7d/plots/cf7d_e256_b8_g64_vl64_pgate25_armC_running_ipc_pr9.png",
   "E": 256.0,
-  "el_cyc": 0.4767225325884544,
+  "el_cyc": 8.0,
   "plot_style": "opcode_lanes_ipc",
   "parsed": {
     "kind": "simd",
     "vf_index": 0,
-    "vf_cyc": 537,
-    "vf_cyc_sum": 537,
-    "n_issues": 548,
-    "n_issues_all": 548,
+    "vf_cyc": 32,
+    "vf_cyc_sum": 32,
+    "n_issues": 9,
+    "n_issues_all": 19,
     "source": "popped_dump",
-    "popped_dump": "/workspace/st_simtvf_parallel/opsim_cf7d_lean/opsim_cf7d_e256_b8_g64_vl64_pgate25_armC/core0.veccore0.instr_popped_log.dump",
-    "absolute_first": 2600,
+    "popped_dump": "/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/opsim_cf7d_e256_b8_g64_vl64_pgate25_armC/OPPROF_20261103181624_JMKHCNHNPVVUTCCY/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 2572,
     "silence_gap": 80
   },
   "meta": {
     "W": 20.0,
     "body_start": 0.0,
-    "body_end": 536.0,
-    "peak_ipc": 1.2,
-    "mean_ipc_body": 1.0134429400386848,
-    "mid_med_ipc": 1.0,
-    "mid_mean_ipc": 1.0093333333333334,
-    "n_windows": 517.0,
-    "n_issues": 548.0,
+    "body_end": 31.0,
+    "peak_ipc": 0.2,
+    "mean_ipc_body": 0.075,
+    "mid_med_ipc": 0.05,
+    "mid_mean_ipc": 0.075,
+    "n_windows": 12.0,
+    "n_issues": 9.0,
     "lane_opcodes": [
       "VLDI",
-      "VMUL",
-      "VDUP",
       "VSTI",
-      "VCMP_GT",
-      "VSEL"
+      "VCADD"
     ],
     "lane_counts": {
-      "VLDI": 6,
-      "VMUL": 512,
-      "VDUP": 2,
-      "VSTI": 4,
-      "VCMP_GT": 8,
-      "VSEL": 8
+      "VLDI": 1,
+      "VSTI": 1,
+      "VCADD": 1
     },
-    "n_issues_all_named": 548.0,
+    "n_issues_all_named": 9.0,
     "plot_style": "opcode_lanes_ipc"
   }
 }

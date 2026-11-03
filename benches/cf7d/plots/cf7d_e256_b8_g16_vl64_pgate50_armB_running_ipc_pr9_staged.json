@@ -1,0 +1,106 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "cf7d hoisted G=16 gate_on armB \u2014 running IPC W=20 + opcode lanes \u2014 staged",
+  "png": "/tmp/tilelangGym-cf7d/benches/cf7d/plots/cf7d_e256_b8_g16_vl64_pgate50_armB_running_ipc_pr9_staged.png",
+  "E": 256.0,
+  "el_cyc": 0.11631076783280327,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 2201,
+    "vf_cyc_sum": 2201,
+    "n_issues": 2600,
+    "n_issues_all": 2600,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/opsim_cf7d_e256_b8_g16_vl64_pgate50_armB/OPPROF_20261103175944_QMKIHYOIUFQAAVXP/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 2352,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 2200.0,
+    "peak_ipc": 1.35,
+    "mean_ipc_body": 1.181682714351215,
+    "mid_med_ipc": 1.2,
+    "mid_mean_ipc": 1.1836469824789098,
+    "n_windows": 2181.0,
+    "n_issues": 2600.0,
+    "lane_opcodes": [
+      "VLDI",
+      "VMUL",
+      "VDUP",
+      "VSTI",
+      "VCADD",
+      "VCMP_GT",
+      "PAND",
+      "VSEL"
+    ],
+    "lane_counts": {
+      "VLDI": 14,
+      "VMUL": 512,
+      "VDUP": 9,
+      "VSTI": 5,
+      "VCADD": 1,
+      "VCMP_GT": 513,
+      "PAND": 512,
+      "VSEL": 1024
+    },
+    "n_issues_all_named": 2600.0,
+    "plot_style": "opcode_lanes_ipc",
+    "stages": [
+      {
+        "seg": "S_load",
+        "t0": 0.0,
+        "t1": 1867.0,
+        "defining": [
+          "VLDI"
+        ],
+        "n_defining": 14
+      },
+      {
+        "seg": "S_reduce",
+        "t0": null,
+        "t1": null,
+        "defining": [
+          "VCMAX",
+          "VMAX",
+          "VAND"
+        ],
+        "n_defining": 0
+      },
+      {
+        "seg": "S_scale",
+        "t0": 10.0,
+        "t1": 2191.0,
+        "defining": [
+          "VSEL",
+          "VDIV",
+          "VDUP"
+        ],
+        "n_defining": 1033
+      },
+      {
+        "seg": "S_eltwise",
+        "t0": 6.0,
+        "t1": 2176.0,
+        "defining": [
+          "VMUL"
+        ],
+        "n_defining": 512
+      },
+      {
+        "seg": "S_store",
+        "t0": 29.0,
+        "t1": 2195.0,
+        "defining": [
+          "VSTI"
+        ],
+        "n_defining": 5
+      }
+    ],
+    "stage_taxonomy": "scripts.st_report.stage_taxonomy.STAGE_TAXONOMY"
+  }
+}
