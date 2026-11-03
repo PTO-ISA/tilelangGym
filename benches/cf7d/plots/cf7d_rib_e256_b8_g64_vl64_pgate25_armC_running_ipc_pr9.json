@@ -1,0 +1,54 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "cf7d rib G=64 gate_off armC \u2014 running IPC W=20 + opcode lanes",
+  "png": "/tmp/tilelangGym-cf7d/benches/cf7d/plots/cf7d_rib_e256_b8_g64_vl64_pgate25_armC_running_ipc_pr9.png",
+  "E": 256.0,
+  "el_cyc": 8.258064516129032,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 31,
+    "vf_cyc_sum": 31,
+    "n_issues": 12,
+    "n_issues_all": 57,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/opsim_cf7d_rib_e256_b8_g64_vl64_pgate25_armC/OPPROF_20261103181801_JJLHQMLQHCXUWRVO/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 3933,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 30.0,
+    "peak_ipc": 0.5,
+    "mean_ipc_body": 0.2636363636363636,
+    "mid_med_ipc": 0.2,
+    "mid_mean_ipc": 0.2636363636363636,
+    "n_windows": 11.0,
+    "n_issues": 12.0,
+    "lane_opcodes": [
+      "VLDI",
+      "VSTI",
+      "SZEROEXT",
+      "SMOVI",
+      "SAND",
+      "SCBZI",
+      "VCADD",
+      "SJUMPI"
+    ],
+    "lane_counts": {
+      "VLDI": 1,
+      "VSTI": 1,
+      "SZEROEXT": 1,
+      "SMOVI": 1,
+      "SAND": 1,
+      "SCBZI": 1,
+      "VCADD": 1,
+      "SJUMPI": 1
+    },
+    "n_issues_all_named": 12.0,
+    "plot_style": "opcode_lanes_ipc"
+  }
+}

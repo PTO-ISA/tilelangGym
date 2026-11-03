@@ -1,0 +1,68 @@
+id = "cf7"
+title = "Nested outer×inner if (slack / slack+AND / scalar_if)"
+family = "cf"
+
+[paths]
+kernel_dsl = "cf7d_outer_inner_if.py"
+
+[focus]
+primary = ["handwritten-simd-dsl"]
+deferred = ["simt-asc", "simd-pto", "simt-pto"]
+
+[pins]
+soc = "Ascend950PR_9599"
+note = "CF7d first-cut 2026-10-30; A≡B; crossover G=0; PARTIAL vs SimtVF"
+
+[[cases]]
+tag = "cf7d_e256_b8_g0_vl64_pgate25"
+suite = "gate"
+args = ["256", "8", "0", "64", "25"]
+shape = { E = 256, B = 8, G = 0, VL = 64, p_gate = 25 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g0_vl64_pgate50"
+suite = "gate"
+args = ["256", "8", "0", "64", "50"]
+shape = { E = 256, B = 8, G = 0, VL = 64, p_gate = 50 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g0_vl64_pgate95"
+suite = "gate"
+args = ["256", "8", "0", "64", "95"]
+shape = { E = 256, B = 8, G = 0, VL = 64, p_gate = 95 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g16_vl64_pgate25"
+suite = "gate"
+args = ["256", "8", "16", "64", "25"]
+shape = { E = 256, B = 8, G = 16, VL = 64, p_gate = 25 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g16_vl64_pgate50"
+suite = "gate"
+args = ["256", "8", "16", "64", "50"]
+shape = { E = 256, B = 8, G = 16, VL = 64, p_gate = 50 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g16_vl64_pgate95"
+suite = "gate"
+args = ["256", "8", "16", "64", "95"]
+shape = { E = 256, B = 8, G = 16, VL = 64, p_gate = 95 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g64_vl64_pgate25"
+suite = "gate"
+args = ["256", "8", "64", "64", "25"]
+shape = { E = 256, B = 8, G = 64, VL = 64, p_gate = 25 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g64_vl64_pgate50"
+suite = "gate"
+args = ["256", "8", "64", "64", "50"]
+shape = { E = 256, B = 8, G = 64, VL = 64, p_gate = 50 }
+
+[[cases]]
+tag = "cf7d_e256_b8_g64_vl64_pgate95"
+suite = "gate"
+args = ["256", "8", "64", "64", "95"]
+shape = { E = 256, B = 8, G = 64, VL = 64, p_gate = 95 }

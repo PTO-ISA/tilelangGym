@@ -1,0 +1,54 @@
+{
+  "W": 20.0,
+  "window": "(t-W,t]",
+  "title": "cf7d rib G=64 gate_on armB \u2014 running IPC W=20 + opcode lanes",
+  "png": "/tmp/tilelangGym-cf7d/benches/cf7d/plots/cf7d_rib_e256_b8_g64_vl64_pgate50_armB_running_ipc_pr9.png",
+  "E": 256.0,
+  "el_cyc": 0.028998640688717717,
+  "plot_style": "opcode_lanes_ipc",
+  "parsed": {
+    "kind": "simd",
+    "vf_index": 0,
+    "vf_cyc": 8828,
+    "vf_cyc_sum": 8828,
+    "n_issues": 10308,
+    "n_issues_all": 10308,
+    "source": "popped_dump",
+    "popped_dump": "/tmp/st_simtvf_parallel/ptodsl_cf7d_rev/opsim_cf7d_rib_e256_b8_g64_vl64_pgate50_armB/OPPROF_20261103182053_OCZPRCJWOIWZUPKG/dump/core0.veccore0.instr_popped_log.dump",
+    "absolute_first": 3743,
+    "silence_gap": 80
+  },
+  "meta": {
+    "W": 20.0,
+    "body_start": 0.0,
+    "body_end": 8827.0,
+    "peak_ipc": 1.6,
+    "mean_ipc_body": 1.1677792915531335,
+    "mid_med_ipc": 1.2,
+    "mid_mean_ipc": 1.1660812560699256,
+    "n_windows": 8808.0,
+    "n_issues": 10308.0,
+    "lane_opcodes": [
+      "VLDI",
+      "VMUL",
+      "VDUP",
+      "VSTI",
+      "VCADD",
+      "VCMP_GT",
+      "PAND",
+      "VSEL"
+    ],
+    "lane_counts": {
+      "VLDI": 21,
+      "VMUL": 2048,
+      "VDUP": 16,
+      "VSTI": 12,
+      "VCADD": 1,
+      "VCMP_GT": 2056,
+      "PAND": 2048,
+      "VSEL": 4096
+    },
+    "n_issues_all_named": 10308.0,
+    "plot_style": "opcode_lanes_ipc"
+  }
+}
