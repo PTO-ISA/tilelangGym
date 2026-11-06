@@ -32,9 +32,9 @@ def main():
         name = f"{kind}-r{rows}c{cols}-g32-t{threads}"
         kernel = make_load4_piece(rows, cols, threads, piece)
         target = "ascend"
-    elif kind in ("warp32u2", "warp32u4"):
+    elif kind in ("warp32u1", "warp32u2", "warp32u4"):
         rows, cols, threads = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
-        factor = 2 if kind == "warp32u2" else 4
+        factor = {"warp32u1": 1, "warp32u2": 2, "warp32u4": 4}[kind]
         name = f"{kind}-r{rows}c{cols}-g32-t{threads}"
         kernel = make_warp_f16_unroll(rows, cols, threads, factor, "float32")
         target = "ascend"

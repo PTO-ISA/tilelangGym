@@ -9,7 +9,7 @@ scale[row, g] = max(eps, absmax(X[row, g*G : (g+1)*G]))
 Out[row, j] = X[row, j] * (1 / scale[row, j // G])
 ```
 
-The scale stays live. The multiply uses a value that was already loaded. el/cyc is `N / VF`.
+The scale stays live. The multiply uses a value that was already loaded. el/cyc is output elements per cycle, `N / VF`. One element is one result in `Out`.
 
 The shapes are 64×64, 64×128, and 128×128. `N` is 4096, 8192, and 16384. Pass is max abs error 1e-4. The runs land near 1e-7.
 
@@ -298,16 +298,17 @@ Load-4 is the SIMT schedule. Its shortest cell on each shape is VF 635 at 1024 t
 
 ### 4.1 Operation breakdown
 
-128×128, load-4, 2048 threads. `N` is 16384. Each row is its own kernel. el/cyc is `N / VF`. The operator window runs from the first issue of that opcode to the last, and its el/cyc is `N` divided by that span.
+128×128, load-4, 2048 threads. This is the shortest SIMT cell. `N` is 16384. One launch. VF is 1887.
 
-`load` reads the four groups and stores them. `max` reads them and stores the warp max. `multiply` is the load-4 kernel. `store` writes 1 and does not load.
+**Whole kernel.** el/cyc is output elements per cycle, `N / VF`.
+
+**Operator window.** From the first issue of that opcode to its last issue. `LDS` counts input bytes, `4 × N`, the float32 values of `X`. `FMNMX`, `REDUX`, `FDIV`, `FMUL`, and `FADD` count output elements, `N`. One issue writes 32 of them, one per lane. `STS` counts output bytes, `4 × N`. Address math is left out of the opcode column.
 
 **Table 5.** Operation breakdown, whole kernel. 128×128, load-4, 2048 threads.
 
 <table align="center">
 <thead>
 <tr>
-<th align="center">Kernel</th>
 <th align="center">VF</th>
 <th align="center">el/cyc</th>
 <th align="center">IPC</th>
@@ -316,76 +317,165 @@ Load-4 is the SIMT schedule. Its shortest cell on each shape is VF 635 at 1024 t
 </thead>
 <tbody>
 <tr>
-<td align="center">load</td>
-<td align="center">1571</td>
-<td align="center">10.43</td>
-<td align="center">1.51</td>
-<td align="center">512 LDS, 512 STS</td>
-</tr>
-<tr>
-<td align="center">max</td>
-<td align="center">1684</td>
-<td align="center">9.73</td>
-<td align="center">2.05</td>
-<td align="center">512 LDS, 512 REDUX, 512 STS</td>
-</tr>
-<tr>
-<td align="center">multiply</td>
 <td align="center">1887</td>
 <td align="center">8.68</td>
 <td align="center">2.61</td>
-<td align="center">512 LDS, 512 REDUX, 512 FDIV, 512 FMUL, 512 STS</td>
-</tr>
-<tr>
-<td align="center">store</td>
-<td align="center"><b>1024</b></td>
-<td align="center">16.00</td>
-<td align="center">1.44</td>
-<td align="center">512 STS</td>
+<td align="center">512 LDS, 512 FMNMX, 512 REDUX, 512 FDIV, 512 FMUL, 512 FADD, 512 STS</td>
 </tr>
 </tbody>
 </table>
 
-**Table 6.** Operation breakdown, operator window. 128×128, load-4, 2048 threads.
+**Table 6.** Operation breakdown, operator window. 128×128, load-4, 2048 threads. Per cycle uses the count in that row.
 
 <table align="center">
 <thead>
 <tr>
-<th align="center">Kernel</th>
 <th align="center">Operator</th>
+<th align="center">Counted</th>
 <th align="center">Ticks</th>
-<th align="center">Window el/cyc</th>
+<th align="center">Per cycle</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">load</td>
 <td align="center">LDS</td>
-<td align="center">58–1456</td>
-<td align="center">11.72</td>
+<td align="center">input bytes</td>
+<td align="center">5936–7619</td>
+<td align="center">38.94</td>
 </tr>
 <tr>
-<td align="center">max</td>
+<td align="center">FMNMX</td>
+<td align="center">output elements</td>
+<td align="center">6015–7705</td>
+<td align="center">9.69</td>
+</tr>
+<tr>
 <td align="center">REDUX</td>
-<td align="center">95–1641</td>
-<td align="center">10.60</td>
+<td align="center">output elements</td>
+<td align="center">5978–7659</td>
+<td align="center">9.75</td>
 </tr>
 <tr>
-<td align="center">multiply</td>
+<td align="center">FDIV</td>
+<td align="center">output elements</td>
+<td align="center">6018–7710</td>
+<td align="center">9.68</td>
+</tr>
+<tr>
 <td align="center">FMUL</td>
-<td align="center">156–1852</td>
+<td align="center">output elements</td>
+<td align="center">6037–7733</td>
 <td align="center">9.66</td>
 </tr>
 <tr>
-<td align="center">store</td>
+<td align="center">FADD</td>
+<td align="center">output elements</td>
+<td align="center">5974–7655</td>
+<td align="center">9.75</td>
+</tr>
+<tr>
 <td align="center">STS</td>
-<td align="center">294–998</td>
-<td align="center"><b>23.27</b></td>
+<td align="center">output bytes</td>
+<td align="center">6054–7742</td>
+<td align="center">38.82</td>
 </tr>
 </tbody>
 </table>
 
-The store is the shortest kernel and the fastest issue window. The multiply kernel is the full schedule, VF 1887.
+The seven spans sit on top of each other, each about 1690 cycles inside the 1887-cycle window. The multiply does not add a separate pass.
+
+The single-op programs at 2048 threads take 27 cycles for `LDS`, 7 for `FMNMX`, 17 for `REDUX`, 18 for `FDIV`, 9 for `FMUL`, 8 for `FADD`, and 20 for `STS`. Active cycles are completion minus issue. The rate columns use the same counts as Table 6. The single-op rates are the whole launch, with that op running alone.
+
+**Table 7.** Single-op check against load-4. 128×128, 2048 threads.
+
+<table align="center">
+<thead>
+<tr>
+<th align="center">Instruction</th>
+<th align="center">Single-op cycles</th>
+<th align="center">Low</th>
+<th align="center">Average</th>
+<th align="center">High</th>
+<th align="center">Counted</th>
+<th align="center">Single-op rate</th>
+<th align="center">Case rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">LDS</td>
+<td align="center">27</td>
+<td align="center">27</td>
+<td align="center">37.7</td>
+<td align="center">73</td>
+<td align="center">input B/cycle</td>
+<td align="center">98.35</td>
+<td align="center">38.94</td>
+</tr>
+<tr>
+<td align="center">FMNMX</td>
+<td align="center">7</td>
+<td align="center">7</td>
+<td align="center">7.0</td>
+<td align="center">7</td>
+<td align="center">elements/cycle</td>
+<td align="center">150.98</td>
+<td align="center">9.69</td>
+</tr>
+<tr>
+<td align="center">REDUX</td>
+<td align="center">17</td>
+<td align="center">17</td>
+<td align="center">17.0</td>
+<td align="center">17</td>
+<td align="center">elements/cycle</td>
+<td align="center">40.98</td>
+<td align="center">9.75</td>
+</tr>
+<tr>
+<td align="center">FDIV</td>
+<td align="center">18</td>
+<td align="center">18</td>
+<td align="center">18.0</td>
+<td align="center">18</td>
+<td align="center">elements/cycle</td>
+<td align="center">58.13</td>
+<td align="center">9.68</td>
+</tr>
+<tr>
+<td align="center">FMUL</td>
+<td align="center">9</td>
+<td align="center">9</td>
+<td align="center">9.0</td>
+<td align="center">9</td>
+<td align="center">elements/cycle</td>
+<td align="center">103.40</td>
+<td align="center">9.66</td>
+</tr>
+<tr>
+<td align="center">FADD</td>
+<td align="center">8</td>
+<td align="center">8</td>
+<td align="center">8.0</td>
+<td align="center">8</td>
+<td align="center">elements/cycle</td>
+<td align="center">127.04</td>
+<td align="center">9.75</td>
+</tr>
+<tr>
+<td align="center">STS</td>
+<td align="center">20</td>
+<td align="center">20</td>
+<td align="center">28.7</td>
+<td align="center">71</td>
+<td align="center">output B/cycle</td>
+<td align="center">112.20</td>
+<td align="center">38.82</td>
+</tr>
+</tbody>
+</table>
+
+`FMNMX`, `REDUX`, `FDIV`, `FMUL`, and `FADD` match the single-op time on every issue. The low `LDS` is still 27. The average is 37.7, and the load moves 38.94 input bytes per cycle. The low `STS` is still 20. The average is 28.7, and the store moves 38.82 output bytes per cycle.
 
 ## 5. Running IPC
 
@@ -411,7 +501,7 @@ Keeplive. Pack does not run on this shape. VF 2041. `VCGMAX`, `VDIV`, and `VSELR
 
 Best SIMT is load-4. Best SIMD is keeplive on the squares and pack on 64×128. The ratio is the SIMT VF divided by the SIMD VF.
 
-**Table 7.** Head-to-head. Best SIMT against best SIMD.
+**Table 8.** Head-to-head. Best SIMT against best SIMD.
 
 <table align="center">
 <thead>
@@ -553,20 +643,11 @@ python kernels/simd/sv8d_vl_resident_case3.py <rows> <cols> 32
 
 Record under `runs/simd/pack/`, `runs/simd/keeplive/`, and `runs/simd/paint/`.
 
-### Tables 5 and 6
+### Tables 5, 6, and 7
 
-128×128, 2048 threads. `load`, `max`, and `store` are their own kernels. The multiply row is the load-4 trace from Tables 2–4, not a fourth kernel.
+128×128, load-4, 2048 threads. The trace is `runs/simt/load4/warp32u4-r128c128-g32-t2048`. Table 6 is the issue span of each opcode. `LDS` divides `4 × N` input bytes by that span. `FMNMX`, `REDUX`, `FDIV`, `FMUL`, and `FADD` divide `N` by that span. `STS` divides `4 × N` output bytes by that span. Table 7 is completion minus issue inside the VF window. The single-op rates are the 2048-thread programs in `simt-uarch/`.
 
-```bash
-python compile.py piece-load 128 128 2048
-python compile.py piece-max 128 128 2048
-python compile.py piece-store 128 128 2048
-python launch_piece.py load runs/ops/piece-load-r128c128-g32-t2048/kernel.so 128 128
-```
-
-`max` and `store` use that same launcher with the name in place of `load`.
-
-### Table 7, starred rows
+### Table 8, starred rows
 
 One recording covers both shapes. The 256×256* VF is every window. The 128×256* VF is the first half of those windows: two of the four load-4 calls, four of the eight pack calls.
 
@@ -581,4 +662,4 @@ python kernels/simd/launch_slabs.py pack_ub_vl256 64 128 8
 python plot_charts.py
 ```
 
-Figure 1 reads the 128×128 load-4 trace at 2048 threads. Figure 2 reads the 128×128 keeplive trace. Figure 3 draws Table 7.
+Figure 1 reads the 128×128 load-4 trace at 2048 threads. Figure 2 reads the 128×128 keeplive trace. Figure 3 draws Table 8.

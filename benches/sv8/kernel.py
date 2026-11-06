@@ -81,8 +81,8 @@ def make_warp_f16_unroll(R, C, threads, factor, dtype="float16"):
     G = 32
     if dtype not in ("float16", "float32"):
         raise ValueError(f"dtype={dtype}")
-    if factor not in (2, 4):
-        raise ValueError(f"factor={factor} must be 2 or 4")
+    if factor not in (1, 2, 4):
+        raise ValueError(f"factor={factor} must be 1, 2, or 4")
     if C % G != 0:
         raise ValueError(f"C={C} must be a multiple of {G}")
     if threads < 32 or threads % 32 != 0 or threads > 2048:
