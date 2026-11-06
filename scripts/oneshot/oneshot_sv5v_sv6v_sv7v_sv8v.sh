@@ -113,8 +113,8 @@ compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c
 compile_run_generic "$SUITE/benches/sv7/sv7v_reduce_large_eltwise.py" sv7v_r64_c128_g128_t64 64 128 128 64
 
 echo "==== PHASE SV8V Case-3 (live + spill_dist, SimdVF) ===="
-compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
-compile_run_generic "$SUITE/benches/sv8/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
+compile_run_generic "$SUITE/benches/sv8/softlib/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_live 64 128 16 64 live
+compile_run_generic "$SUITE/benches/sv8/softlib/sv8v_case3_bcast.py" sv8v_r64_c128_g16_t64_spill_dist 64 128 16 64 spill_dist
 
 "$PY" "$SUITE/harvest_report.py" 2>&1 | tee "$OUT/harvest_sv5v_sv6v_sv8v.log" || true
 "$PY" "$SUITE/harvest_simt_vmi_compare.py" --out "$OUT/reports/ST_VMI_COMPARE.md" 2>&1 | tee "$OUT/harvest_simt_vmi_compare.log" || true

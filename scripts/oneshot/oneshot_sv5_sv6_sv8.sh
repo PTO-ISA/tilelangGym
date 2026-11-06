@@ -142,8 +142,8 @@ fi
 
 if has_phase sv8; then
 echo "==== PHASE SV8 Case-3 (live + spill_dist) ===="
-compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
-compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
+compile_run_generic "$SUITE/benches/sv8/softlib/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
+compile_run_generic "$SUITE/benches/sv8/softlib/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
 fi
 
 ST_SIMTVF_OUT="$OUT" ST_SIMTVF_REPORTS="$OUT/reports" "$PY" "$SUITE/harvest_report.py" \

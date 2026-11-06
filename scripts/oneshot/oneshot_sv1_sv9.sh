@@ -174,8 +174,8 @@ compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c12
 compile_run_generic "$SUITE/benches/sv7/sv7_reduce_large_eltwise.py" sv7_r64_c128_g128_t32 64 128 128 32
 
 echo "==== PHASE SV8 Case-3 quant e2e ===="
-compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
-compile_run_generic "$SUITE/benches/sv8/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
+compile_run_generic "$SUITE/benches/sv8/softlib/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_live 64 128 16 32 live
+compile_run_generic "$SUITE/benches/sv8/softlib/sv8_case3_bcast.py" sv8_r64_c128_g16_t32_spill_dist 64 128 16 32 spill_dist
 
 echo "==== PHASE SV9 topk e2e ===="
 compile_run_topk sv9_e256_k1_t32_keep 256 1 32 keep
