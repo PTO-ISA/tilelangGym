@@ -1,0 +1,36 @@
+lds t=32 PASS maxabs=0.000e+00 bin yes
+  vf=1054 n=32 span=209 act_med=27 bytes=4096 B/cyc=19.60 at128=32
+lds t=128 PASS maxabs=0.000e+00 bin yes
+  vf=1066 n=128 span=252 act_med=27 bytes=16384 B/cyc=65.02 at128=128
+lds t=256 PASS maxabs=0.000e+00 bin yes
+  vf=1206 n=256 span=394 act_med=29 bytes=32768 B/cyc=83.17 at128=256
+lds t=512 PASS maxabs=0.000e+00 bin yes
+  vf=1395 n=512 span=1058 act_med=36 bytes=65536 B/cyc=61.94 at128=512
+ldg t=32 PASS maxabs=0.000e+00 bin yes
+  vf=2795 n=32 span=2107 act_med=1146 bytes=4096 B/cyc=1.94 at128=32
+ldg t=128 PASS maxabs=0.000e+00 bin yes
+  vf=6743 n=128 span=5722 act_med=603 bytes=16384 B/cyc=2.86 at128=128
+ldg t=256 PASS maxabs=0.000e+00 bin yes
+  vf=7378 n=256 span=6341 act_med=583 bytes=32768 B/cyc=5.17 at128=256
+ldg t=512 PASS maxabs=0.000e+00 bin yes
+  vf=7939 n=512 span=6276 act_med=640 bytes=65536 B/cyc=10.44 at128=512
+ldg t=1024 PASS maxabs=0.000e+00 bin yes
+  vf=13874 n=1024 span=9918 act_med=628 bytes=131072 B/cyc=13.22 at128=1024
+sts t=32 PASS maxabs=0.000e+00 bin yes
+  vf=1086 n=32 span=326 act_med=20 bytes=4096 B/cyc=12.56 at128=32
+sts t=256 PASS maxabs=0.000e+00 bin yes
+  vf=1043 n=256 span=497 act_med=20 bytes=32768 B/cyc=65.93 at128=256
+sts t=512 PASS maxabs=0.000e+00 bin yes
+  vf=1025 n=512 span=717 act_med=20 bytes=65536 B/cyc=91.40 at128=512
+fadd t=32 PASS maxabs=0.000e+00 bin yes
+  vf=1019 n=32 span=504 act_med=8 bytes=4096 B/cyc=8.13 at128=32
+fadd t=256 PASS maxabs=0.000e+00 bin yes
+  vf=1467 n=256 span=896 act_med=8 bytes=32768 B/cyc=36.57 at128=256
+fadd t=512 PASS maxabs=0.000e+00 bin yes
+  vf=4036 n=512 span=2355 act_med=8 bytes=65536 B/cyc=27.83 at128=512
+ffma t=32 PASS maxabs=1.192e-07 bin yes
+  vf=1292 n=32 span=548 act_med=11 bytes=4096 B/cyc=7.47 at128=32
+ffma t=256 PASS maxabs=1.192e-07 bin yes
+  vf=1664 n=256 span=721 act_med=11 bytes=32768 B/cyc=45.45 at128=256
+ffma t=512 PASS maxabs=1.192e-07 bin yes
+  vf=3158 n=512 span=2223 act_med=11 bytes=65536 B/cyc=29.48 at128=512

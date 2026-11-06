@@ -8,7 +8,7 @@
 Out[n] = sum_k A[n, k] * x[k]
 ```
 
-el/cyc is `N / VF`. mac/cyc is `N × K / VF`.
+el/cyc is output elements per cycle, `N / VF`. One element is one result in `Out`. mac/cyc is products per cycle, `N × K / VF`. One product is one element of `A`.
 
 Table 3 holds `N` at 4096 and doubles `K`. `K` is 8, 16, 32, and 64. Table 4 holds `K` at 128 and doubles `N`: 128, 256, 512, 1024, and 2048.
 
@@ -339,89 +339,7 @@ Shape `N = 4096`, `K = 32`. The launch is 128, 256, 512, 1024, and 2048 threads.
 
 The window shortens as the launch grows. 2048 threads is the shortest. `LDK` and `STK` are 0.
 
-### 4.3 Operation breakdown
-
-`N = 4096`, `K = 32`, 256 threads, the GM thread run. Each row is its own kernel.
-
-**Whole kernel.** el/cyc is `N / VF` over the entire VF window, including the loads an operator needs and the store that keeps the result.
-
-**Operator window.** From the first issue of that opcode to the last. el/cyc is the elements that opcode issues, divided by that span. `load` and `ffma` credit `N × K`. `sts` credits `N`.
-
-`load` sums `A` along `K`, so the loads stay. `ffma` is the gemv. `sts` stores the constant 1 and does not load. Address math is left out of the opcode column.
-
-**Table 6.** Operation breakdown, whole kernel. `N = 4096`, `K = 32`, 256 threads.
-
-<table align="center">
-<thead>
-<tr>
-<th align="center">Kernel</th>
-<th align="center">VF</th>
-<th align="center">el/cyc</th>
-<th align="center">IPC</th>
-<th align="center">Opcodes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">load</td>
-<td align="center">233381</td>
-<td align="center">0.02</td>
-<td align="center">0.09</td>
-<td align="center">4096 FADD, 4096 LDG, 4096 F2F, 64 STS</td>
-</tr>
-<tr>
-<td align="center">ffma</td>
-<td align="center">234238</td>
-<td align="center">0.02</td>
-<td align="center">0.09</td>
-<td align="center">4096 FFMA, 4352 LDG, 4352 F2F, 64 STS</td>
-</tr>
-<tr>
-<td align="center">sts</td>
-<td align="center"><b>695</b></td>
-<td align="center">5.89</td>
-<td align="center">0.27</td>
-<td align="center">64 STS</td>
-</tr>
-</tbody>
-</table>
-
-**Table 7.** Operation breakdown, operator window. `N = 4096`, `K = 32`, 256 threads.
-
-<table align="center">
-<thead>
-<tr>
-<th align="center">Kernel</th>
-<th align="center">Operator</th>
-<th align="center">Ticks</th>
-<th align="center">Window el/cyc</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">load</td>
-<td align="center">LDG</td>
-<td align="center">375–233211</td>
-<td align="center">0.56</td>
-</tr>
-<tr>
-<td align="center">ffma</td>
-<td align="center">FFMA</td>
-<td align="center">6291–234157</td>
-<td align="center">0.58</td>
-</tr>
-<tr>
-<td align="center">sts</td>
-<td align="center">STS</td>
-<td align="center">208–524</td>
-<td align="center"><b>12.96</b></td>
-</tr>
-</tbody>
-</table>
-
-`sts` is the shortest kernel and the fastest issue window. `load` and `ffma` are almost the same window. The multiply does not add a separate pass. The loads already cover it.
-
-### 4.4 Buffer staging
+### 4.3 Buffer staging
 
 Same shapes as the head-to-head. `A` and `x` are copied into the buffer before the VF, and the VF loads them from the buffer. The copy sits outside the VF window. VF is the sum of the launches. The launch is 256 threads.
 
@@ -431,7 +349,7 @@ The buffer is 248 KB. A tile that fits is one launch. A tile that does not fit i
 - `N = 4096`, `K = 32`, and `N = 1024`, `K = 128`: two launches
 - `N = 4096`, `K = 64`, and `N = 2048`, `K = 128`: four launches
 
-**Table 8.** Buffer staging against the GM thread column. Δ VF is the buffer VF minus the GM VF.
+**Table 6.** Buffer staging against the GM thread column. Δ VF is the buffer VF minus the GM VF.
 
 <table align="center">
 <thead>
@@ -523,7 +441,144 @@ The buffer is 248 KB. A tile that fits is one launch. A tile that does not fit i
 </tbody>
 </table>
 
-The buffer VF is lower than the GM VF on every row. `LDK` and `STK` are 0.
+The buffer VF is lower than the GM VF on every row. `LDK` and `STK` are 0. The operation breakdown uses the `N = 4096`, `K = 32` row.
+
+### 4.4 Operation breakdown
+
+`N = 4096`, `K = 32`, 256 threads, the buffer run. Two launches. VF is the sum, 132303. The copy into the buffer sits outside this window.
+
+**Whole kernel.** el/cyc is output elements per cycle, `N / VF`, over both launches.
+
+**Operator window.** From the first issue of that opcode to its last issue, inside each launch. The span is the sum of the two launches. `LDS` counts input bytes, `2 × N × K + 2 × K`, the fp16 values of `A` and `x`. `F2F` counts input elements of `A`. One half becomes one float, so that count is also the number of converted values. `FFMA` counts products, one per element of `A`. `STS` counts output bytes, `4 × N`. Address math is left out of the opcode column.
+
+**Table 7.** Operation breakdown, whole kernel. `N = 4096`, `K = 32`, 256 threads, buffer.
+
+<table align="center">
+<thead>
+<tr>
+<th align="center">VF</th>
+<th align="center">el/cyc</th>
+<th align="center">IPC</th>
+<th align="center">Opcodes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">132303</td>
+<td align="center">0.03</td>
+<td align="center">0.16</td>
+<td align="center">4608 LDS, 4608 F2F, 4096 FFMA, 64 STS</td>
+</tr>
+</tbody>
+</table>
+
+**Table 8.** Operation breakdown, operator window. `N = 4096`, `K = 32`, 256 threads, buffer. Ticks are the two launches. Per cycle uses the count in that row.
+
+<table align="center">
+<thead>
+<tr>
+<th align="center">Operator</th>
+<th align="center">Counted</th>
+<th align="center">Ticks</th>
+<th align="center">Per cycle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">LDS</td>
+<td align="center">input bytes</td>
+<td align="center">6622–71870<br>74698–139848</td>
+<td align="center">2.01</td>
+</tr>
+<tr>
+<td align="center">F2F</td>
+<td align="center">input elements of A</td>
+<td align="center">6689–72468<br>75025–140543</td>
+<td align="center">1.00</td>
+</tr>
+<tr>
+<td align="center">FFMA</td>
+<td align="center">products</td>
+<td align="center">7300–72475<br>75923–140550</td>
+<td align="center">1.01</td>
+</tr>
+<tr>
+<td align="center">STS</td>
+<td align="center">output bytes</td>
+<td align="center">72522–72640<br>140597–140715</td>
+<td align="center">69.42</td>
+</tr>
+</tbody>
+</table>
+
+`LDS`, `F2F`, and `FFMA` cover the same stretch of each launch. The multiply does not add a separate pass. `STS` is 118 cycles at the end of each launch.
+
+The `LDS` window is the VF. Each launch issues 2304 loads. The next load follows on a median gap of 32 cycles. From the first issue to the last completion the two launches take 65821 and 65820 cycles, 131641 together, inside the VF of 132303. The 262208 input bytes over the issue span of 130398 cycles are the 2.01 bytes per cycle in Table 8. The 128 B/cycle line for those bytes is 2048.5 cycles, and 85% of that line is 2410 cycles.
+
+The other 662 cycles sit outside that load window. The head, 90 and 108 cycles, is address math before the first load. The tail, 232 cycles in each launch, is the last `F2F` and `FFMA`, a block barrier, the store addresses, and 32 `STS`. The shortest load is active for 27 and 30 cycles. The median active time is 652, queue time behind loads already issued.
+
+The single-op programs are the 32-float runs at 256 threads. `LDS` stays active for 29 cycles and moves 83.17 bytes per cycle. `FADD` stays active for 8 cycles, 9.14 elements per cycle. `FFMA` stays active for 11 cycles, 11.36 products per cycle. `STS` stays active for 20 cycles, 65.93 bytes per cycle. The `F2F` row uses the `FADD` program. Case rates still use the Table 8 spans.
+
+**Table 9.** Single-op check against the buffer kernel. `N = 4096`, `K = 32`, 256 threads.
+
+<table align="center">
+<thead>
+<tr>
+<th align="center">Instruction</th>
+<th align="center">Single-op cycles</th>
+<th align="center">Low</th>
+<th align="center">Average</th>
+<th align="center">High</th>
+<th align="center">Counted</th>
+<th align="center">Single-op rate</th>
+<th align="center">Case rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">LDS</td>
+<td align="center">29</td>
+<td align="center">27</td>
+<td align="center">634.5</td>
+<td align="center">714</td>
+<td align="center">input B/cycle</td>
+<td align="center">83.17</td>
+<td align="center">2.01</td>
+</tr>
+<tr>
+<td align="center">F2F</td>
+<td align="center">8</td>
+<td align="center">8</td>
+<td align="center">8.0</td>
+<td align="center">8</td>
+<td align="center">elements/cycle</td>
+<td align="center">9.14</td>
+<td align="center">1.00</td>
+</tr>
+<tr>
+<td align="center">FFMA</td>
+<td align="center">11</td>
+<td align="center">11</td>
+<td align="center">11.0</td>
+<td align="center">11</td>
+<td align="center">products/cycle</td>
+<td align="center">11.36</td>
+<td align="center">1.01</td>
+</tr>
+<tr>
+<td align="center">STS</td>
+<td align="center">20</td>
+<td align="center">23</td>
+<td align="center">28.6</td>
+<td align="center">31</td>
+<td align="center">output B/cycle</td>
+<td align="center">65.93</td>
+<td align="center">69.42</td>
+</tr>
+</tbody>
+</table>
+
+`F2F` and `FFMA` match the single-op time on every issue. The low `LDS` is still 27. The average is 634.5, and the load moves 2.01 input bytes per cycle. The 32-float `LDS` program at 256 threads moves 83.17 bytes per cycle, and 85% of the 128 byte line is 108.8. `STS` runs from 23 to 31, average 28.6. The case store is 8 bytes per lane, and that burst moves 69.42 output bytes per cycle.
 
 ## 5. Running IPC
 
@@ -545,11 +600,59 @@ The buffer run, 256 threads. Two launches, and the sum is VF 132303. `LDS` and `
 
 ![Buffer SIMT instructions, N = 4096, K = 32](plots/simt_first_launch.png)
 
-## 6. Conclusion
+## 6. Hand-written
+
+`N = 4096`, `K = 32`, 256 threads. Same case as the operation breakdown and Figure 3.
+
+### 6.1 SIMT
+
+Source `benches/sv3/cce/gemv_n4096_k32_t256.asc`. Each warp owns 256 outputs. Lane `L` loads `A[n, L]`. The buffer kernel uses `threadIdx.x * 64 + k`, so adjacent threads are 128 bytes apart.
+
+**Table 10.** CCE against the buffer kernel. `N = 4096`, `K = 32`, 256 threads.
+
+<table align="center">
+<thead>
+<tr>
+<th align="center">Kernel</th>
+<th align="center">VF</th>
+<th align="center">el/cyc</th>
+<th align="center">mac/cyc</th>
+<th align="center">IPC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Buffer</td>
+<td align="center">132303</td>
+<td align="center">0.03</td>
+<td align="center">0.99</td>
+<td align="center">0.16</td>
+</tr>
+<tr>
+<td align="center">CCE</td>
+<td align="center"><b>55100</b></td>
+<td align="center">0.07</td>
+<td align="center">2.38</td>
+<td align="center">1.12</td>
+</tr>
+</tbody>
+</table>
+
+The buffer window is 2.40× the CCE window. Buffer `LDS` issues every 32 cycles, median active time 652. CCE `LDS` issues every 13 cycles and finishes in 27. CCE uses `FMUL` and `REDUX` in place of `FFMA`.
+
+**Figure 4.** Buffer instructions, first launch. `N = 4096`, `K = 32`, 256 threads.
+
+![Buffer instructions, first launch](plots/cmp_tilelang_zoom.png)
+
+**Figure 5.** CCE instructions, first launch. `N = 4096`, `K = 32`, 256 threads.
+
+![CCE instructions, first launch](plots/cmp_cce_zoom.png)
+
+## 7. Conclusion
 
 SIMD is the lower VF on every row. Bold is that VF.
 
-**Table 9.** Head-to-head. Buffer SIMT, 256 threads, against SIMD.
+**Table 11.** Head-to-head. Buffer SIMT, 256 threads, against SIMD.
 
 <table align="center">
 <thead>
@@ -628,7 +731,7 @@ npusim record -s Ascend950 -o runs/<case>/npusim -g -n 0 "python launch.py runs/
 python decode.py <instr.bin> N K thread|simd
 ```
 
-`instr.bin` is the newest file under `runs/<case>/npusim`. Decode reads veccore 0. It prints VF, el/cyc, mac/cyc, IPC, and the spill counts. Pass `thread` for the thread, warp, and buffer traces, and `simd` for the SIMD trace.
+`instr.bin` is the newest file under `runs/<case>/npusim`. Decode reads veccore 0. It prints VF, el/cyc, mac/cyc, IPC, and the spill counts. el/cyc there is output elements per cycle. mac/cyc is products per cycle. Pass `thread` for the thread, warp, and buffer traces, and `simd` for the SIMD trace.
 
 **Tables 1 and 3.** `N = 4096`. `K` is 8, 16, 32, 64. SIMD, thread, and warp.
 
@@ -636,10 +739,12 @@ python decode.py <instr.bin> N K thread|simd
 
 **Table 5.** `N = 4096`, `K = 32`. Threads 128, 512, 1024, and 2048 are `thread-n4096-k32-t<threads>`. The 256-thread case is `thread-n4096-k32`.
 
-**Table 8.** Buffer cases are `ub-n<N>-k<K>`. The GM column is the matching `thread-n<N>-k<K>`.
+**Table 6.** Buffer cases are `ub-n<N>-k<K>`. The GM column is the matching `thread-n<N>-k<K>`.
 
-**Table 9.** Buffer VF from Table 8 against the SIMD VF from Tables 1 and 2.
+**Table 11.** Buffer VF from Table 6 against the SIMD VF from Tables 1 and 2.
 
-**Tables 6 and 7.** `runs/ops/load`, `runs/ops/ffma`, and `runs/ops/sts`. `python ops.py compile`, then `ops_launch.py runs/ops/<name>/kernel.so load|ffma|sts`.
+**Tables 7, 8, and 9.** `runs/ub-n4096-k32`. Table 8 sums the issue span of each opcode across the two launches. `LDS` divides `2 × N × K + 2 × K` by that span. `F2F` and `FFMA` divide `N × K` by that span. `STS` divides `4 × N` by that span. Table 9 is completion minus issue inside the VF window. The single-op rates are the 32-float programs at 256 threads in `simt-uarch/`. The `F2F` row uses the `FADD` program.
+
+**Table 10 and Figures 4 and 5.** The CCE source is `benches/sv3/cce/gemv_n4096_k32_t256.asc`. Launch it with `launch.py` from `benches/sv3/nk`, `N = 4096`, `K = 32`. Figures 4 and 5 are the first launch of that trace and of `runs/ub-n4096-k32`. From `benches/sv3`, `python cce/plot_compare.py` writes them under `plots/`.
 
 **Figures.** Figure 1 is Table 4. Figure 2 reads `runs/simd-n4096-k32`. Figure 3 reads `runs/ub-n4096-k32`. `python plot_charts.py` writes all three under `../plots/`.
